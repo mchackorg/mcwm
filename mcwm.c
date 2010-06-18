@@ -23,8 +23,10 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <errno.h>
+#include <getopt.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_keysyms.h>
@@ -52,13 +54,6 @@
 #define MCWM_RESIZE 3
 
 
-/* Globals */
-xcb_connection_t *conn;         /* Connection to X server. */
-xcb_screen_t *screen;           /* Our current screen.  */
-char *terminal = TERMINAL;      /* Terminal to start. */
-xcb_drawable_t focuswin;        /* Current focus window. */
-
-
 /* Types. */
 typedef enum {
     KEY_H,
@@ -72,6 +67,13 @@ typedef enum {
     KEY_TAB,
     KEY_MAX
 } key_enum_t;
+
+
+/* Globals */
+xcb_connection_t *conn;         /* Connection to X server. */
+xcb_screen_t *screen;           /* Our current screen.  */
+char *terminal = TERMINAL;      /* Terminal to start. */
+xcb_drawable_t focuswin;        /* Current focus window. */
 
 struct keys
 {
@@ -89,6 +91,13 @@ struct keys
     { USERKEY_MAX, 0 },
     { USERKEY_CHANGE, 0 }    
 };    
+
+struct conf
+{
+    bool borders;
+    bool map;
+
+} conf;
 
 
 /* Functions declerations. */
@@ -122,22 +131,28 @@ void setupwin(xcb_window_t win)
 
     PDEBUG("Setting up window %d\n", win);
 
-    /* Set border color. */
-    values[0] = UNFOCUSCOL;
-    xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
+    if (conf.borders)
+    {
+        /* Set border color. */
+        values[0] = UNFOCUSCOL;
+        xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
 
-    /* Set border width. */
-    values[0] = BORDERWIDTH;
-    mask = XCB_CONFIG_WINDOW_BORDER_WIDTH;
-    xcb_configure_window(conn, win, mask, values);
-
+        /* Set border width. */
+        values[0] = BORDERWIDTH;
+        mask = XCB_CONFIG_WINDOW_BORDER_WIDTH;
+        xcb_configure_window(conn, win, mask, values);
+    }
+    
     mask = XCB_CW_EVENT_MASK;
     values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes_checked(conn, win, mask, values);
 
-    /* Show window on screen. */
-    xcb_map_window(conn, win);
-
+    if (conf.map)
+    {
+        /* Show window on screen. */
+        xcb_map_window(conn, win);
+    }
+    
     /* FIXME: set properties. */
     
     xcb_flush(conn);
@@ -261,12 +276,12 @@ void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
 void setunfocus(xcb_drawable_t win)
 {
     uint32_t values[1];
-
-    if (focuswin == screen->root)
+    
+    if (focuswin == screen->root || !conf.borders)
     {
         return;
     }
-    
+
     /* Set new border colour. */
     values[0] = UNFOCUSCOL;
     xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
@@ -287,12 +302,15 @@ void setfocus(xcb_drawable_t win)
         return;
     }
 
-    /* Set new border colour. */
-    values[0] = FOCUSCOL;
-    xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
+    if (conf.borders)
+    {
+        /* Set new border colour. */
+        values[0] = FOCUSCOL;
+        xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
 
-    /* Unset last focus. */
-    setunfocus(focuswin);
+        /* Unset last focus. */
+        setunfocus(focuswin);
+    }
     
     /* Set new input focus. */
     focuswin = win;
@@ -776,7 +794,7 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
     }
 } /* handle_keypress() */
 
-int main(void)
+int main(int argc, char **argv)
 {
     xcb_window_t root;
     xcb_generic_event_t *ev;
@@ -787,6 +805,7 @@ int main(void)
     int mode = 0;
     uint16_t mode_x;
     uint16_t mode_y;
+    char ch;                    /* Option character */
     
     /*
     int xcb_parse_display(const char *name, char **host, int *display, int *screen);
@@ -794,6 +813,34 @@ int main(void)
 /*
     xcb_parse_display(dispname, &host, &disp, NULL)
 */
+
+    conf.borders = true;
+    conf.map = true;
+    
+    while (1)
+    {
+        ch = getopt(argc, argv, "bm");
+        if (-1 == ch)
+        {
+                
+            /* No more options, break out of while loop. */
+            break;
+        }
+        
+        switch (ch)
+        {
+        case 'b':
+            /* No borders. */
+            conf.borders = false;
+            break;
+
+        case 'm':
+            /* Don't map all windows when initializing. */
+            conf.map = false;
+            break;
+
+        }
+    }
     
     conn = xcb_connect(NULL, NULL);
     if (xcb_connection_has_error(conn))
