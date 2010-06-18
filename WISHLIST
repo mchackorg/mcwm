@@ -1,0 +1,39 @@
+-*- text -*-
+
+A wishlist for a window manager:
+
+- Small.
+
+- Few external dependencies, both for running and building.
+
+- Fast.
+
+- Minimal decoration.
+
+- Sloppy focus.
+
+- Changing focus from keyboard which rememebers last focused window.
+  Keep on the same physical screen.
+
+- Focus change from keyboard should restore stacking order after focus
+  switch.
+
+- Key bindings for all window functions.
+
+- Configurable key bindings.
+
+- Vertical and maximum maximizing.
+
+- Don't move off physical screen. Configurable?
+
+- Know about physical screens dynamically (RandR).
+
+- Virtual screens. Separate sets for each physical screen.
+
+- Remember where pointer was on virtual screen. Or at least remember
+  what window had focus.
+
+- Quickly move windows to corners.
+
+- Window placement on virtual screens should be remembered even if wm
+  killed and restarted.

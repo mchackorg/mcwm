@@ -1,0 +1,55 @@
+-*- text -*-
+
+This is a small window manager for the X Window System written
+entirely with XCB, the straight X protocol binding to the C language.
+It doesn't use libX11, like most older window managers do.
+
+It's a traditional 'floating' window manager. It doesn't really do
+anything new to the user experience. It is pretty stupid, but can
+probably be useful for some people.
+
+Unlike most window managers, however, it is not a reparenting window
+manager. This means it might be able to run simultaneously with
+another window manager if you just want to get at the key bindings to
+manipulate windows. If this will work or not depends pretty much on
+what the other window manager thinks about stuff happening to windows
+without it looking.
+
+== Usage ==
+
+With the the default configuration, use it like this:
+
+  Mod1 key + mouse buttons:
+
+    1 move
+    2 raise
+    3 resize
+
+  Mod2 key + key:
+
+    r		raise
+    x 		maximize
+    m 		maximize vertically
+    h 		move left
+    j 		move down
+    k 		move up
+    l 		move right
+    H 		resize left
+    J 		resize down
+    K 		resize up
+    L 		resize right
+    Return	start terminal
+
+If you don't like the default key bindings, border width, et cetera,
+look in the config.h file, change and recompile.
+
+== More information & Contact ==
+
+Please see:
+
+  http://hack.org/mc/hacks/mcwm/
+
+To contact me, write to:
+
+  Michael Cardell Widerkrantz <mc@hack.org>
+

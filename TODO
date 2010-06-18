@@ -1,0 +1,56 @@
+-*- text -*-
+
+In order of importance:
+
+* Run under some memory checker. DMALLOC?
+
+* Changing focus from keyboard
+
+  Save the subwindows of the root window and focus each when pressing
+  modkey + user_key_change. First option always last focused window.
+
+* "R" should toggle stack order.
+
+* "M" and "X" should toggle.
+
+  Store original geom in X properties for the window.
+
+* Move to corners: YU BN.
+
+  Quickly move a window to the corners of the screen, a la evilwm.
+
+* Use window resizing hints.
+
+* Obey no-input hints.
+
+  Don't focus on these windows at all. Does unclutter use this?
+
+* Flag to disable dontmoveoff.
+
+* Flag for borders off or on.
+
+* Handle colours for real. Don't just assume raw pixel values will work.
+
+* Special treatment when someone resizes a maximed window... Should it
+  be possible at all? Set new border width.
+  
+  Set and read window hint about maximized state.
+
+* Virtual workspaces
+
+  Store workspace data in an X property for the window.
+
+  When changing workspace, look for the windows with the right
+  property.
+
+  possibly store internally as well, so we don't generate so much
+  traffic?
+
+* RandR/Xinerama
+
+  Get physical screen characteristics. Maximize and move to corners
+  should consider the screen it's on.
+
+* Key to move to another physical screen.
+
+* Use event handlers?
