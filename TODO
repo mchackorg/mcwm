@@ -4,6 +4,9 @@ In order of importance:
 
 * Run under some memory checker. DMALLOC?
 
+* GTK apps has some extra windows that are initially unmapped. How do
+  we handle these?
+
 * Changing focus from keyboard
 
   Save the subwindows of the root window and focus each when pressing
@@ -26,8 +29,6 @@ In order of importance:
   Don't focus on these windows at all. Does unclutter use this?
 
 * Flag to disable dontmoveoff.
-
-* Flag for borders off or on.
 
 * Handle colours for real. Don't just assume raw pixel values will work.
 
