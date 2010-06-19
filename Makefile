@@ -1,6 +1,6 @@
-VERSION=201000618
+VERSION=201000619
 DIST=mcwm-$(VERSION)
-DISTFILES=LICENSE Makefile README TODO WISHLIST config.h mcwm.c
+DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST config.h mcwm.c
 
 CC=gcc
 CFLAGS=-g -std=c99 -Wall -I/usr/local/include -L/usr/local/lib -lxcb \
@@ -8,15 +8,16 @@ CFLAGS=-g -std=c99 -Wall -I/usr/local/include -L/usr/local/lib -lxcb \
 
 # Define -DDEBUG for lots of debug information.
 
-#CFLAGS=-g -std=c99 -Wall -I/usr/local/include -L/usr/local/lib -lxcb -lxcb-keysyms \
-#	-DDMALLOC -DMALLOC_FUNC_CHECK -ldmalloc
-
-
 RM=/bin/rm
 
 TARGETS=mcwm
 
 all: $(TARGETS)
+
+mcwm-static: mcwm.c config.h
+	$(CC) -o mcwm-static mcwm.c -static -g -std=c99 -Wall \
+	-I/usr/local/include/ -L/usr/local/lib \
+	-lxcb -lxcb-keysyms -lXau -lXdmcp
 
 $(DIST).tar.bz2:
 	mkdir $(DIST)
