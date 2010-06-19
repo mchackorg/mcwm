@@ -288,8 +288,6 @@ void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
         return;
     }
     
-    raisewindow(win);
-    
     values[0] = x;
     values[1] = y;
 
@@ -416,6 +414,8 @@ void resizestep(xcb_drawable_t win, char direction)
         /* Can't resize root. */
         return;
     }
+
+    raisewindow(win);
     
     /* Get window geometry. */
     geom = xcb_get_geometry_reply(conn,
@@ -490,8 +490,6 @@ void mousemove(xcb_drawable_t win, int rel_x, int rel_y)
     int x;
     int y;
 
-    raisewindow(win);
-    
     /* Get window geometry. */
     geom = xcb_get_geometry_reply(conn,
                                   xcb_get_geometry(conn, win),
@@ -587,6 +585,8 @@ void movestep(xcb_drawable_t win, char direction)
         /* Can't move root. */
         return;
     }
+
+    raisewindow(win);
     
     /* Get window geometry. */
     geom = xcb_get_geometry_reply(conn,
@@ -893,6 +893,9 @@ void events(void)
                 else
                 {
                     /* We're moving or resizing. */
+
+                    /* Raise window. */
+                    raisewindow(win);
                     
                     /* Save the pointer coordinates when starting. */
                     mode_x = e->event_x;
