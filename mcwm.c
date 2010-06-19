@@ -95,13 +95,11 @@ struct keys
 struct conf
 {
     bool borders;
-    bool map;
-
 } conf;
 
 
 /* Functions declerations. */
-
+void newwin(xcb_window_t win);
 void setupwin(xcb_window_t win);
 xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms);
 int setupkeys(void);
@@ -123,13 +121,46 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev);
 
 /* Function bodies. */
 
+/* Set position, geometry and attributes of a new window. */
+void newwin(xcb_window_t win)
+{
+    xcb_query_pointer_reply_t *pointer;
+    int x;
+    int y;
+    
+    /* Get pointer position. */
+    pointer = xcb_query_pointer_reply(
+        conn, xcb_query_pointer(conn, screen->root), 0);
+
+    if (NULL == pointer)
+    {
+        x = 1;
+        y = 1;
+    }
+    else
+    {
+        x = pointer->root_x;
+        y = pointer->root_y;
+    }
+    
+    /* Move the window to cursor position. */
+    movewindow(win, x, y);
+
+    /* Set up stuff and raise the window. */
+    setupwin(win);
+    raisewindow(win);
+
+    /* Show window on screen. */
+    xcb_map_window(conn, win);
+
+    xcb_flush(conn);
+}
+
 /* set border colour, width and event mask for window. */
 void setupwin(xcb_window_t win)
 {
     uint32_t mask = 0;    
     uint32_t values[2];
-
-    PDEBUG("Setting up window %d\n", win);
 
     if (conf.borders)
     {
@@ -146,12 +177,6 @@ void setupwin(xcb_window_t win)
     mask = XCB_CW_EVENT_MASK;
     values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes_checked(conn, win, mask, values);
-
-    if (conf.map)
-    {
-        /* Show window on screen. */
-        xcb_map_window(conn, win);
-    }
     
     /* FIXME: set properties. */
     
@@ -231,6 +256,8 @@ int setupscreen(void)
         setupwin(children[i]);
     }
 
+    xcb_flush(conn);
+    
     free(reply);
 
     return 0;
@@ -715,7 +742,7 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
 {
     int i;
     key_enum_t key;
-
+    
     for (key = KEY_MAX, i = KEY_H; i < KEY_MAX; i ++)
     {
         if (ev->detail == keys[i].keycode)
@@ -794,136 +821,16 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
     }
 } /* handle_keypress() */
 
-int main(int argc, char **argv)
+    
+void events(void)
 {
-    xcb_window_t root;
     xcb_generic_event_t *ev;
-    uint32_t mask = 0;
-    uint32_t values[2];
     xcb_drawable_t win;
     xcb_get_geometry_reply_t *geom;
     int mode = 0;
     uint16_t mode_x;
     uint16_t mode_y;
-    char ch;                    /* Option character */
-    
-    /*
-    int xcb_parse_display(const char *name, char **host, int *display, int *screen);
-    */
-/*
-    xcb_parse_display(dispname, &host, &disp, NULL)
-*/
 
-    conf.borders = true;
-    conf.map = true;
-    
-    while (1)
-    {
-        ch = getopt(argc, argv, "bm");
-        if (-1 == ch)
-        {
-                
-            /* No more options, break out of while loop. */
-            break;
-        }
-        
-        switch (ch)
-        {
-        case 'b':
-            /* No borders. */
-            conf.borders = false;
-            break;
-
-        case 'm':
-            /* Don't map all windows when initializing. */
-            conf.map = false;
-            break;
-
-        }
-    }
-    
-    conn = xcb_connect(NULL, NULL);
-    if (xcb_connection_has_error(conn))
-    {
-        perror("xcb_connect");
-        exit(1);
-    }
-    
-    /* Get the first screen */
-    screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
-    
-    /* screen->root is our root. */
-    root = screen->root;
-
-    /* Initial focus is root */
-    /* FIXME: Ask the X server what window has focus. */
-    focuswin = root;
-    
-    PDEBUG("Screen size: %dx%d\nRoot window: %d\n", screen->width_in_pixels,
-           screen->height_in_pixels, screen->root);
-
-    /* FIXME: Get some colours. */
-    
-    /* Loop over all clients and set up stuff. */
-    if (0 != setupscreen())
-    {
-        fprintf(stderr, "Failed to initialize windows. Exiting.\n");
-        exit(1);
-    }
-
-    /* Set up key bindings. */
-    if (0 != setupkeys())
-    {
-        fprintf(stderr, "mcwm: Couldn't set up keycodes. Exiting.");
-        exit(1);
-    }
-    
-    /* Grab some keys and mouse buttons. */
-
-    xcb_grab_key(conn, 1, root, MODKEY, XCB_NO_SYMBOL,
-                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-
-    xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
-                    | XCB_EVENT_MASK_BUTTON_RELEASE,
-                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                    1 /* left mouse button */,
-                    MOUSEMODKEY);
-
-    xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
-                    | XCB_EVENT_MASK_BUTTON_RELEASE,
-                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                    2 /* middle mouse button */,
-                    MOUSEMODKEY);
-
-    xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
-                    | XCB_EVENT_MASK_BUTTON_RELEASE,
-                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                    3 /* right mouse button */,
-                    MOUSEMODKEY);
-
-#if 0
-
-    /*
-     * If we really want to be a wm, ask for these events as well:
-     */
-    mask = XCB_CW_EVENT_MASK;
-    values[0] =
-        XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT /* only one client can use this. */
-        | XCB_EVENT_MASK_STRUCTURE_NOTIFY; /* don't know about this. New screens? */
-
-    xcb_void_cookie_t cookie;
-
-    cookie = xcb_change_window_attributes_checked(conn, root, mask, values);
-
-#endif
-
-    mask = XCB_CW_EVENT_MASK;
-    values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY;
-    xcb_change_window_attributes_checked(conn, root, mask, values);
-    
-    xcb_flush(conn);
-    
-    /* Loop over events. */
     for (;;)
     {
         ev = xcb_wait_for_event(conn);
@@ -937,16 +844,28 @@ int main(int argc, char **argv)
 
         switch (ev->response_type & ~0x80)
         {
+
+        /* If we're the only wm, we get these when a new window is created. */
+        case XCB_MAP_REQUEST:
+        {
+            xcb_create_notify_event_t *e;
+
+            PDEBUG("Map request\n");
+            e = ( xcb_create_notify_event_t *) ev;
+            newwin(e->window);
+        }
+        break;
+
+        /* If we're not the only window manager, we receive these instead. */
         case XCB_CREATE_NOTIFY:
         {
             xcb_create_notify_event_t *e;
 
-            PDEBUG("A new window!\n");            
+            PDEBUG("Create notify event\n");            
             e = ( xcb_create_notify_event_t *) ev;
             setupwin(e->window);
-        }   
-        break;
-            
+        }
+        
         case XCB_BUTTON_PRESS:
         {
             xcb_button_press_event_t *e;
@@ -1012,12 +931,12 @@ int main(int argc, char **argv)
 
                     xcb_grab_pointer(conn,
                                      0, /* get all from mask below */
-                                     root, /* grab here */
+                                     screen->root, /* grab here */
                                      XCB_EVENT_MASK_BUTTON_RELEASE
                                      | XCB_EVENT_MASK_POINTER_MOTION, 
                                      XCB_GRAB_MODE_ASYNC, /* get more pointer events */
                                      XCB_GRAB_MODE_ASYNC,
-                                     root, /* stay here */
+                                     screen->root, /* stay here */
                                      XCB_NONE, /* no other cursor. */
                                      XCB_CURRENT_TIME);
                     xcb_flush(conn);
@@ -1115,6 +1034,128 @@ int main(int argc, char **argv)
         
         free(ev);
     }
+}
+
+int main(int argc, char **argv)
+{
+    uint32_t mask = 0;
+    uint32_t values[2];
+    char ch;                    /* Option character */
+    xcb_void_cookie_t cookie;
+    xcb_generic_error_t *error;
+    xcb_drawable_t root;
+
+    conf.borders = true;
+    
+    while (1)
+    {
+        ch = getopt(argc, argv, "bm");
+        if (-1 == ch)
+        {
+                
+            /* No more options, break out of while loop. */
+            break;
+        }
+        
+        switch (ch)
+        {
+        case 'b':
+            /* No borders. */
+            conf.borders = false;
+            break;
+        }
+    }
+    
+    conn = xcb_connect(NULL, NULL);
+    if (xcb_connection_has_error(conn))
+    {
+        perror("xcb_connect");
+        exit(1);
+    }
+    
+    /* Get the first screen */
+    screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
+
+    root = screen->root;
+    /* Initial focus is root */
+    /* FIXME: Ask the X server what window has focus. */
+    focuswin = screen->root;
+    
+    PDEBUG("Screen size: %dx%d\nRoot window: %d\n", screen->width_in_pixels,
+           screen->height_in_pixels, screen->root);
+
+    /* FIXME: Get some colours. */
+    
+    /* Loop over all clients and set up stuff. */
+    if (0 != setupscreen())
+    {
+        fprintf(stderr, "Failed to initialize windows. Exiting.\n");
+        exit(1);
+    }
+
+    /* Set up key bindings. */
+    if (0 != setupkeys())
+    {
+        fprintf(stderr, "mcwm: Couldn't set up keycodes. Exiting.");
+        exit(1);
+    }
+
+    /* Grab some keys and mouse buttons. */
+
+    xcb_grab_key(conn, 1, root, MODKEY, XCB_NO_SYMBOL,
+                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+
+    xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
+                    | XCB_EVENT_MASK_BUTTON_RELEASE,
+                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+                    1 /* left mouse button */,
+                    MOUSEMODKEY);
+
+    xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
+                    | XCB_EVENT_MASK_BUTTON_RELEASE,
+                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+                    2 /* middle mouse button */,
+                    MOUSEMODKEY);
+
+    xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
+                    | XCB_EVENT_MASK_BUTTON_RELEASE,
+                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
+                    3 /* right mouse button */,
+                    MOUSEMODKEY);
+
+    /* Subscribe to events. */
+    mask = XCB_CW_EVENT_MASK;
+    values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT;
+
+    cookie =
+        xcb_change_window_attributes_checked(conn, root, mask, values);
+    error = xcb_request_check(conn, cookie);
+    if (NULL != error)
+    {
+        fprintf(stderr, "mcwm: Can't subscribe to SUBSTRUCTURE REDIRECT event. "
+                "Error code: %d\n"
+                "Another window manager running?\n"
+                "Falling back to co-running mode.\n",
+                error->error_code);
+
+        values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY;
+        cookie =
+            xcb_change_window_attributes_checked(conn, root, mask, values);
+        error = xcb_request_check(conn, cookie);
+        if (NULL != error)
+        {
+            fprintf(stderr, "Co-running didn't work either. Error code: %d\n"
+                    "Exiting\n",
+                    error->error_code);
+            xcb_disconnect(conn);
+            exit(1);
+        }
+    }
+    
+    xcb_flush(conn);
+
+    /* Loop over events. */
+    events();
 
     xcb_disconnect(conn);
         
