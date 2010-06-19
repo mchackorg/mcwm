@@ -1,0 +1,15 @@
+-*- text -*-
+
+2010-06-19
+
+  * Now a real window manager. Now controls mapping of windows. If we
+    can't be a real window manager, this probably means there is
+    already one running, so we fall back to co-running.
+
+    Windows are mapped at the pointer position if we can control it.
+
+  * A flag, -b, for not drawing any borders what so ever. Might be
+    useful when co-running.
+
+  * Now doesn't raise windows all the time while moving or resizing
+    with the mouse. Just raises once.
