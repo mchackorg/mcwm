@@ -996,24 +996,22 @@ void events(void)
 
         switch (ev->response_type & ~0x80)
         {
-
-        /* If we're the only wm, we get these when a new window is created. */
         case XCB_MAP_REQUEST:
         {
-            xcb_create_notify_event_t *e;
+            xcb_map_request_event_t *e;
 
             PDEBUG("event: Map request.\n");
-            e = ( xcb_create_notify_event_t *) ev;
+            e = (xcb_map_request_event_t *) ev;
             newwin(e->window);
         }
         break;
         
         case XCB_DESTROY_NOTIFY:
         {
-            xcb_create_notify_event_t *e;
+            xcb_destroy_notify_event_t *e;
 
             PDEBUG("event: Destroy notify.\n");
-            e = ( xcb_create_notify_event_t *) ev;
+            e = (xcb_destroy_notify_event_t *) ev;
 
             /* FIXME: Find the window in list of clients. */
         }
