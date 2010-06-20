@@ -418,7 +418,7 @@ void setfocus(xcb_drawable_t win)
         /* Unset last focus. */
         setunfocus(focuswin);
     }
-    
+
     /* Set new input focus. */
     focuswin = win;
     xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win,
@@ -1075,20 +1075,28 @@ void events(void)
                     }
 
                     /*
-                     * Take control of the pointer. Wait for the
-                     * button to be released or for the pointer to
-                     * move.
+                     * Take control of the pointer in the root window
+                     * and confine it to root.
+                     *
+                     * Give us events when the button is released or
+                     * if any motion occurs with the button held down,
+                     * but give us only hints about movement. We ask
+                     * for the position ourselves later.
+                     *
+                     * Keep updating everything else.
+                     *
+                     * Don't use any new cursor.
                      */
-                    xcb_grab_pointer(conn,
-                                     0,
-                                     screen->root, /* grab in here */
+                    xcb_grab_pointer(conn, 0, screen->root,
                                      XCB_EVENT_MASK_BUTTON_RELEASE
-                                     | XCB_EVENT_MASK_POINTER_MOTION, 
+                                     | XCB_EVENT_MASK_BUTTON_MOTION
+                                     | XCB_EVENT_MASK_POINTER_MOTION_HINT, 
                                      XCB_GRAB_MODE_ASYNC,
                                      XCB_GRAB_MODE_ASYNC,
-                                     screen->root, /* stay here */
-                                     XCB_NONE, /* no other cursor. */
+                                     screen->root,
+                                     XCB_NONE,
                                      XCB_CURRENT_TIME);
+
                     xcb_flush(conn);
 
                     PDEBUG("mode now : %d\n", mode);
@@ -1107,24 +1115,39 @@ void events(void)
         case XCB_MOTION_NOTIFY:
         {
             xcb_motion_notify_event_t *e = (xcb_motion_notify_event_t *)ev;
-
+            xcb_query_pointer_reply_t *pointer;
+            
             /*
              * Our pointer is moving and since we even get this event
              * we're resizing or moving a window.
              */
+
+            /* Get current pointer position. */
+            pointer = xcb_query_pointer_reply(
+                conn, xcb_query_pointer(conn, screen->root), 0);
+
+            if (NULL == pointer)
+            {
+                PDEBUG("Couldn't get pointer position.\n");
+                break;
+            }
+
             if (mode == MCWM_MOVE)
             {
-                mousemove(win, e->event_x, e->event_y);
+                mousemove(win, pointer->root_x, pointer->root_y);
+            
             }
             else if (mode == MCWM_RESIZE)
             {
                 /* Resize. */
-                mouseresize(win, e->event_x, e->event_y);
+                mouseresize(win, pointer->root_x, pointer->root_y);
             }
             else
             {
                 PDEBUG("Motion event when we're not moving our resizing!\n");
             }
+
+            free(pointer);
         }
         break;
 
@@ -1137,6 +1160,7 @@ void events(void)
                     (xcb_button_release_event_t *)ev;
     
                 /* We're finished moving or resizing. */
+
                 xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
                 xcb_flush(conn); /* Important! */
                 
@@ -1180,7 +1204,7 @@ void events(void)
                 }
             }
             break;        
-        
+            
         } /* switch */
         
         free(ev);
@@ -1288,9 +1312,9 @@ int main(int argc, char **argv)
     
     if (NULL != error)
     {
-        fprintf(stderr, "mcwm: Can't subscribe to SUBSTRUCTURE REDIRECT event. "
+        fprintf(stderr, "mcwm: Can't get SUBSTRUCTURE REDIRECT. "
                 "Error code: %d\n"
-                "Another window manager running?\n",
+                "Another window manager running? Exiting.\n",
                 error->error_code);
 
         xcb_disconnect(conn);
