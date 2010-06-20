@@ -864,7 +864,13 @@ void maxvert(xcb_drawable_t win)
         return;
     }
     
-    /* FIXME: Check if maximized already. If so, revert to stored geometry. */
+    /*
+     * FIXME: Check if maximized already. If so, revert to stored
+     * geometry.
+     */
+
+    /* Raise first. Pretty silly to maximize below something else. */
+    raisewindow(win);
 
     /* Get window geometry. */
     geom = xcb_get_geometry_reply(conn,
