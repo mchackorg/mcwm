@@ -30,6 +30,8 @@
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_keysyms.h>
+#include <xcb/xcb_atom.h>
+#include <xcb/xcb_icccm.h>
 #include <X11/keysym.h>
 
 /* Check here for user configurable parts: */
@@ -67,12 +69,12 @@ typedef enum {
     KEY_TAB,
     KEY_MAX
 } key_enum_t;
-
+    
 
 /* Globals */
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
-char *terminal = TERMINAL;      /* Terminal to start. */
+char *terminal = TERMINAL;      /* Path to terminal to start. */
 xcb_drawable_t focuswin;        /* Current focus window. */
 
 struct keys
@@ -105,6 +107,7 @@ xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms);
 int setupkeys(void);
 int setupscreen(void);
 void raisewindow(xcb_drawable_t win);
+void raiseorlower(xcb_drawable_t win);
 void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y);
 void setunfocus(xcb_drawable_t win);
 void setfocus(xcb_drawable_t win);
@@ -121,14 +124,18 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev);
 
 /* Function bodies. */
 
-/* Set position, geometry and attributes of a new window. */
+/*
+ * Set position, geometry and attributes of a new window and show it
+ * on the screen.
+ */
 void newwin(xcb_window_t win)
 {
     xcb_query_pointer_reply_t *pointer;
+    xcb_get_geometry_reply_t *geom;    
     int x;
     int y;
-    
-    /* Get pointer position. */
+
+    /* Get pointer position so we can move the window to the cursor. */
     pointer = xcb_query_pointer_reply(
         conn, xcb_query_pointer(conn, screen->root), 0);
 
@@ -141,11 +148,44 @@ void newwin(xcb_window_t win)
     {
         x = pointer->root_x;
         y = pointer->root_y;
+
+        free(pointer);
+    }
+
+    /*
+     * Get window geometry so we can check if it fits on the screen
+     * where the cursor is.
+     */
+    geom = xcb_get_geometry_reply(conn,
+                                  xcb_get_geometry(conn, win),
+                                  NULL);
+    if (NULL == geom)
+    {
+        return;
+    }
+
+    /* If the window is larger than our screen, just place it in the corner. */
+    if (geom->width > screen->width_in_pixels)
+    {
+        x = 1;
+    }
+    else if (x + geom->width + BORDERWIDTH * 2 > screen->width_in_pixels)
+    {
+        x = screen->width_in_pixels - (geom->width + BORDERWIDTH * 2);
+    }
+
+    if (geom->height > screen->width_in_pixels)
+    {
+        y = 1;
+    }
+    else if (y + geom->height + BORDERWIDTH * 2 > screen->height_in_pixels)
+    {
+        y = screen->height_in_pixels - (geom->height + BORDERWIDTH * 2);
     }
     
     /* Move the window to cursor position. */
     movewindow(win, x, y);
-
+    
     /* Set up stuff and raise the window. */
     setupwin(win);
     raisewindow(win);
@@ -153,6 +193,15 @@ void newwin(xcb_window_t win)
     /* Show window on screen. */
     xcb_map_window(conn, win);
 
+    /*
+     * Move cursor into the middle of the window so we don't lose the
+     * pointer to another window.
+     */
+    xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
+                     geom->width / 2, geom->height / 2);
+
+    free(geom);
+    
     xcb_flush(conn);
 }
 
@@ -179,7 +228,7 @@ void setupwin(xcb_window_t win)
     xcb_change_window_attributes_checked(conn, win, mask, values);
     
     /* FIXME: set properties. */
-    
+
     xcb_flush(conn);
 }
 
@@ -235,10 +284,11 @@ int setupkeys(void)
 int setupscreen(void)
 {
     xcb_query_tree_reply_t *reply;
+    xcb_query_pointer_reply_t *pointer;
     int i;
     int len;
     xcb_window_t *children;
-
+    
     /* Get all children. */
     reply = xcb_query_tree_reply(conn,
                                  xcb_query_tree(conn, screen->root), 0);
@@ -256,6 +306,23 @@ int setupscreen(void)
         setupwin(children[i]);
     }
 
+    /*
+     * Get pointer position so we can set focus on any window which
+     * might be under it.
+     */
+    pointer = xcb_query_pointer_reply(
+        conn, xcb_query_pointer(conn, screen->root), 0);
+
+    if (NULL == pointer)
+    {
+        focuswin = screen->root;
+    }
+    else
+    {
+        setfocus(pointer->child);
+        free(pointer);
+    }
+
     xcb_flush(conn);
     
     free(reply);
@@ -266,6 +333,21 @@ int setupscreen(void)
 void raisewindow(xcb_drawable_t win)
 {
     uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+
+    if (screen->root == win || 0 == win)
+    {
+        return;
+    }
+    
+    xcb_configure_window(conn, win,
+                         XCB_CONFIG_WINDOW_STACK_MODE,
+                         values);
+    xcb_flush(conn);
+}
+
+void raiseorlower(xcb_drawable_t win)
+{
+    uint32_t values[] = { XCB_STACK_MODE_OPPOSITE };
 
     if (screen->root == win || 0 == win)
     {
@@ -408,7 +490,10 @@ void resizestep(xcb_drawable_t win, char direction)
     xcb_get_geometry_reply_t *geom;
     int width;
     int height;
-
+    xcb_size_hints_t hints;
+    int step_x = MOVE_STEP;
+    int step_y = MOVE_STEP;
+    
     if (0 == win)
     {
         /* Can't resize root. */
@@ -416,7 +501,7 @@ void resizestep(xcb_drawable_t win, char direction)
     }
 
     raisewindow(win);
-    
+
     /* Get window geometry. */
     geom = xcb_get_geometry_reply(conn,
                                   xcb_get_geometry(conn, win),
@@ -426,10 +511,36 @@ void resizestep(xcb_drawable_t win, char direction)
         return;
     }
 
+    /*
+     * Get the window's incremental size step, if any, and use that
+     * when resizing.
+     */
+    if (!xcb_get_wm_normal_hints_reply(
+            conn, xcb_get_wm_normal_hints_unchecked(
+                conn, win), &hints, NULL))
+    {
+        PDEBUG("Couldn't get size hints.");
+    }
+
+    if (hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)
+    {
+        if (0 == hints.width_inc || 0 == hints.height_inc)
+        {
+            PDEBUG("Client lied. No size inc hints.\n");
+            step_x = 1;
+            step_y = 1;
+        }
+        else
+        {
+            step_x = hints.width_inc;
+            step_y = hints.height_inc;
+        }
+    }
+    
     switch (direction)
     {
     case 'h':
-        width = geom->width - MOVE_STEP;
+        width = geom->width - step_x;
         height = geom->height;
         if (width < 0)
         {
@@ -439,7 +550,7 @@ void resizestep(xcb_drawable_t win, char direction)
 
     case 'j':
         width = geom->width;
-        height = geom->height + MOVE_STEP;
+        height = geom->height + step_y;
         if (height + geom->y > screen->height_in_pixels)
         {
             goto bad;
@@ -448,7 +559,7 @@ void resizestep(xcb_drawable_t win, char direction)
 
     case 'k':
         width = geom->width;
-        height = geom->height - MOVE_STEP;
+        height = geom->height - step_y;
         if (height < 0)
         {
             goto bad;
@@ -456,7 +567,7 @@ void resizestep(xcb_drawable_t win, char direction)
         break;
 
     case 'l':
-        width = geom->width + MOVE_STEP;
+        width = geom->width + step_x;
         height = geom->height;
         if (width + geom->x > screen->width_in_pixels)
         {
@@ -468,12 +579,12 @@ void resizestep(xcb_drawable_t win, char direction)
         PDEBUG("resizestep in unknown direction.\n");
         break;
     } /* switch direction */
-
+           
     resize(win, width, height);
 
     /*
      * Move cursor into the middle of the window so we don't lose the
-     * pointer.
+     * pointer to another window.
      */
     xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
                      width / 2, height / 2);
@@ -486,11 +597,12 @@ bad:
 
 void mousemove(xcb_drawable_t win, int rel_x, int rel_y)
 {
-    xcb_get_geometry_reply_t *geom;
+    xcb_get_geometry_reply_t *geom;    
     int x;
     int y;
-
+    
     /* Get window geometry. */
+
     geom = xcb_get_geometry_reply(conn,
                                   xcb_get_geometry(conn, win),
                                   NULL);
@@ -520,15 +632,18 @@ void mousemove(xcb_drawable_t win, int rel_x, int rel_y)
     }
     
     movewindow(win, x, y);
-    
+
     free(geom);
 }
 
 void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
 {
     xcb_get_geometry_reply_t *geom;
+    xcb_size_hints_t hints;
     uint32_t width;
     uint32_t height;
+    uint32_t width_inc = 1;
+    uint32_t height_inc = 1;
 
     raisewindow(win);
 
@@ -554,23 +669,60 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
     width = rel_x - geom->x;
     height = rel_y - geom->y;
 
+    /*
+     * Get the window's incremental size step, if any, and use that
+     * when resizing.
+     */
+    if (!xcb_get_wm_normal_hints_reply(
+            conn, xcb_get_wm_normal_hints_unchecked(conn, win), &hints, NULL))
+    {
+        PDEBUG("Couldn't get size hints.");
+
+    }
+    if (hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)
+    {
+        if (0 == hints.width_inc || 0 == hints.height_inc)
+        {
+            PDEBUG("The client lied. There is no resize inc here.\n");
+
+            hints.width_inc = 1;
+            hints.height_inc = 1;
+        }
+        else
+        {
+            width_inc = hints.width_inc;
+            height_inc = hints.height_inc;
+
+            if (0 != width % width_inc)
+            {
+                width -= width % width_inc;
+            }
+
+            if (0 != height % height_inc)
+            {        
+                height -= height % height_inc;
+            }
+        }
+    }
+
     if (width > screen->width_in_pixels)
     {
-        width = screen->width_in_pixels - geom->x;
+        width = (screen->width_in_pixels - geom->x) / width_inc;
     }
         
     if (height > screen->height_in_pixels)
     {
-        height = screen->height_in_pixels - geom->y;
+        height = (screen->height_in_pixels - geom->y) / height_inc;
     }
 
-    PDEBUG("mousresize: Resizing to %d x %d\n\n", width, height);
+    PDEBUG("Resizing to %dx%d (%dx%d)\n", width, height,
+           width / width_inc,
+           height / height_inc);
 
     resize(win, width, height);
 
     free(geom);
 }
-
     
 void movestep(xcb_drawable_t win, char direction)
 {
@@ -650,7 +802,7 @@ void movestep(xcb_drawable_t win, char direction)
     /* Move cursor into the middle of the window after moving. */
     xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
                      width / 2, height / 2);
-
+    
     xcb_flush(conn);
     
     free(geom);
@@ -762,19 +914,19 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
         switch (key)
         {
         case KEY_H: /* h */
-            resizestep(win, 'h');
+            resizestep(focuswin, 'h');
             break;
 
         case KEY_J: /* j */
-            resizestep(win, 'j');
+            resizestep(focuswin, 'j');
             break;
 
         case KEY_K: /* k */
-            resizestep(win, 'k');
+            resizestep(focuswin, 'k');
             break;
 
         case KEY_L: /* l */
-            resizestep(win, 'l');
+            resizestep(focuswin, 'l');
             break;
         }
     }
@@ -787,34 +939,34 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
             break;
 
         case KEY_H: /* h */
-            movestep(win, 'h');
+            movestep(focuswin, 'h');
             break;
 
         case KEY_J: /* j */
-            movestep(win, 'j');
+            movestep(focuswin, 'j');
             break;
 
         case KEY_K: /* k */
-            movestep(win, 'k');
+            movestep(focuswin, 'k');
             break;
 
         case KEY_L: /* l */
-            movestep(win, 'l');
+            movestep(focuswin, 'l');
             break;
 
         case KEY_TAB: /* tab */
             break;
 
         case KEY_M: /* m */
-            maxvert(win);
+            maxvert(focuswin);
             break;
 
         case KEY_R: /* r*/
-            raisewindow(win);
+            raiseorlower(focuswin);
             break;
                     
         case KEY_X: /* x */
-            maximize(win);
+            maximize(focuswin);
             break;
                 
         } /* switch unshifted */
@@ -830,14 +982,14 @@ void events(void)
     int mode = 0;
     uint16_t mode_x;
     uint16_t mode_y;
-
+    
     for (;;)
     {
         ev = xcb_wait_for_event(conn);
         if (NULL == ev)
         {
-            perror("xcb_wait_for_event");
-            break;
+            fprintf(stderr, "mcwm: Couldn't get event. Exiting...\n");
+            exit(1);
         }
         
         PDEBUG("Event: %d\n", ev->response_type);
@@ -850,22 +1002,23 @@ void events(void)
         {
             xcb_create_notify_event_t *e;
 
-            PDEBUG("Map request\n");
+            PDEBUG("event: Map request.\n");
             e = ( xcb_create_notify_event_t *) ev;
             newwin(e->window);
         }
         break;
-
-        /* If we're not the only window manager, we receive these instead. */
-        case XCB_CREATE_NOTIFY:
+        
+        case XCB_DESTROY_NOTIFY:
         {
             xcb_create_notify_event_t *e;
 
-            PDEBUG("Create notify event\n");            
+            PDEBUG("event: Destroy notify.\n");
             e = ( xcb_create_notify_event_t *) ev;
-            setupwin(e->window);
+
+            /* FIXME: Find the window in list of clients. */
         }
-        
+        break;
+            
         case XCB_BUTTON_PRESS:
         {
             xcb_button_press_event_t *e;
@@ -879,16 +1032,13 @@ void events(void)
             {
                 win = e->child; 
                 
-                /* If middle button was pressed, raise window. */
-
                 /*
-                 * FIXME: If already raised, lower
-                 * instead. XCB_STACK_MODE_BELOW
+                 * If middle button was pressed, raise window or lower
+                 * it if it was already on top.
                  */
-                
                 if (2 == e->detail)
                 {
-                    raisewindow(win);
+                    raiseorlower(win);                    
                 }
                 else
                 {
@@ -931,13 +1081,12 @@ void events(void)
                      * button to be released or for the pointer to
                      * move.
                      */
-
                     xcb_grab_pointer(conn,
-                                     0, /* get all from mask below */
-                                     screen->root, /* grab here */
+                                     0,
+                                     screen->root, /* grab in here */
                                      XCB_EVENT_MASK_BUTTON_RELEASE
                                      | XCB_EVENT_MASK_POINTER_MOTION, 
-                                     XCB_GRAB_MODE_ASYNC, /* get more pointer events */
+                                     XCB_GRAB_MODE_ASYNC,
                                      XCB_GRAB_MODE_ASYNC,
                                      screen->root, /* stay here */
                                      XCB_NONE, /* no other cursor. */
@@ -1018,6 +1167,7 @@ void events(void)
         break;
 
         case XCB_ENTER_NOTIFY:
+            PDEBUG("event: Enter notify.\n");
             if (0 == mode)
             {
                 xcb_enter_notify_event_t *e = (xcb_enter_notify_event_t *)ev;
@@ -1128,34 +1278,27 @@ int main(int argc, char **argv)
 
     /* Subscribe to events. */
     mask = XCB_CW_EVENT_MASK;
-    values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT;
+
+    values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT
+        | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY;
 
     cookie =
         xcb_change_window_attributes_checked(conn, root, mask, values);
     error = xcb_request_check(conn, cookie);
+
+    xcb_flush(conn);
+    
     if (NULL != error)
     {
         fprintf(stderr, "mcwm: Can't subscribe to SUBSTRUCTURE REDIRECT event. "
                 "Error code: %d\n"
-                "Another window manager running?\n"
-                "Falling back to co-running mode.\n",
+                "Another window manager running?\n",
                 error->error_code);
 
-        values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY;
-        cookie =
-            xcb_change_window_attributes_checked(conn, root, mask, values);
-        error = xcb_request_check(conn, cookie);
-        if (NULL != error)
-        {
-            fprintf(stderr, "Co-running didn't work either. Error code: %d\n"
-                    "Exiting\n",
-                    error->error_code);
-            xcb_disconnect(conn);
-            exit(1);
-        }
+        xcb_disconnect(conn);
+        
+        exit(1);
     }
-    
-    xcb_flush(conn);
 
     /* Loop over events. */
     events();

@@ -4,9 +4,7 @@ DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST config.h mcwm.c
 
 CC=gcc
 CFLAGS=-g -std=c99 -Wall -I/usr/local/include -L/usr/local/lib -lxcb \
-	-lxcb-keysyms
-
-# Define -DDEBUG for lots of debug information.
+	-lxcb-keysyms -lxcb-icccm -lxcb-atom -DDEBUG
 
 RM=/bin/rm
 
@@ -17,7 +15,8 @@ all: $(TARGETS)
 mcwm-static: mcwm.c config.h
 	$(CC) -o mcwm-static mcwm.c -static -g -std=c99 -Wall \
 	-I/usr/local/include/ -L/usr/local/lib \
-	-lxcb -lxcb-keysyms -lXau -lXdmcp
+	-lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom  -lxcb-property \
+	-lxcb-event -lXau -lXdmcp
 
 $(DIST).tar.bz2:
 	mkdir $(DIST)
