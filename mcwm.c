@@ -1345,7 +1345,25 @@ void events(void)
             }
         }
         break;
+
+        case XCB_CIRCULATE_REQUEST:
+        {
+            xcb_circulate_request_event_t *e
+                = (xcb_circulate_request_event_t *)ev;
+
+            /*
+             * Subwindow e->window to parent e->event is about to be
+             * restacked.
+             *
+             * Just do what was requested, e->place is either
+             * XCB_PLACE_ON_TOP or _ON_BOTTOM. We don't care.
+             */
+
+            xcb_circulate_window(conn, e->window, e->place);
             
+        }
+        break;
+        
         } /* switch */
         
         free(ev);
