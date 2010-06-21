@@ -182,8 +182,7 @@ void newwin(xcb_window_t win)
 
         /*
          * If the hints don't agree with the window geometry, resize
-         * the window to what the hints say. Needed for xterm, for
-         * example.
+         * the window to what the hints say.
          */
         if (width != geom->width || height != geom->height)
         {
@@ -1301,6 +1300,7 @@ void events(void)
 
             if (e->value_mask & XCB_CONFIG_WINDOW_X)
             {
+                PDEBUG("Changing X coordinate.\n");
                 mask |= XCB_CONFIG_WINDOW_X;
                 i ++;                
                 values[i] = e->x;
@@ -1309,6 +1309,7 @@ void events(void)
 
             if (e->value_mask & XCB_CONFIG_WINDOW_Y)
             {
+                PDEBUG("Changing Y coordinate.\n");                
                 mask |= XCB_CONFIG_WINDOW_Y;
                 i ++;                
                 values[i] = e->y;
@@ -1317,7 +1318,7 @@ void events(void)
             
             if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
             {
-                PDEBUG("Changing width\n");
+                PDEBUG("Changing width.\n");
                 mask |= XCB_CONFIG_WINDOW_WIDTH;
                 i ++;                
                 values[i] = e->width;
@@ -1325,6 +1326,7 @@ void events(void)
             
             if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
             {
+                PDEBUG("Changing height.\n");                
                 mask |= XCB_CONFIG_WINDOW_HEIGHT;
                 i ++;                
                 values[i] = e->width;
