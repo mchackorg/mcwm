@@ -134,7 +134,6 @@ void newwin(xcb_window_t win)
     xcb_get_geometry_reply_t *geom;
     int x;
     int y;
-    xcb_size_hints_t hints;
     int32_t width;
     int32_t height;
 
@@ -167,36 +166,8 @@ void newwin(xcb_window_t win)
         return;
     }
 
-    /* Get geometry hints. */
-    if (!xcb_get_wm_normal_hints_reply(
-            conn, xcb_get_wm_normal_hints_unchecked(
-                conn, win), &hints, NULL))
-    {
-        PDEBUG("Couldn't get size hints.");
-    }
-
-    if (hints.flags & XCB_SIZE_HINT_P_SIZE)
-    {
-        width = hints.width;
-        height = hints.height;
-
-        /*
-         * If the hints don't agree with the window geometry, resize
-         * the window to what the hints say.
-         */
-        if (width != geom->width || height != geom->height)
-        {
-            resize(win, width, height);
-        }
-    }
-    else
-    {
-        width = geom->width;
-        height = geom->height;
-    }
-
-    PDEBUG("Hints say initial size of window: %d x %d (geom: %d x %d)\n",
-           width, height, geom->width, geom->height);
+    width = geom->width;
+    height = geom->height;
     
     /* FIXME: XCB_SIZE_HINT_BASE_SIZE */
     
@@ -1294,13 +1265,13 @@ void events(void)
             uint32_t values[7];
             int i = -1;
             
-            PDEBUG("event: Configure request.\n");
+            PDEBUG("event: Configure request. mask = %d\n", e->value_mask);
 
             /* Check if it's anything we care about, like a resize or move. */
 
             if (e->value_mask & XCB_CONFIG_WINDOW_X)
             {
-                PDEBUG("Changing X coordinate.\n");
+                PDEBUG("Changing X coordinate to %d\n", e->x);
                 mask |= XCB_CONFIG_WINDOW_X;
                 i ++;                
                 values[i] = e->x;
@@ -1309,7 +1280,7 @@ void events(void)
 
             if (e->value_mask & XCB_CONFIG_WINDOW_Y)
             {
-                PDEBUG("Changing Y coordinate.\n");                
+                PDEBUG("Changing Y coordinate to %d.\n", e->y);
                 mask |= XCB_CONFIG_WINDOW_Y;
                 i ++;                
                 values[i] = e->y;
@@ -1318,7 +1289,7 @@ void events(void)
             
             if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
             {
-                PDEBUG("Changing width.\n");
+                PDEBUG("Changing width to %d.\n", e->width);
                 mask |= XCB_CONFIG_WINDOW_WIDTH;
                 i ++;                
                 values[i] = e->width;
@@ -1326,23 +1297,30 @@ void events(void)
             
             if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
             {
-                PDEBUG("Changing height.\n");                
+                PDEBUG("Changing height to %d.\n", e->height);
                 mask |= XCB_CONFIG_WINDOW_HEIGHT;
                 i ++;                
-                values[i] = e->width;
+                values[i] = e->height;
             }
-            
-#if 0
-            /* Still left to decide about: */
 
-            XCB_CONFIG_WINDOW_SIBLING
-            XCB_CONFIG_WINDOW_BORDER_WIDTH
-                
+#if 0
+            /* Unsure. Do we allow this? */
             if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE)
             {
+                PDEBUG("Changing stack order.\n");
+                mask |= XCB_CONFIG_WINDOW_STACK_MODE;
+                i ++;                
+                values[i] = e->stack_mode;
                 break;
             }
 #endif
+            
+            /*
+             * Still left to decide about:
+             *
+             * XCB_CONFIG_WINDOW_SIBLING
+             * XCB_CONFIG_WINDOW_BORDER_WIDTH
+             */
 
             if (-1 != i)
             {
