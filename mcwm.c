@@ -131,9 +131,12 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev);
 void newwin(xcb_window_t win)
 {
     xcb_query_pointer_reply_t *pointer;
-    xcb_get_geometry_reply_t *geom;    
+    xcb_get_geometry_reply_t *geom;
     int x;
     int y;
+    xcb_size_hints_t hints;
+    int32_t width;
+    int32_t height;
 
     /* Get pointer position so we can move the window to the cursor. */
     pointer = xcb_query_pointer_reply(
@@ -141,8 +144,8 @@ void newwin(xcb_window_t win)
 
     if (NULL == pointer)
     {
-        x = 1;
-        y = 1;
+        x = 0;
+        y = 0;
     }
     else
     {
@@ -164,28 +167,69 @@ void newwin(xcb_window_t win)
         return;
     }
 
-    /* If the window is larger than our screen, just place it in the corner. */
-    if (geom->width > screen->width_in_pixels)
+    /* Get geometry hints. */
+    if (!xcb_get_wm_normal_hints_reply(
+            conn, xcb_get_wm_normal_hints_unchecked(
+                conn, win), &hints, NULL))
     {
-        x = 1;
-    }
-    else if (x + geom->width + BORDERWIDTH * 2 > screen->width_in_pixels)
-    {
-        x = screen->width_in_pixels - (geom->width + BORDERWIDTH * 2);
+        PDEBUG("Couldn't get size hints.");
     }
 
-    if (geom->height > screen->width_in_pixels)
+    if (hints.flags & XCB_SIZE_HINT_P_SIZE)
     {
-        y = 1;
+        width = hints.width;
+        height = hints.height;
+
+        /*
+         * If the hints don't agree with the window geometry, resize
+         * the window to what the hints say. Needed for xterm, for
+         * example.
+         */
+        if (width != geom->width || height != geom->height)
+        {
+            resize(win, width, height);
+        }
     }
-    else if (y + geom->height + BORDERWIDTH * 2 > screen->height_in_pixels)
+    else
     {
-        y = screen->height_in_pixels - (geom->height + BORDERWIDTH * 2);
+        width = geom->width;
+        height = geom->height;
+    }
+
+    PDEBUG("Hints say initial size of window: %d x %d (geom: %d x %d)\n",
+           width, height, geom->width, geom->height);
+    
+    /* FIXME: XCB_SIZE_HINT_BASE_SIZE */
+    
+    /*
+     * If the window is larger than our screen, just place it in the
+     * corner and resize.
+     */
+    if (width > screen->width_in_pixels)
+    {
+        x = 0;
+        width = screen->width_in_pixels - BORDERWIDTH * 2;;
+        resize(win, width, height);
+    }
+    else if (x + width + BORDERWIDTH * 2 > screen->width_in_pixels)
+    {
+        x = screen->width_in_pixels - (width + BORDERWIDTH * 2);
+    }
+
+    if (height > screen->height_in_pixels)
+    {
+        y = 0;
+        height = screen->height_in_pixels - BORDERWIDTH * 2;
+        resize(win, width, height);
+    }
+    else if (y + height + BORDERWIDTH * 2 > screen->height_in_pixels)
+    {
+        y = screen->height_in_pixels - (height + BORDERWIDTH * 2);
     }
     
     /* Move the window to cursor position. */
     movewindow(win, x, y);
-    
+
     /* Set up stuff and raise the window. */
     setupwin(win);
     raisewindow(win);
@@ -1120,7 +1164,6 @@ void events(void)
 
         case XCB_MOTION_NOTIFY:
         {
-            xcb_motion_notify_event_t *e = (xcb_motion_notify_event_t *)ev;
             xcb_query_pointer_reply_t *pointer;
             
             /*
@@ -1210,8 +1253,39 @@ void events(void)
                 }
             }
             break;        
+        
+        case XCB_CONFIGURE_NOTIFY:
+        {
+            xcb_configure_notify_event_t *e = (xcb_configure_notify_event_t *)ev;
+            
+            if (e->window == screen->root)
+            {
+                /*
+                 * When using RANDR, the root can suddenly change
+                 * geometry when the user adds a new screen, tilts
+                 * their screen 90 degrees or whatnot.
+                 *
+                 * Since mcwm cares about the root edges, we need to
+                 * update our view if this happens.
+                 */
+                PDEBUG("Notify event for root!\n");
+
+                screen->width_in_pixels = e->width;
+                screen->height_in_pixels = e->height;
+
+                PDEBUG("New root geometry: %dx%d\n", e->width, e->height);
+
+                /*
+                 * FIXME: If the root suddenly got a lot smaller and
+                 * some windows are outside of the root window, we
+                 * need to rearrange them.
+                 */
+            }
+        }
+        break;
             
         } /* switch */
+
         
         free(ev);
     }
@@ -1308,6 +1382,7 @@ int main(int argc, char **argv)
     mask = XCB_CW_EVENT_MASK;
 
     values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT
+        | XCB_EVENT_MASK_STRUCTURE_NOTIFY
         | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY;
 
     cookie =
