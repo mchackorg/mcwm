@@ -1023,7 +1023,6 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
     }
 } /* handle_keypress() */
 
-    
 void events(void)
 {
     xcb_generic_event_t *ev;
@@ -1112,6 +1111,10 @@ void events(void)
                     {
                         mode = MCWM_MOVE;
 
+                        /*
+                         * Warp pointer to upper left of window before
+                         * starting move.
+                         */
                         xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
                                          1, 1);
                     }
@@ -1278,14 +1281,76 @@ void events(void)
                 /*
                  * FIXME: If the root suddenly got a lot smaller and
                  * some windows are outside of the root window, we
-                 * need to rearrange them.
+                 * need to rearrange them to fit the new geometry.
                  */
+            }
+        }
+        break;
+        
+        case XCB_CONFIGURE_REQUEST:
+        {
+            xcb_configure_request_event_t *e
+                = (xcb_configure_request_event_t *)ev;
+            uint32_t mask = 0;
+            uint32_t values[7];
+            int i = -1;
+            
+            PDEBUG("event: Configure request.\n");
+
+            /* Check if it's anything we care about, like a resize or move. */
+
+            if (e->value_mask & XCB_CONFIG_WINDOW_X)
+            {
+                mask |= XCB_CONFIG_WINDOW_X;
+                i ++;                
+                values[i] = e->x;
+
+            }
+
+            if (e->value_mask & XCB_CONFIG_WINDOW_Y)
+            {
+                mask |= XCB_CONFIG_WINDOW_Y;
+                i ++;                
+                values[i] = e->y;
+
+            }
+            
+            if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
+            {
+                PDEBUG("Changing width\n");
+                mask |= XCB_CONFIG_WINDOW_WIDTH;
+                i ++;                
+                values[i] = e->width;
+            }
+            
+            if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
+            {
+                mask |= XCB_CONFIG_WINDOW_HEIGHT;
+                i ++;                
+                values[i] = e->width;
+            }
+            
+#if 0
+            /* Still left to decide about: */
+
+            XCB_CONFIG_WINDOW_SIBLING
+            XCB_CONFIG_WINDOW_BORDER_WIDTH
+                
+            if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE)
+            {
+                break;
+            }
+#endif
+
+            if (-1 != i)
+            {
+                xcb_configure_window(conn, e->window, mask, values);
+                xcb_flush(conn);
             }
         }
         break;
             
         } /* switch */
-
         
         free(ev);
     }
