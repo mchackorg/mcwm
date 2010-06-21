@@ -336,7 +336,7 @@ int setupscreen(void)
         setfocus(pointer->child);
         free(pointer);
     }
-
+    
     xcb_flush(conn);
     
     free(reply);
@@ -1391,11 +1391,7 @@ int main(int argc, char **argv)
     
     /* Get the first screen */
     screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
-
     root = screen->root;
-    /* Initial focus is root */
-    /* FIXME: Ask the X server what window has focus. */
-    focuswin = screen->root;
     
     PDEBUG("Screen size: %dx%d\nRoot window: %d\n", screen->width_in_pixels,
            screen->height_in_pixels, screen->root);
