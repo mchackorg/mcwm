@@ -686,6 +686,22 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
     /*
      * Get the window's incremental size step, if any, and use that
      * when resizing.
+     *
+     * FIXME: Do this right. ICCCM v2.0, 4.1.2.3. WM_NORMAL_HINTS
+     * Property says:
+     *
+     *   The base_width and base_height elements in conjunction with
+     *   width_inc and height_inc define an arithmetic progression of
+     *   preferred window widths and heights for nonnegative integers
+     *   i and j:
+     *
+     *   width = base_width + (i × width_inc)
+     *   height = base_height + (j × height_inc)
+     *
+     *   Window managers are encouraged to use i and j instead of
+     *   width and height in reporting window sizes to users. If a
+     *   base size is not provided, the minimum size is to be used in
+     *   its place and vice versa.
      */
     if (!xcb_get_wm_normal_hints_reply(
             conn, xcb_get_wm_normal_hints_unchecked(conn, win), &hints, NULL))
