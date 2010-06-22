@@ -1,6 +1,9 @@
 /* User configurable stuff. */
 
-/* Move this many pixels when moving or resizing with keyboard. */
+/*
+ * Move this many pixels when moving or resizing with keyboard unless
+ * the window has hints saying otherwise.
+ */
 #define MOVE_STEP 32
 
 /*
@@ -19,17 +22,25 @@
  */
 #define MOUSEMODKEY XCB_MOD_MASK_1
 
-/* Start this program when pressing MODKEY + USERKEY_TERMINAL. */
-#define TERMINAL "/usr/local/bin/urxvt"
-
-/* for VNC when running another wm simultaneously: XCB_BUTTON_MASK_ANY */
+/*
+ * Start this program when pressing MODKEY + USERKEY_TERMINAL. Needs
+ * to be in $PATH.
+ *
+ * Change to "xterm" if you're feeling conservative.
+ */
+#define TERMINAL "urxvt"
 
 /* Colour on border for focused windows. */
 
-/* FIXME: We blatantly ignore displays that doesn't handle direct pixel values. */
+/*
+ * FIXME: We blatantly ignore displays that doesn't handle direct
+ * colour values. Sorry.
+ */
 
-#define FOCUSCOL 0xe5e5e5
-/* amber #define FOCUSCOL 0xff7f24 */
+/* very light gray. */
+/* #define FOCUSCOL 0xe5e5e5 */
+/* amber */
+#define FOCUSCOL 0xff7f24
 
 /* Ditto for unfocused. */
 #define UNFOCUSCOL 0x666666
