@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
 #include <getopt.h>
@@ -32,6 +33,7 @@
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>
+
 #include <X11/keysym.h>
 
 /* Check here for user configurable parts: */
@@ -964,6 +966,10 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
         case KEY_L: /* l */
             resizestep(focuswin, 'l');
             break;
+
+        default:
+            /* Ignore other shifted keys. */
+            break;
         }
     }
     else
@@ -1004,7 +1010,10 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
         case KEY_X: /* x */
             maximize(focuswin);
             break;
-                
+
+        default:
+            /* Ignore other keys. */
+            break;            
         } /* switch unshifted */
     }
 } /* handle_keypress() */
