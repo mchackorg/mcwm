@@ -125,6 +125,7 @@ void movestep(xcb_drawable_t win, char direction);
 void maximize(xcb_drawable_t win);
 void maxvert(xcb_drawable_t win);
 void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev);
+void printhelp(void);
 
 
 /* Function bodies. */
@@ -1408,6 +1409,14 @@ void events(void)
     }
 }
 
+void printhelp(void)
+{
+    printf("mcwm: Usage: mcwm [-b] [-t /path/to/terminal]\n");
+    printf("  -b means draw no borders\n");
+    printf("  -t /usr/local/bin/urxvt will start urxvt when MODKEY + Return "
+           "is pressed\n");
+}
+
 int main(int argc, char **argv)
 {
     uint32_t mask = 0;
@@ -1421,7 +1430,7 @@ int main(int argc, char **argv)
     
     while (1)
     {
-        ch = getopt(argc, argv, "bm");
+        ch = getopt(argc, argv, "bt:");
         if (-1 == ch)
         {
                 
@@ -1435,7 +1444,15 @@ int main(int argc, char **argv)
             /* No borders. */
             conf.borders = false;
             break;
-        }
+
+        case 't':
+            terminal = optarg;
+            break;
+
+        default:
+            printhelp();
+            exit(0);
+        } /* switch */
     }
     
     conn = xcb_connect(NULL, NULL);
