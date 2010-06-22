@@ -29,6 +29,9 @@
 #include <errno.h>
 #include <getopt.h>
 
+#include <sys/types.h>
+#include <sys/wait.h>
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_atom.h>
@@ -455,28 +458,54 @@ int start_terminal(void)
     }
     else if (0 == pid)
     {
-        char *argv[2];
-        
-        /* In the child. */
-        
-        argv[0] = terminal;
-        argv[1] = NULL;
-        
+        pid_t termpid;
+
+        /* In our first child. */
+
         /*
-         * Create new process leader, otherwise the terminal will die
-         * when wm dies.
+         * Make this process a new process leader, otherwise the
+         * terminal will die when the wm dies. Also, this makes any
+         * SIGCHLD go to this process when we fork again.
          */
         if (-1 == setsid())
         {
             perror("setsid");
             exit(1);
         }
-
-        if (-1 == execvp(terminal, argv))
+        
+        /*
+         * Fork again for the terminal process. This way, the wm won't
+         * know anything about it.
+         */
+        termpid = fork();
+        if (-1 == termpid)
         {
-            perror("execve");            
+            perror("fork");
             exit(1);
-        }        
+        }
+        else if (0 == termpid)
+        {
+            char *argv[2];
+        
+            /* In the second child, now starting terminal. */
+        
+            argv[0] = terminal;
+            argv[1] = NULL;
+
+            if (-1 == execvp(terminal, argv))
+            {
+                perror("execve");            
+                exit(1);
+            }
+        } /* second child */
+
+        /* Exit our first child so the wm can pick up and continue. */
+        exit(0);
+    } /* first child */
+    else
+    {
+        /* Wait for the first forked process to exit. */
+        waitpid(pid, NULL, 0);
     }
 
     return 0;
