@@ -1,5 +1,26 @@
 -*- text -*-
 
+User visible changes
+
+2010-06-22
+
+  * Handles size changes of the root window. That is, if the user adds
+    an additional screen or removes one when the X server supports
+    RANDR.
+
+  * MODKEY + R toggles raise/lower of window.
+
+  * Maps new windows on pointer position and tries to fit on screen.
+
+  * Resizes with size hints. This means, for instance, that most
+    programs using fixed width fonts resizes by font width and height.
+    No feedback yet, though.
+
+  * Handles more requests, which means usable with more programs
+    (xterm and xpdf, for instance, which hardly worked before).
+
+  * Fixed bugs.
+  
 2010-06-19
 
   * Now a real window manager. Now controls mapping of windows. If we
