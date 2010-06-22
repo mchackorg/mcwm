@@ -8,9 +8,46 @@ It's a traditional 'floating' window manager. It doesn't really do
 anything new to the user experience. It is pretty stupid, but can
 probably be useful for some people.
 
-== Usage ==
+== Start ==
 
-With the the default configuration, use it like this:
+Start like this:
+
+  mcwm [-b] [-t /full/path/toterminal]
+
+-b means draw no borders around windows.
+
+-t /usr/local/bin/urxvt will start the urxvt terminal emulator when
+Mod1 + Return is pressed.
+
+Typically mcwm will start automatically when you start the X Window
+System. If you start from the console, you need an .xinitrc file.
+Here's a complete example:
+
+----------------- 8< -----------------
+#! /bin/sh
+
+# Set nice background.
+xsetroot -mod 16 16 -fg rgb:54/6/6 -bg grey20
+
+# Set nice pointer cursor.
+xsetroot -cursor_name plus -fg white -bg black
+
+# Load resources.
+xrdb -load ~/.Xresources
+
+# Start window manager in the background. If it dies, X still lives.
+mcwm &
+
+# Start a terminal in the foreground. If this dies, X dies.
+urxvt
+----------------- 8< -----------------
+
+If you are using a graphical login program such as XDM you can use the
+same file as .xsession instead.
+
+== Use ==
+
+With the the default configuration, use mcwm like this:
 
   Mod1 + mouse buttons:
 
