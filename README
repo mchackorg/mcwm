@@ -12,12 +12,12 @@ probably be useful for some people.
 
 Start like this:
 
-  mcwm [-b] [-t /full/path/toterminal]
+  mcwm [-b] [-t terminal-program]
 
 -b means draw no borders around windows.
 
--t /usr/local/bin/urxvt will start the urxvt terminal emulator when
-Mod1 + Return is pressed.
+-t urxvt will start the urxvt terminal emulator when Mod1 + Return is
+pressed. urxvt needs to be in the $PATH.
 
 Typically mcwm will start automatically when you start the X Window
 System. If you start from the console, you need an .xinitrc file.
