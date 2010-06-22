@@ -2,17 +2,10 @@
 
 In order of importance:
 
-* Run under some memory checker. DMALLOC?
-
-* GTK apps has some extra windows that are initially unmapped. How do
-  we handle these?
-
 * Changing focus from keyboard
 
   Save the subwindows of the root window and focus each when pressing
   modkey + user_key_change. First option always last focused window.
-
-* "R" should toggle stack order.
 
 * "M" and "X" should toggle.
 
@@ -24,11 +17,7 @@ In order of importance:
 
 * Use window resizing hints.
 
-* Obey no-input hints.
-
-  Don't focus on these windows at all. Does unclutter use this?
-
-* Flag to disable dontmoveoff.
+  Done, but needs looking over.
 
 * Handle colours for real. Don't just assume raw pixel values will work.
 
@@ -37,6 +26,15 @@ In order of importance:
   
   Set and read window hint about maximized state.
 
+* Obey no-input hints.
+
+  Don't focus on these windows at all? How will this work with our
+  window movement keys that work with the focused window?
+
+  Does unclutter use this?
+
+* Flag to disable dontmoveoff.
+
 * Virtual workspaces
 
   Store workspace data in an X property for the window.
@@ -44,8 +42,13 @@ In order of importance:
   When changing workspace, look for the windows with the right
   property.
 
-  possibly store internally as well, so we don't generate so much
+  Possibly store internally as well, so we don't generate so much
   traffic?
+
+* GTK apps has some extra windows that are initially unmapped. How do
+  we handle these? For now, we never map them and silently ignore
+  them. When we go to virtual desktops, this might become a problem.
+  How do we know that we're not supposed to map them?
 
 * RandR/Xinerama
 
@@ -54,4 +57,8 @@ In order of importance:
 
 * Key to move to another physical screen.
 
-* Use event handlers?
+* Use xcb-event's event handlers?
+
+* Configurable keys.
+
+* Configuration file.
