@@ -12,6 +12,8 @@ TARGETS=mcwm
 
 all: $(TARGETS)
 
+mcwm: mcwm.c config.h
+
 mcwm-static: mcwm.c config.h
 	$(CC) -o mcwm-static mcwm.c -static -g -std=c99 -Wall \
 	-I/usr/local/include/ -L/usr/local/lib \
