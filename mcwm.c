@@ -1312,22 +1312,21 @@ void events(void)
              * focus in these cases.
              *
              */
-            if (e->mode != XCB_NOTIFY_MODE_NORMAL)
+            if (e->mode == XCB_NOTIFY_MODE_NORMAL
+                || e->mode == XCB_NOTIFY_MODE_UNGRAB)
             {
-                PDEBUG("Not a normal EnterNotify. Ignoring.\n");
-                break;
-            }
 
-            /*
-             * If we're entering the same window we focus now,
-             * then don't bother focusing.
-             */
-            if (e->event != focuswin)
-            {
                 /*
-                 * Otherwise, set focus to the window we just entered.
+                 * If we're entering the same window we focus now,
+                 * then don't bother focusing.
                  */
-                setfocus(e->event);
+                if (e->event != focuswin)
+                {
+                    /*
+                     * Otherwise, set focus to the window we just entered.
+                     */
+                    setfocus(e->event);
+                }
             }
         }
         break;        
