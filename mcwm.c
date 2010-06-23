@@ -307,7 +307,8 @@ int setupscreen(void)
     int i;
     int len;
     xcb_window_t *children;
-    
+    xcb_get_window_attributes_reply_t *attr;
+
     /* Get all children. */
     reply = xcb_query_tree_reply(conn,
                                  xcb_query_tree(conn, screen->root), 0);
@@ -319,10 +320,40 @@ int setupscreen(void)
     len = xcb_query_tree_children_length(reply);    
     children = xcb_query_tree_children(reply);
     
-    /* Set up all windows. */
+    /* Set up all windows on this root. */
     for (i = 0; i < len; i ++)
     {
-        setupwin(children[i]);
+        attr = xcb_get_window_attributes_reply(
+            conn, xcb_get_window_attributes(conn, children[i]), NULL);
+
+        if (!attr)
+        {
+            PDEBUG("Couldn't get attributes.");
+        }
+        else
+        {
+            /*
+             * Don't set up windows in override redirect mode.
+             *
+             * This mode means they wouldn't have been reported to us
+             * with a MapRequest if we had been running, so in the
+             * normal case we wouldn't have seen them.
+             *
+             * Usually, this mode is used for menu windows and the
+             * like.
+             */
+            if (!attr->override_redirect)
+            {
+                setupwin(children[i]);
+            }
+#if #DEBUG
+            else
+            {
+                PDEBUG("win %d has override_redirect.\n", children[i]);
+            }
+#endif
+            free(attr);
+        }
     }
 
     /*
@@ -1265,25 +1296,46 @@ void events(void)
         break;
 
         case XCB_ENTER_NOTIFY:
-            PDEBUG("event: Enter notify.\n");
-            if (0 == mode)
+        {
+            xcb_enter_notify_event_t *e = (xcb_enter_notify_event_t *)ev;
+            
+            PDEBUG("event: Enter notify eventwin %d child %d.\n",
+                   e->event,
+                   e->child);
+
+            /*
+             * If this isn't a normal enter notify, don't bother.
+             *
+             * The other cases means the pointer is grabbed and that
+             * either means someone is using it for menu selections or
+             * that we're moving or resizing. We don't want to change
+             * focus in these cases.
+             *
+             */
+            if (e->mode != XCB_NOTIFY_MODE_NORMAL)
             {
-                xcb_enter_notify_event_t *e = (xcb_enter_notify_event_t *)ev;
-                
-                /*
-                 * If we're entering the same window we focus now,
-                 * then don't bother focusing.
-                 */
-                if (e->event != focuswin)
-                {
-                    setfocus(e->event);
-                }
+                PDEBUG("Not a normal EnterNotify. Ignoring.\n");
+                break;
             }
-            break;        
+
+            /*
+             * If we're entering the same window we focus now,
+             * then don't bother focusing.
+             */
+            if (e->event != focuswin)
+            {
+                /*
+                 * Otherwise, set focus to the window we just entered.
+                 */
+                setfocus(e->event);
+            }
+        }
+        break;        
         
         case XCB_CONFIGURE_NOTIFY:
         {
-            xcb_configure_notify_event_t *e = (xcb_configure_notify_event_t *)ev;
+            xcb_configure_notify_event_t *e
+                = (xcb_configure_notify_event_t *)ev;
             
             if (e->window == screen->root)
             {
