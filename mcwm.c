@@ -1357,24 +1357,32 @@ void events(void)
                 values[i] = e->height;
             }
 
-#if 0
-            /* Unsure. Do we allow this? */
+            /* We handle a request to change the border width, but
+             * only change it to what we think is right.
+             */
+            if (e->value_mask & XCB_CONFIG_WINDOW_BORDER_WIDTH)
+            {
+                PDEBUG("Changing width to %d, but not really.\n",
+                       e->border_width);
+                mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
+                i ++;                
+                values[i] = BORDERWIDTH;
+            }
+
+            if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING)
+            {
+                mask |= XCB_CONFIG_WINDOW_SIBLING;
+                i ++;                
+                values[i] = e->sibling;
+            }
+
             if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE)
             {
                 PDEBUG("Changing stack order.\n");
                 mask |= XCB_CONFIG_WINDOW_STACK_MODE;
                 i ++;                
                 values[i] = e->stack_mode;
-                break;
             }
-#endif
-            
-            /*
-             * Still left to decide about:
-             *
-             * XCB_CONFIG_WINDOW_SIBLING
-             * XCB_CONFIG_WINDOW_BORDER_WIDTH
-             */
 
             if (-1 != i)
             {
@@ -1396,7 +1404,6 @@ void events(void)
              * Just do what was requested, e->place is either
              * XCB_PLACE_ON_TOP or _ON_BOTTOM. We don't care.
              */
-
             xcb_circulate_window(conn, e->window, e->place);
             
         }
@@ -1410,10 +1417,9 @@ void events(void)
 
 void printhelp(void)
 {
-    printf("mcwm: Usage: mcwm [-b] [-t /path/to/terminal]\n");
+    printf("mcwm: Usage: mcwm [-b] [-t terminal-program]\n");
     printf("  -b means draw no borders\n");
-    printf("  -t /usr/local/bin/urxvt will start urxvt when MODKEY + Return "
-           "is pressed\n");
+    printf("  -t urxvt will start urxvt when MODKEY + Return is pressed\n");
 }
 
 int main(int argc, char **argv)
