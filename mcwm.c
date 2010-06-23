@@ -79,7 +79,6 @@ typedef enum {
 /* Globals */
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
-char *terminal = TERMINAL;      /* Path to terminal to start. */
 xcb_drawable_t focuswin;        /* Current focus window. */
 
 struct keys
@@ -102,6 +101,7 @@ struct keys
 struct conf
 {
     bool borders;
+    char *terminal; /* Path to terminal to start. */
 } conf;
 
 
@@ -489,10 +489,10 @@ int start_terminal(void)
         
             /* In the second child, now starting terminal. */
         
-            argv[0] = terminal;
+            argv[0] = conf.terminal;
             argv[1] = NULL;
 
-            if (-1 == execvp(terminal, argv))
+            if (-1 == execvp(conf.terminal, argv))
             {
                 perror("execve");            
                 exit(1);
@@ -1432,6 +1432,7 @@ int main(int argc, char **argv)
     xcb_drawable_t root;
 
     conf.borders = true;
+    conf.terminal = TERMINAL;
     
     while (1)
     {
@@ -1451,7 +1452,7 @@ int main(int argc, char **argv)
             break;
 
         case 't':
-            terminal = optarg;
+            conf.terminal = optarg;
             break;
 
         default:
