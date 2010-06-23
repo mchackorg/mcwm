@@ -206,10 +206,9 @@ void newwin(xcb_window_t win)
     /* Move the window to cursor position. */
     movewindow(win, x, y);
 
-    /* Set up stuff and raise the window. */
+    /* Set up stuff, like borders. */
     setupwin(win);
-    raisewindow(win);
-
+    
     /* Show window on screen. */
     xcb_map_window(conn, win);
 
