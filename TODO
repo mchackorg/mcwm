@@ -7,35 +7,6 @@ In order of importance:
   Save the subwindows of the root window and focus each when pressing
   modkey + user_key_change. First option always last focused window.
 
-* "M" and "X" should toggle.
-
-  Store original geom in X properties for the window.
-
-* Move to corners: YU BN.
-
-  Quickly move a window to the corners of the screen, a la evilwm.
-
-* Use window resizing hints.
-
-  Done, but needs looking over.
-
-* Special treatment when someone resizes a maximed window... Should it
-  be possible at all? Set new border width.
-  
-  Set and read window hint about maximized state.
-
-* Obey no-input hints.
-
-  Don't focus on these windows at all? How will this work with our
-  window movement keys that work with the focused window?
-
-  Does unclutter use this? No. It creates a subwindow and sends
-  a synthetic enter notify back to the client.
-
-  unclutter -grab works, though.
-
-* Flag to disable dontmoveoff.
-
 * Virtual screens/workspaces
 
   Store workspace data in an X property for the window.
@@ -50,6 +21,34 @@ In order of importance:
   something like Mod2-f for "all virtual screens" and perhaps
   something like Mod2-a <n>, where <n> is 1--9 for virtual screens.
   Better ways?
+
+* "M" and "X" should toggle.
+
+  Store original geom in X properties for the window.
+
+* Move to corners: YU BN.
+
+  Quickly move a window to the corners of the screen, a la evilwm.
+
+* CTWM-like resize, at least with the mouse.
+
+* Use window resizing hints.
+
+  Done, but needs looking over.
+
+* Special treatment when someone resizes a maximed window... Should it
+  be possible at all? Set new border width.
+  
+  Set and read window hint about maximized state.
+
+* Figure out why unclutter doesn't work in default mode
+
+  It creates a subwindow and sends a synthetic enter notify back to
+  the client.
+
+  unclutter -grab works, though.
+
+* Flag to disable dontmoveoff.
 
 * GTK apps has some extra windows that are initially unmapped. How do
   we handle these? For now, we never map them and silently ignore
