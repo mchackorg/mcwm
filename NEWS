@@ -2,6 +2,17 @@
 
 User visible changes
 
+2010-06-24
+
+  * When starting, we don't care about windows with override redirect
+    set. This means, for instance, that if a GTK application was
+    running when we started, we won't draw any borders around its
+    menus.
+
+  * New option, -t <terminal-program>.
+
+  * Fixed bugs.
+
 2010-06-22
 
   * Handles size changes of the root window. That is, if the user adds

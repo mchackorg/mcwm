@@ -31,7 +31,10 @@ In order of importance:
   Don't focus on these windows at all? How will this work with our
   window movement keys that work with the focused window?
 
-  Does unclutter use this?
+  Does unclutter use this? No. It creates a subwindow and sends
+  a synthetic enter notify back to the client.
+
+  You can use unclutter -grab, which works, though.
 
 * Flag to disable dontmoveoff.
 
@@ -52,8 +55,8 @@ In order of importance:
 
 * RandR/Xinerama
 
-  Get physical screen characteristics. Maximize and move to corners
-  should consider the screen it's on.
+  Get physical screen characteristics for every screen. Maximize and
+  move to corners should consider the screen it's on.
 
 * Key to move to another physical screen.
 
