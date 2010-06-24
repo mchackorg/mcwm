@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <getopt.h>
+#include <string.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -59,6 +60,7 @@
 /* Internal Constants. */
 #define MCWM_MOVE 2
 #define MCWM_RESIZE 3
+
 
 
 /* Types. */
@@ -102,10 +104,13 @@ struct conf
 {
     bool borders;
     char *terminal; /* Path to terminal to start. */
+    uint32_t focuscol;
+    uint32_t unfocuscol;
 } conf;
 
 
 /* Functions declerations. */
+uint32_t getcolor(const char *colstr);
 void newwin(xcb_window_t win);
 void setupwin(xcb_window_t win);
 xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms);
@@ -129,6 +134,30 @@ void printhelp(void);
 
 
 /* Function bodies. */
+
+uint32_t getcolor(const char *colstr)
+{
+    xcb_alloc_named_color_reply_t *col_reply;    
+    xcb_colormap_t colormap; 
+    xcb_generic_error_t *error;
+    xcb_alloc_named_color_cookie_t colcookie;
+
+    colormap = screen->default_colormap;
+
+    colcookie = xcb_alloc_named_color(conn, colormap, strlen(colstr), colstr);
+    
+    col_reply = xcb_alloc_named_color_reply(conn, colcookie, &error);
+    if (NULL != error)
+    {
+        fprintf(stderr, "mcwm: Couldn't get pixel value for colour %s. "
+                "Exiting.\n", colstr);
+
+        xcb_disconnect(conn);
+        exit(1);
+    }
+
+    return col_reply->pixel;
+}
 
 /*
  * Set position, geometry and attributes of a new window and show it
@@ -233,7 +262,7 @@ void setupwin(xcb_window_t win)
     if (conf.borders)
     {
         /* Set border color. */
-        values[0] = UNFOCUSCOL;
+        values[0] = conf.unfocuscol;
         xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
 
         /* Set border width. */
@@ -440,7 +469,7 @@ void setunfocus(xcb_drawable_t win)
     }
 
     /* Set new border colour. */
-    values[0] = UNFOCUSCOL;
+    values[0] = conf.unfocuscol;
     xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
 
     xcb_flush(conn);
@@ -462,7 +491,7 @@ void setfocus(xcb_drawable_t win)
     if (conf.borders)
     {
         /* Set new border colour. */
-        values[0] = FOCUSCOL;
+        values[0] = conf.focuscol;
         xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
 
         /* Unset last focus. */
@@ -1468,9 +1497,13 @@ void events(void)
 
 void printhelp(void)
 {
-    printf("mcwm: Usage: mcwm [-b] [-t terminal-program]\n");
+    printf("mcwm: Usage: mcwm [-b] [-t terminal-program] [-f color] "
+           "[- u color]\n");
     printf("  -b means draw no borders\n");
     printf("  -t urxvt will start urxvt when MODKEY + Return is pressed\n");
+    printf("  -f color sets colour for focused window borders of focused "
+           "to a named color.\n");
+    printf("  -u color sets colour for unfocused window borders.");
 }
 
 int main(int argc, char **argv)
@@ -1481,13 +1514,19 @@ int main(int argc, char **argv)
     xcb_void_cookie_t cookie;
     xcb_generic_error_t *error;
     xcb_drawable_t root;
+    char *focuscol;
+    char *unfocuscol;
 
+    /* Set up defaults. */
+    
     conf.borders = true;
     conf.terminal = TERMINAL;
+    focuscol = FOCUSCOL;
+    unfocuscol = UNFOCUSCOL;
     
     while (1)
     {
-        ch = getopt(argc, argv, "bt:");
+        ch = getopt(argc, argv, "bt:f:u:");
         if (-1 == ch)
         {
                 
@@ -1506,6 +1545,14 @@ int main(int argc, char **argv)
             conf.terminal = optarg;
             break;
 
+        case 'f':
+            focuscol = optarg;
+            break;
+
+        case 'u':
+            unfocuscol = optarg;
+            break;
+            
         default:
             printhelp();
             exit(0);
@@ -1525,8 +1572,10 @@ int main(int argc, char **argv)
     
     PDEBUG("Screen size: %dx%d\nRoot window: %d\n", screen->width_in_pixels,
            screen->height_in_pixels, screen->root);
-
-    /* FIXME: Get some colours. */
+    
+    /* Get some colours. */
+    conf.focuscol = getcolor(focuscol);
+    conf.unfocuscol = getcolor(unfocuscol);
     
     /* Loop over all clients and set up stuff. */
     if (0 != setupscreen())

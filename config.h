@@ -27,23 +27,19 @@
  * to be in $PATH.
  *
  * Change to "xterm" if you're feeling conservative.
+ *
+ * Can be set from command line with "-t program".
  */
 #define TERMINAL "urxvt"
 
-/* Colour on border for focused windows. */
-
 /*
- * FIXME: We blatantly ignore displays that doesn't handle direct
- * colour values. Sorry.
+ * Default colour on border for focused windows. Can be set from
+ * command line with "-f color".
  */
+#define FOCUSCOL "chocolate1"
 
-/* very light gray. */
-/* #define FOCUSCOL 0xe5e5e5 */
-/* amber */
-#define FOCUSCOL 0xff7f24
-
-/* Ditto for unfocused. */
-#define UNFOCUSCOL 0x666666
+/* Ditto for unfocused. Use "-u color". */
+#define UNFOCUSCOL "grey40"
 
 /* Width of border window, in pixels. */
 #define BORDERWIDTH 1

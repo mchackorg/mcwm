@@ -19,8 +19,6 @@ In order of importance:
 
   Done, but needs looking over.
 
-* Handle colours for real. Don't just assume raw pixel values will work.
-
 * Special treatment when someone resizes a maximed window... Should it
   be possible at all? Set new border width.
   

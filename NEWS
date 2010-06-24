@@ -2,6 +2,10 @@
 
 User visible changes
 
+2010-06-24-3
+
+  * -f and -u options for focused and unfocused colours.
+
 2010-06-24
 
   * When starting, we don't care about windows with override redirect
