@@ -40,6 +40,10 @@
 
 #include <X11/keysym.h>
 
+#ifdef DEBUG
+#include "events.h"
+#endif
+
 /* Check here for user configurable parts: */
 #include "config.h"
 
@@ -1124,8 +1128,17 @@ void events(void)
             fprintf(stderr, "mcwm: Couldn't get event. Exiting...\n");
             exit(1);
         }
-        
-        PDEBUG("Event: %d\n", ev->response_type);
+
+#ifdef DEBUG
+        if (ev->response_type <= MAXEVENTS)
+        {
+            PDEBUG("Event: %s\n", evnames[ev->response_type]);
+        }
+        else
+        {
+            PDEBUG("Event: #%d. Not known.\n", ev->response_type);
+        }
+#endif
 
         switch (ev->response_type & ~0x80)
         {
@@ -1344,7 +1357,6 @@ void events(void)
             if (e->mode == XCB_NOTIFY_MODE_NORMAL
                 || e->mode == XCB_NOTIFY_MODE_UNGRAB)
             {
-
                 /*
                  * If we're entering the same window we focus now,
                  * then don't bother focusing.
