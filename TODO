@@ -32,11 +32,11 @@ In order of importance:
   Does unclutter use this? No. It creates a subwindow and sends
   a synthetic enter notify back to the client.
 
-  You can use unclutter -grab, which works, though.
+  unclutter -grab works, though.
 
 * Flag to disable dontmoveoff.
 
-* Virtual workspaces
+* Virtual screens/workspaces
 
   Store workspace data in an X property for the window.
 
@@ -45,6 +45,11 @@ In order of importance:
 
   Possibly store internally as well, so we don't generate so much
   traffic?
+
+  A window might be on one, several or all virtual screens. Add width
+  something like Mod2-f for "all virtual screens" and perhaps
+  something like Mod2-a <n>, where <n> is 1--9 for virtual screens.
+  Better ways?
 
 * GTK apps has some extra windows that are initially unmapped. How do
   we handle these? For now, we never map them and silently ignore
