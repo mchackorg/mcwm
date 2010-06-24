@@ -30,6 +30,9 @@ A wishlist for a window manager:
 
 - Virtual screens. Separate sets for each physical screen.
 
+  A window should be able to occupy one, several or all virtual
+  screens.
+
 - Remember where pointer was on virtual screen. Or at least remember
   what window had focus.
 
