@@ -22,6 +22,12 @@ mcwm-static: mcwm.c config.h
 	-lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom  -lxcb-property \
 	-lxcb-event -lXau -lXdmcp
 
+install: $(TARGETS)
+	install -m 755 mcwm $(PREFIX)/bin
+
+deinstall:
+	$(RM) $(PREFIX)/bin/mcwm
+
 $(DIST).tar.bz2:
 	mkdir $(DIST)
 	cp $(DISTFILES) $(DIST)/
