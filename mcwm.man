@@ -1,0 +1,124 @@
+.TH mcwm 1 "Jun 24, 2010" "" ""
+.SH NAME
+mcwm \- MC's Window Manager for X11.
+.SH SYNOPSIS
+.B mcwm
+[ 
+.B \-b 
+]
+[ 
+.B \-t 
+.I terminal-program
+] [ 
+.B \-f 
+.I colour
+] [ 
+.B \-u 
+.I colour
+]
+
+.SH DESCRIPTION
+.B mcwm\fP is a window manager for the X Window System.
+
+.SH OPTIONS
+.TP
+\-b means draw no window borders.
+.TP
+\-t urxvt will start urxvt when MODKEY + Return is pressed.
+.TP
+\-f colour sets colour for focused window borders to a named colour.
+.TP
+\-u colour sets colour for unfocused window borders.
+
+.SH USE
+With the the default configuration, use mcwm like this.
+.PP
+Mod1 + mouse buttons:
+.RS
+.IP \(bu 2
+.B 1 
+move
+.IP \(bu 2
+.B 2 
+raise
+.IP \(bu 2
+.B 3 
+resize
+.RE
+.PP
+Mod2 + key:
+.PP
+.RS
+.IP \(bu 2
+.B r 
+raise or lower (toggles)
+.IP \(bu 2
+.B x 
+maximize
+.IP \(bu 2
+.B m 
+maximize vertically
+.IP \(bu 2
+.B h 
+move left
+.IP \(bu 2
+.B j 
+move down
+.IP \(bu 2
+.B k 
+move up
+.IP \(bu 2
+.B l 
+move right
+.IP \(bu 2
+.B H 
+resize left
+.IP \(bu 2
+.B J 
+resize down
+.IP \(bu 2
+.B K 
+resize up
+.IP \(bu 2
+.B L
+resize right
+.IP \(bu 2
+.B Return
+start terminal
+.RE
+.PP
+If you don't like the default key bindings, border width, et cetera,
+look in the config.h file, change and recompile.
+.PP
+.SH STARTING
+Typically the window manager is started from a script, either run by
+.B startx(1) 
+or a login manager such as 
+.B xdm(1).
+.PP
+If you start from the console, you need an .xinitrc file. Here's a
+complete example:
+.sp
+.in +4
+.nf
+\&#! /bin/sh
+
+# Set nice background.
+xsetroot \-mod 16 16 \-fg rgb:54/6/6 \-bg grey20
+
+# Set nice pointer cursor.
+xsetroot \-cursor_name plus \-fg white \-bg black
+
+# Load resources.
+xrdb \-load ~/.Xresources
+
+# Start window manager in the background. If it dies, X still lives.
+mcwm &
+
+# Start a terminal in the foreground. If this dies, X dies.
+urxvt
+.fi
+.in -4
+.sp
+.SH AUTHOR
+Michael Cardell Widerkrantz <mc@hack.org>.
