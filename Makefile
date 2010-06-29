@@ -10,12 +10,13 @@ LDFLAGS=-L/usr/local/lib -lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom
 RM=/bin/rm
 PREFIX=/usr/local
 
-TARGETS=mcwm list.o
+TARGETS=mcwm
+OBJS=mcwm.o list.o
 
 all: $(TARGETS)
 
-mcwm: mcwm.o list.o config.h events.h Makefile
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ mcwm.c list.o
+mcwm: $(OBJS) config.h events.h Makefile
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
 
 mcwm-static: mcwm.c config.h
 	$(CC) -o mcwm-static mcwm.c -static -g -std=c99 -Wall \
