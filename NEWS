@@ -2,6 +2,10 @@
 
 User visible changes
 
+2010-06-29
+
+  * Focus can change from keyboard with Mod2-Tab.
+
 2010-06-24-3
 
   * -f and -u options for focused and unfocused colours.
