@@ -1,7 +1,7 @@
 VERSION=201000629
 DIST=mcwm-$(VERSION)
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST config.h mcwm.c \
-	events.h mcwm.man
+	list.c list.h events.h mcwm.man
 
 CC=gcc
 CFLAGS=-g -std=c99 -Wall -I/usr/local/include #-DDEBUG
