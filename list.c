@@ -50,7 +50,6 @@ struct item *additem(struct item **mainlist)
     {
         /* First in the list. */
 
-        PDEBUG("First in list.\n");
         item->prev = NULL;
         item->next = NULL;
     }
