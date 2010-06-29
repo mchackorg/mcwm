@@ -1,20 +1,21 @@
-VERSION=201000624-3
+VERSION=201000629
 DIST=mcwm-$(VERSION)
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST config.h mcwm.c \
-	events.h
+	events.h mcwm.man
 
 CC=gcc
-CFLAGS=-g -std=c99 -Wall -I/usr/local/include -L/usr/local/lib -lxcb \
-	-lxcb-keysyms -lxcb-icccm -lxcb-atom #-DDEBUG
+CFLAGS=-g -std=c99 -Wall -I/usr/local/include #-DDEBUG
+LDFLAGS=-L/usr/local/lib -lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom
 
 RM=/bin/rm
 PREFIX=/usr/local
 
-TARGETS=mcwm
+TARGETS=mcwm list.o
 
 all: $(TARGETS)
 
-mcwm: mcwm.c config.h events.h Makefile
+mcwm: mcwm.o list.o config.h events.h Makefile
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ mcwm.c list.o
 
 mcwm-static: mcwm.c config.h
 	$(CC) -o mcwm-static mcwm.c -static -g -std=c99 -Wall \
@@ -38,7 +39,7 @@ $(DIST).tar.bz2:
 dist: $(DIST).tar.bz2
 
 clean:
-	$(RM) -f $(TARGETS)
+	$(RM) -f $(TARGETS) *.o
 
 distclean: clean
 	$(RM) -f $(DIST).tar.bz2

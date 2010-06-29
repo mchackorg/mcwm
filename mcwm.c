@@ -44,6 +44,8 @@
 #include "events.h"
 #endif
 
+#include "list.h"
+
 /* Check here for user configurable parts: */
 #include "config.h"
 
@@ -80,12 +82,28 @@ typedef enum {
     KEY_TAB,
     KEY_MAX
 } key_enum_t;
+
+struct client
+{
+    xcb_drawable_t id;
+    int16_t x;
+    int16_t y;
+    uint16_t width;
+    uint16_t height;
+    int32_t min_width, min_height;
+    int32_t max_width, max_height;
+    int32_t width_inc, height_inc;
+    int32_t base_width, base_height;
+    int vscreen;                /* Virtual screen. */
+    struct item *winitem; /* Pointer to our place in list of all windows. */
+};
     
 
 /* Globals */
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
-xcb_drawable_t focuswin;        /* Current focus window. */
+struct client *focuswin;        /* Current focus window. */
+struct item *winlist = NULL;
 
 struct keys
 {
@@ -115,16 +133,20 @@ struct conf
 
 /* Functions declerations. */
 uint32_t getcolor(const char *colstr);
+void forgetwin(xcb_window_t win);
 void newwin(xcb_window_t win);
-void setupwin(xcb_window_t win);
+struct client *setupwin(xcb_window_t win,
+                        xcb_get_window_attributes_reply_t *attr);
 xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms);
 int setupkeys(void);
 int setupscreen(void);
 void raisewindow(xcb_drawable_t win);
 void raiseorlower(xcb_drawable_t win);
 void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y);
+struct client *findclient(xcb_drawable_t win);
+void focusnext(void);
 void setunfocus(xcb_drawable_t win);
-void setfocus(xcb_drawable_t win);
+void setfocus(struct client *client);
 int start_terminal(void);
 void resize(xcb_drawable_t win, uint32_t width, uint32_t height);
 void resizestep(xcb_drawable_t win, char direction);
@@ -163,6 +185,29 @@ uint32_t getcolor(const char *colstr)
     return col_reply->pixel;
 }
 
+void forgetwin(xcb_window_t win)
+{
+    struct item *item;
+    struct client *client;
+
+    for (item = winlist; item != NULL; item = item->next)
+    {
+        client = item->data;
+
+        PDEBUG("Win %d == client ID %d\n", win, client->id);
+        if (win == client->id)
+        {
+            /* Found it. */
+            PDEBUG("Found it. Forgetting...\n");
+          
+            free(item->data);
+
+            delitem(&winlist, item);
+            return;
+        }
+    }
+}
+
 /*
  * Set position, geometry and attributes of a new window and show it
  * on the screen.
@@ -170,12 +215,13 @@ uint32_t getcolor(const char *colstr)
 void newwin(xcb_window_t win)
 {
     xcb_query_pointer_reply_t *pointer;
-    xcb_get_geometry_reply_t *geom;
     int x;
     int y;
     int32_t width;
     int32_t height;
-
+    xcb_get_window_attributes_reply_t *attr;    
+    struct client *client;
+    
     /* Get pointer position so we can move the window to the cursor. */
     pointer = xcb_query_pointer_reply(
         conn, xcb_query_pointer(conn, screen->root), 0);
@@ -194,19 +240,27 @@ void newwin(xcb_window_t win)
     }
 
     /*
-     * Get window geometry so we can check if it fits on the screen
-     * where the cursor is.
+     * Set up stuff, like borders, add the window to the client list,
+     * et cetera.
      */
-    geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, win),
-                                  NULL);
-    if (NULL == geom)
+    attr = xcb_get_window_attributes_reply(
+        conn, xcb_get_window_attributes(conn, win), NULL);
+
+    if (!attr)
     {
+        fprintf(stderr, "Couldn't get attributes for window %d.", win);
         return;
     }
-
-    width = geom->width;
-    height = geom->height;
+    client = setupwin(win, attr);
+    
+    if (NULL == client)
+    {
+        fprintf(stderr, "mcwm: Couldn't set up window. Out of memory.\n");
+        return;
+    }
+        
+    width = client->width;
+    height = client->height;
     
     /* FIXME: XCB_SIZE_HINT_BASE_SIZE */
     
@@ -238,9 +292,8 @@ void newwin(xcb_window_t win)
     
     /* Move the window to cursor position. */
     movewindow(win, x, y);
-
-    /* Set up stuff, like borders. */
-    setupwin(win);
+    client->x = x;
+    client->y = y;
     
     /* Show window on screen. */
     xcb_map_window(conn, win);
@@ -250,19 +303,21 @@ void newwin(xcb_window_t win)
      * pointer to another window.
      */
     xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
-                     geom->width / 2, geom->height / 2);
-
-    free(geom);
+                     client->width / 2, client->height / 2);
     
     xcb_flush(conn);
 }
 
 /* set border colour, width and event mask for window. */
-void setupwin(xcb_window_t win)
+struct client *setupwin(xcb_window_t win,
+                        xcb_get_window_attributes_reply_t *attr)
 {
     uint32_t mask = 0;    
     uint32_t values[2];
-
+    xcb_get_geometry_reply_t *geom;
+    struct item *item;
+    struct client *client;
+    
     if (conf.borders)
     {
         /* Set border color. */
@@ -278,10 +333,51 @@ void setupwin(xcb_window_t win)
     mask = XCB_CW_EVENT_MASK;
     values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes_checked(conn, win, mask, values);
-    
-    /* FIXME: set properties. */
 
     xcb_flush(conn);
+    
+    /* Remember window and store a few things about it. */
+    geom = xcb_get_geometry_reply(conn,
+                                  xcb_get_geometry(conn, win),
+                                  NULL);
+    if (NULL == geom)
+    {
+        goto bad;
+    }
+    
+    item = additem(&winlist);
+    
+    if (NULL == item)
+    {
+        PDEBUG("newwin: Out of memory.\n");
+        goto bad;
+    }
+
+    client = malloc(sizeof (struct client));
+    if (NULL == client)
+    {
+        PDEBUG("newwin: Out of memory.\n");
+        goto bad;
+    }
+
+    item->data = client;
+
+    client->id = win;
+    PDEBUG("Adding window %d\n", client->id);
+    client->x = geom->x;
+    client->y = geom->y;
+    client->width = geom->width;
+    client->height = geom->height;
+    client->vscreen = 0;
+    client->winitem = item;
+
+    free(geom);
+    
+    return client;
+
+bad:
+    free(geom);
+    return NULL;
 }
 
 xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms)
@@ -341,7 +437,7 @@ int setupscreen(void)
     int len;
     xcb_window_t *children;
     xcb_get_window_attributes_reply_t *attr;
-
+     
     /* Get all children. */
     reply = xcb_query_tree_reply(conn,
                                  xcb_query_tree(conn, screen->root), 0);
@@ -361,33 +457,33 @@ int setupscreen(void)
 
         if (!attr)
         {
-            PDEBUG("Couldn't get attributes.");
+            fprintf(stderr, "Couldn't get attributes for window %d.",
+                    children[i]);
+            continue;
         }
-        else
+        
+        /*
+         * Don't set up or even bother windows in override redirect
+         * mode.
+         *
+         * This mode means they wouldn't have been reported to us
+         * with a MapRequest if we had been running, so in the
+         * normal case we wouldn't have seen them.
+         *
+         * Usually, this mode is used for menu windows and the
+         * like.
+         *
+         * We don't care for any unmapped windows either. If they get
+         * unmapped later, we handle them when we get a MapRequest.
+         */    
+        if (!attr->override_redirect &&
+            XCB_MAP_STATE_UNMAPPED != attr->map_state)
         {
-            /*
-             * Don't set up windows in override redirect mode.
-             *
-             * This mode means they wouldn't have been reported to us
-             * with a MapRequest if we had been running, so in the
-             * normal case we wouldn't have seen them.
-             *
-             * Usually, this mode is used for menu windows and the
-             * like.
-             */
-            if (!attr->override_redirect)
-            {
-                setupwin(children[i]);
-            }
-#if #DEBUG
-            else
-            {
-                PDEBUG("win %d has override_redirect.\n", children[i]);
-            }
-#endif
-            free(attr);
+            setupwin(children[i], attr);
         }
-    }
+        
+        free(attr);
+    } /* for */
 
     /*
      * Get pointer position so we can set focus on any window which
@@ -398,11 +494,11 @@ int setupscreen(void)
 
     if (NULL == pointer)
     {
-        focuswin = screen->root;
+        focuswin = NULL;
     }
     else
     {
-        setfocus(pointer->child);
+        setfocus(findclient(pointer->child));
         free(pointer);
     }
     
@@ -463,11 +559,71 @@ void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
 
 }
 
+void focusnext(void)
+{
+    struct client *client;
+    bool found = false;
+
+#if DEBUG
+    if (NULL != focuswin)
+    {
+        PDEBUG("Focus now in win %d\n", focuswin->id);
+    }
+#endif
+    
+    /* If we currently focus the root, focus first in list. */
+    if (NULL == focuswin)
+    {
+        if (NULL == winlist)
+        {
+            PDEBUG("No windows to focus on.\n");
+            return;
+        }
+        
+        client = winlist->data;
+        found = true;
+    }
+    else
+    {
+        if (NULL != focuswin->winitem->next)
+        {
+            client = focuswin->winitem->next->data;
+            found = true;
+        }
+        else
+        {
+            /*
+             * We were at the end of list. Focusing on first window in
+             * list instead.
+             */
+            client = winlist->data;
+            found = true;
+        }
+    }
+
+    if (found)
+    {
+        raisewindow(client->id);
+        xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
+                         client->width / 2, client->height / 2);
+        setfocus(client);
+    }
+    else
+    {
+        PDEBUG("Couldn't find any new window to focus on.\n");
+    }
+}
+
 void setunfocus(xcb_drawable_t win)
 {
     uint32_t values[1];
+
+    if (NULL == focuswin)
+    {
+        return;
+    }
     
-    if (focuswin == screen->root || !conf.borders)
+    if (focuswin->id == screen->root || !conf.borders)
     {
         return;
     }
@@ -479,15 +635,45 @@ void setunfocus(xcb_drawable_t win)
     xcb_flush(conn);
 }
 
-void setfocus(xcb_drawable_t win)
+struct client *findclient(xcb_drawable_t win)
+{
+    struct item *item;
+    struct client *client;
+
+    for (item = winlist; item != NULL; item = item->next)
+    {
+        client = item->data;
+        if (win == client->id)
+        {
+            PDEBUG("findclient: Found it. Win: %d\n", client->id);
+            return client;
+        }
+    }
+
+    return NULL;
+}
+
+void setfocus(struct client *client)
 {
     uint32_t values[1];
 
+    /* if client is NULL, we focus on the root. */
+    if (NULL == client)
+    {
+        focuswin = NULL;
+
+        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, screen->root,
+                            XCB_CURRENT_TIME);
+        xcb_flush(conn);
+        
+        return;
+    }
+    
     /*
      * Don't bother focusing on the root window or on the same window
      * that already has focus.
      */
-    if (win == screen->root || win == focuswin)
+    if (client->id == screen->root || client == focuswin)
     {
         return;
     }
@@ -496,18 +682,24 @@ void setfocus(xcb_drawable_t win)
     {
         /* Set new border colour. */
         values[0] = conf.focuscol;
-        xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
+        xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
+                                     values);
 
         /* Unset last focus. */
-        setunfocus(focuswin);
+        if (NULL != focuswin)
+        {
+            setunfocus(focuswin->id);
+        }
     }
 
     /* Set new input focus. */
-    focuswin = win;
-    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, win,
+
+    xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, client->id,
                         XCB_CURRENT_TIME);
 
     xcb_flush(conn);
+
+    focuswin = client;
 }
 
 int start_terminal(void)
@@ -1045,19 +1237,19 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
         switch (key)
         {
         case KEY_H: /* h */
-            resizestep(focuswin, 'h');
+            resizestep(focuswin->id, 'h');
             break;
 
         case KEY_J: /* j */
-            resizestep(focuswin, 'j');
+            resizestep(focuswin->id, 'j');
             break;
 
         case KEY_K: /* k */
-            resizestep(focuswin, 'k');
+            resizestep(focuswin->id, 'k');
             break;
 
         case KEY_L: /* l */
-            resizestep(focuswin, 'l');
+            resizestep(focuswin->id, 'l');
             break;
 
         default:
@@ -1074,34 +1266,35 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
             break;
 
         case KEY_H: /* h */
-            movestep(focuswin, 'h');
+            movestep(focuswin->id, 'h');
             break;
 
         case KEY_J: /* j */
-            movestep(focuswin, 'j');
+            movestep(focuswin->id, 'j');
             break;
 
         case KEY_K: /* k */
-            movestep(focuswin, 'k');
+            movestep(focuswin->id, 'k');
             break;
 
         case KEY_L: /* l */
-            movestep(focuswin, 'l');
+            movestep(focuswin->id, 'l');
             break;
 
         case KEY_TAB: /* tab */
+            focusnext();
             break;
 
         case KEY_M: /* m */
-            maxvert(focuswin);
+            maxvert(focuswin->id);
             break;
 
         case KEY_R: /* r*/
-            raiseorlower(focuswin);
+            raiseorlower(focuswin->id);
             break;
                     
         case KEY_X: /* x */
-            maximize(focuswin);
+            maximize(focuswin->id);
             break;
 
         default:
@@ -1156,10 +1349,26 @@ void events(void)
         {
             xcb_destroy_notify_event_t *e;
 
-            PDEBUG("event: Destroy notify.\n");
             e = (xcb_destroy_notify_event_t *) ev;
 
-            /* FIXME: Find the window in list of clients. */
+            /*
+             * If we had focus in this window, forget about the focus.
+             * We will get an EnterNotify if there's another window
+             * under the pointer so we can set the focus proper later.
+             */
+            if (focuswin->id == e->window)
+            {
+                focuswin = NULL;
+            }
+            
+            /*
+             * Find this window in list of clients and forget about
+             * it.
+             */
+            forgetwin(e->window);
+#if DEBUG
+            listitems(winlist);
+#endif
         }
         break;
             
@@ -1316,7 +1525,7 @@ void events(void)
                 mode = 0;
                 free(geom);
 
-                setfocus(e->event);
+                setfocus(findclient(e->event));
                 
                 PDEBUG("mode now = %d\n", mode);
                 
@@ -1336,10 +1545,11 @@ void events(void)
             handle_keypress(win, e);
         }
         break;
-
+            
         case XCB_ENTER_NOTIFY:
         {
             xcb_enter_notify_event_t *e = (xcb_enter_notify_event_t *)ev;
+            struct client *client;
             
             PDEBUG("event: Enter notify eventwin %d child %d.\n",
                    e->event,
@@ -1361,12 +1571,13 @@ void events(void)
                  * If we're entering the same window we focus now,
                  * then don't bother focusing.
                  */
-                if (e->event != focuswin)
+                if (NULL == focuswin || e->event != focuswin->id)
                 {
                     /*
                      * Otherwise, set focus to the window we just entered.
                      */
-                    setfocus(e->event);
+                    client = findclient(e->event);
+                    setfocus(client);
                 }
             }
         }
