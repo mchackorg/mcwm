@@ -145,27 +145,6 @@ int main(void)
     listitems(mainlist);
 
     printf("DELETING.\n");
-
-/*
-        delclient: entry removed. item = 0x28201040, *mainlist = 0x28201050
-        in listitems: mainlist = 0x28201050
-        item #1 (stored at 0x28201050): 3
-        item #2 (stored at 0x28201030): 1
-
-        Removing last item...
-
-        next == NULL
-        prev == *mainlist
-        
-        delclient: entry removed. item = 0x28201030, *mainlist = 0x28201050
-        in listitems: mainlist = 0x28201050
-        item #1 (stored at 0x28201050): 3
-        item #2 (stored at 0x28201030): 1
-
-        delclient: first entry removed.
-        in listitems: mainlist = 0x28201030
-        item #1 (stored at 0x28201030): 1
-*/
         
     delitem(&mainlist, item2);
     listitems(mainlist);
