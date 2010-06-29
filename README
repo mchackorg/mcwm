@@ -2,76 +2,15 @@
 
 This is a small window manager for the X Window System written
 entirely with XCB, the straight X protocol binding to the C language.
-It doesn't use libX11 which most older window managers do.
 
-It's a traditional 'floating' window manager. It doesn't really do
+It's a traditional 'floating' window manager. It doesn't really give
 anything new to the user experience. It is pretty stupid, but can
 probably be useful for some people.
 
-== Start ==
-
-Start like this:
-
-  mcwm [-b] [-t terminal-program]
-
--b means draw no borders around windows.
-
--t urxvt will start the urxvt terminal emulator when Mod1 + Return is
-pressed. urxvt needs to be in the $PATH.
-
-Typically mcwm will start automatically when you start the X Window
-System. If you start from the console, you need an .xinitrc file.
-Here's a complete example:
-
------------------ 8< -----------------
-#! /bin/sh
-
-# Set nice background.
-xsetroot -mod 16 16 -fg rgb:54/6/6 -bg grey20
-
-# Set nice pointer cursor.
-xsetroot -cursor_name plus -fg white -bg black
-
-# Load resources.
-xrdb -load ~/.Xresources
-
-# Start window manager in the background. If it dies, X still lives.
-mcwm &
-
-# Start a terminal in the foreground. If this dies, X dies.
-urxvt
------------------ 8< -----------------
-
-If you are using a graphical login program such as XDM you can use the
-same file as .xsession instead.
-
-== Use ==
-
-With the the default configuration, use mcwm like this:
-
-  Mod1 + mouse buttons:
-
-    1 move
-    2 raise
-    3 resize
-
-  Mod2 + key:
-
-    r		raise or lower (toggles)
-    x 		maximize
-    m 		maximize vertically
-    h 		move left
-    j 		move down
-    k 		move up
-    l 		move right
-    H 		resize left
-    J 		resize down
-    K 		resize up
-    L 		resize right
-    Return	start terminal
-
 If you don't like the default key bindings, border width, et cetera,
 look in the config.h file, change and recompile.
+
+See the manual page for how to use it.
 
 == More information & Contact ==
 
@@ -82,4 +21,3 @@ Please see:
 To contact me, write to:
 
   Michael Cardell Widerkrantz <mc@hack.org>
-
