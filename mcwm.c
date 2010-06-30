@@ -304,6 +304,8 @@ void changeworkspace(int ws)
             xcb_unmap_window(conn, client->id);
         }
     }
+
+    focuswin = NULL;
     
     /* Go through list of new ws. Map everything that isn't fixed. */
     for (item = wslist[ws]; item != NULL; item = item->next)
