@@ -4,7 +4,7 @@ DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST config.h mcwm.c \
 	list.c list.h events.h mcwm.man
 
 CC=gcc
-CFLAGS=-g -std=c99 -Wall -I/usr/local/include #-DDEBUG
+CFLAGS=-g -std=c99 -Wall -Wextra -I/usr/local/include -DDEBUG
 LDFLAGS=-L/usr/local/lib -lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom
 
 RM=/bin/rm
