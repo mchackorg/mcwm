@@ -86,6 +86,9 @@ resize right
 .B Return
 start terminal
 .IP \(bu 2
+.B Tab
+go to next visible window.
+.IP \(bu 2
 .B f
 fix window so it is visible on all workspaces.
 .IP \(bu 2
