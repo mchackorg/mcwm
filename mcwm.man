@@ -85,6 +85,12 @@ resize right
 .IP \(bu 2
 .B Return
 start terminal
+.IP \(bu 2
+.B f
+fix window so it is visible on all workspaces.
+.IP \(bu 2
+.B 0\-9
+go to workspace n, 0-9.
 .RE
 .PP
 If you don't like the default key bindings, border width, et cetera,
