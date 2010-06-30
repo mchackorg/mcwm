@@ -67,6 +67,9 @@
 #define MCWM_MOVE 2
 #define MCWM_RESIZE 3
 
+#define WORKSPACE_MAX 9
+
+#define NET_WM_FIXED 0xffffffff
 
 
 /* Types. */
@@ -162,8 +165,12 @@ struct conf
     uint32_t unfocuscol;
 } conf;
 
+xcb_atom_t atom_desktop;
+
 
 /* Functions declerations. */
+void setwmdesktop(xcb_drawable_t win, int ws);
+int getwmdesktop(xcb_drawable_t win);
 void addtoworkspace(struct client *client, int ws);
 void delfromworkspace(struct client *client, int ws);
 void changeworkspace(int ws);
@@ -197,6 +204,54 @@ void printhelp(void);
 
 /* Function bodies. */
 
+void setwmdesktop(xcb_drawable_t win, int ws)
+{
+    PDEBUG("Changing _NET_WM_DESKTOP on window %d to %d\n", win, ws);
+    
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, win,
+                        atom_desktop, CARDINAL, 32, 1,
+                        &ws);
+}
+
+int getwmdesktop(xcb_drawable_t win)
+{
+    xcb_get_property_reply_t *reply;
+    xcb_get_property_cookie_t cookie;
+    int *wsp;
+    int ws;
+    
+    cookie = xcb_get_any_property(conn, false, win, atom_desktop,
+                                  sizeof (int32_t));
+
+    reply = xcb_get_property_reply(conn, cookie, NULL);
+    if (NULL == reply)
+    {
+        fprintf(stderr, "mcwm: Couldn't get properties for win %d\n", win);
+        return -2;
+    }
+
+    /* Length is 0 if we didn't find it. */
+    if (0 == xcb_get_property_value_length(reply))
+    {
+        PDEBUG("_NET_WM_DESKTOP reply was 0 length.\n");
+        goto bad;
+    }
+        
+    wsp = xcb_get_property_value(reply);
+
+    ws = *wsp;
+
+    PDEBUG("got _NET_WM_DESKTOP: %d stored at %p.\n", ws, wsp);
+    
+    free(reply);
+
+    return ws;
+
+bad:
+    free(reply);
+    return -2;
+}
+
 void addtoworkspace(struct client *client, int ws)
 {
     struct item *item;
@@ -209,6 +264,8 @@ void addtoworkspace(struct client *client, int ws)
     }
 
     item->data = client;
+
+    setwmdesktop(client->id, ws);
 }
 
 void delfromworkspace(struct client *client, int ws)
@@ -274,6 +331,7 @@ void fixwindow(struct client *client)
     else
     {
         client->fixed = true;
+        setwmdesktop(client->id, NET_WM_FIXED);        
         delfromworkspace(client, curws);
     }
 }
@@ -440,9 +498,9 @@ struct client *setupwin(xcb_window_t win,
 {
     uint32_t mask = 0;    
     uint32_t values[2];
-
     struct item *item;
     struct client *client;
+    int ws;
     
     if (conf.borders)
     {
@@ -485,9 +543,23 @@ struct client *setupwin(xcb_window_t win,
     PDEBUG("Adding window %d\n", client->id);
     client->winitem = item;
 
-    /* Add this window to the current workspace. */
-    addtoworkspace(client, curws);
-    
+    /* Check if this window has a workspace set already. */
+    ws = getwmdesktop(win);
+
+    if (ws == NET_WM_FIXED)
+    {
+        fixwindow(client);
+    }
+    else if (-2 != ws && ws < WORKSPACE_MAX)
+    {
+        addtoworkspace(client, ws);
+    }
+    else
+    {
+        /* Add this window to the current workspace. */
+        addtoworkspace(client, curws);
+    }
+
     return client;
 }
 
@@ -583,12 +655,8 @@ int setupscreen(void)
          *
          * Usually, this mode is used for menu windows and the
          * like.
-         *
-         * We don't care for any unmapped windows either. If they get
-         * unmapped later, we handle them when we get a MapRequest.
          */    
-        if (!attr->override_redirect &&
-            XCB_MAP_STATE_UNMAPPED != attr->map_state)
+        if (!attr->override_redirect)
         {
             setupwin(children[i], attr);
         }
@@ -1966,6 +2034,9 @@ int main(int argc, char **argv)
     /* Get some colours. */
     conf.focuscol = getcolor(focuscol);
     conf.unfocuscol = getcolor(unfocuscol);
+
+    /* Get an atom. */
+    atom_desktop = xcb_atom_get(conn, "_NET_WM_DESKTOP");
     
     /* Loop over all clients and set up stuff. */
     if (0 != setupscreen())
