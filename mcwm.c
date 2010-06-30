@@ -670,6 +670,8 @@ int setupscreen(void)
         free(attr);
     } /* for */
 
+    changeworkspace(1);
+        
     /*
      * Get pointer position so we can set focus on any window which
      * might be under it.
@@ -690,7 +692,7 @@ int setupscreen(void)
     xcb_flush(conn);
     
     free(reply);
-
+    
     return 0;
 }
 
