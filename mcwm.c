@@ -295,7 +295,7 @@ void changeworkspace(int ws)
 
     PDEBUG("Changing from workspace #%d to #%d\n", curws, ws);
 
-    if (NULL != focuswin)
+    if (NULL != focuswin && !focuswin->fixed)
     {
         setunfocus(focuswin->id);
         focuswin = NULL;        
