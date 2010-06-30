@@ -70,6 +70,7 @@
 #define WORKSPACE_MAX 9
 
 #define NET_WM_FIXED 0xffffffff
+#define MCWM_NOWS 0xfffffffe
 
 
 /* Types. */
@@ -112,7 +113,7 @@ struct client
 /* Globals */
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
-int curws = 1;                  /* Current workspace. */
+int32_t curws = 1;                  /* Current workspace. */
 struct client *focuswin;        /* Current focus window. */
 struct item *winlist = NULL;
 struct item *wslist[10] =
@@ -170,10 +171,10 @@ xcb_atom_t atom_desktop;
 
 /* Functions declerations. */
 void setwmdesktop(xcb_drawable_t win, int ws);
-int getwmdesktop(xcb_drawable_t win);
+int32_t getwmdesktop(xcb_drawable_t win);
 void addtoworkspace(struct client *client, int ws);
 void delfromworkspace(struct client *client, int ws);
-void changeworkspace(int ws);
+void changeworkspace(int32_t ws);
 void fixwindow(struct client *client);
 uint32_t getcolor(const char *colstr);
 void forgetwin(xcb_window_t win);
@@ -213,12 +214,12 @@ void setwmdesktop(xcb_drawable_t win, int ws)
                         &ws);
 }
 
-int getwmdesktop(xcb_drawable_t win)
+int32_t getwmdesktop(xcb_drawable_t win)
 {
     xcb_get_property_reply_t *reply;
     xcb_get_property_cookie_t cookie;
-    int *wsp;
-    int ws;
+    int32_t *wsp;
+    int32_t ws;
     
     cookie = xcb_get_any_property(conn, false, win, atom_desktop,
                                   sizeof (int32_t));
@@ -227,7 +228,7 @@ int getwmdesktop(xcb_drawable_t win)
     if (NULL == reply)
     {
         fprintf(stderr, "mcwm: Couldn't get properties for win %d\n", win);
-        return -2;
+        return MCWM_NOWS;
     }
 
     /* Length is 0 if we didn't find it. */
@@ -249,7 +250,7 @@ int getwmdesktop(xcb_drawable_t win)
 
 bad:
     free(reply);
-    return -2;
+    return MCWM_NOWS;
 }
 
 void addtoworkspace(struct client *client, int ws)
@@ -282,7 +283,7 @@ void delfromworkspace(struct client *client, int ws)
     }
 }
 
-void changeworkspace(int ws)
+void changeworkspace(int32_t ws)
 {
     struct item *item;
     struct client *client;
@@ -612,7 +613,7 @@ int setupscreen(void)
     xcb_window_t *children;
     xcb_get_window_attributes_reply_t *attr;
     struct client *client;
-    int ws;
+    int32_t ws;
     
     /* Get all children. */
     reply = xcb_query_tree_reply(conn,
@@ -665,7 +666,7 @@ int setupscreen(void)
                 {
                     fixwindow(client);
                 }
-                else if (-2 != ws && ws < WORKSPACE_MAX)
+                else if (MCWM_NOWS != ws && ws < WORKSPACE_MAX)
                 {
                     addtoworkspace(client, ws);
                 }
