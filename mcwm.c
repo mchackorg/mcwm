@@ -1520,9 +1520,12 @@ void events(void)
              * We will get an EnterNotify if there's another window
              * under the pointer so we can set the focus proper later.
              */
-            if (focuswin->id == e->window)
+            if (NULL != focuswin)
             {
-                focuswin = NULL;
+                if (focuswin->id == e->window)
+                {
+                    focuswin = NULL;
+                }
             }
             
             /*
