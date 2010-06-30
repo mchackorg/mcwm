@@ -7,15 +7,22 @@ In order of importance:
   Save the subwindows of the root window and focus each when pressing
   modkey + user_key_change. First option always last focused window.
 
+  Partly done. I have added a linked list of all windows and can walk
+  around them in a simple window ring.
+
+  We need to re-arrange the list so the last focused window gets to be
+  the next in ring. Perhaps simply move the focused window to head of
+  list after finishing focusing? How do we know when we're finished?
+  Both Tab and Mod2 are released. Use a mode?
+
 * Virtual screens/workspaces
 
-  Store workspace data in an X property for the window.
+  Partially done. Still needed:
 
-  When changing workspace, look for the windows with the right
-  property.
+  Handle fixed windows when doing keyboard focus. Do we need them in
+  all lists? Or a special list for fixed windows?
 
-  Possibly store internally as well, so we don't generate so much
-  traffic?
+  Store workspace data in an X property for the window?
 
   A window might be on one, several or all virtual screens. Add width
   something like Mod2-f for "all virtual screens" and perhaps
@@ -34,7 +41,8 @@ In order of importance:
 
 * Use window resizing hints.
 
-  Done, but needs looking over.
+  Done, but needs looking over. Needs to use the data in the window
+  list.
 
 * Special treatment when someone resizes a maximed window... Should it
   be possible at all? Set new border width.
@@ -46,9 +54,10 @@ In order of importance:
   It creates a subwindow and sends a synthetic enter notify back to
   the client.
 
-  unclutter -grab works, though.
+  unclutter -grab works, though, but that mucks with slock. It makes
+  slock unlock the screen after ~20 seconds!
 
-* Flag to disable dontmoveoff.
+* Flag to disable dontmoveoff?
 
 * GTK apps has some extra windows that are initially unmapped. How do
   we handle these? For now, we never map them and silently ignore
