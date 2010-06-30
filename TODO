@@ -19,15 +19,14 @@ In order of importance:
 
   Partially done. Still needed:
 
-  Handle fixed windows when doing keyboard focus. Do we need them in
-  all lists? Or a special list for fixed windows?
+  - Handle fixed windows when doing keyboard focus. Do we need them in
+    all lists? Or a special list for fixed windows?
 
-  Store workspace data in an X property for the window?
-
-  A window might be on one, several or all virtual screens. Add width
-  something like Mod2-f for "all virtual screens" and perhaps
-  something like Mod2-a <n>, where <n> is 1--9 for virtual screens.
-  Better ways?
+  - A window might be on one, several or all virtual screens. Add
+    width something like Mod2-f for "all virtual screens" and perhaps
+    something like Mod2-a <n>, where <n> is 1--9 for virtual screens.
+    Better ways? Note that this seems to be incompatible with the EWMH
+    _NET_WM_DESKTOP hint we're currently using.
 
 * "M" and "X" should toggle.
 
@@ -42,12 +41,12 @@ In order of importance:
 * Use window resizing hints.
 
   Done, but needs looking over. Needs to use the data in the window
-  list.
+  list instead of asking the server every time.
 
 * Special treatment when someone resizes a maximed window... Should it
-  be possible at all? Set new border width.
+  be possible at all? Set new border width when they do it.
   
-  Set and read window hint about maximized state.
+  Possibly set and read hint about maximized state.
 
 * Figure out why unclutter doesn't work in default mode
 
@@ -60,9 +59,11 @@ In order of importance:
 * Flag to disable dontmoveoff?
 
 * GTK apps has some extra windows that are initially unmapped. How do
-  we handle these? For now, we never map them and silently ignore
-  them. When we go to virtual desktops, this might become a problem.
-  How do we know that we're not supposed to map them?
+  we handle these? 
+
+  When we're starting and a GTK program is already running, these
+  windows becomes visible on a workspace. How do we handle them? How
+  do we know we're not supposed to map them, ever?
 
 * RandR/Xinerama
 
