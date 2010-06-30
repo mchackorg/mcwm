@@ -442,6 +442,9 @@ void newwin(xcb_window_t win)
         return;
     }
 
+    /* Add this window to the current workspace. */
+    addtoworkspace(client, curws);
+    
     geom = xcb_get_geometry_reply(conn,
                                   xcb_get_geometry(conn, win),
                                   NULL);
@@ -506,7 +509,6 @@ struct client *setupwin(xcb_window_t win,
     uint32_t values[2];
     struct item *item;
     struct client *client;
-    int ws;
     
     if (conf.borders)
     {
@@ -548,23 +550,6 @@ struct client *setupwin(xcb_window_t win,
     client->id = win;
     PDEBUG("Adding window %d\n", client->id);
     client->winitem = item;
-
-    /* Check if this window has a workspace set already. */
-    ws = getwmdesktop(win);
-
-    if (ws == NET_WM_FIXED)
-    {
-        fixwindow(client);
-    }
-    else if (-2 != ws && ws < WORKSPACE_MAX)
-    {
-        addtoworkspace(client, ws);
-    }
-    else
-    {
-        /* Add this window to the current workspace. */
-        addtoworkspace(client, curws);
-    }
 
     return client;
 }
@@ -626,7 +611,9 @@ int setupscreen(void)
     int len;
     xcb_window_t *children;
     xcb_get_window_attributes_reply_t *attr;
-     
+    struct client *client;
+    int ws;
+    
     /* Get all children. */
     reply = xcb_query_tree_reply(conn,
                                  xcb_query_tree(conn, screen->root), 0);
@@ -664,7 +651,33 @@ int setupscreen(void)
          */    
         if (!attr->override_redirect)
         {
-            setupwin(children[i], attr);
+            client = setupwin(children[i], attr);
+            if (NULL != client)
+            {
+                /*
+                 * Check if this window has a workspace set already.
+                 *
+                 * If not and it is not mapped either, ignore it.
+                 */
+                ws = getwmdesktop(children[i]);
+
+                if (ws == NET_WM_FIXED)
+                {
+                    fixwindow(client);
+                }
+                else if (-2 != ws && ws < WORKSPACE_MAX)
+                {
+                    addtoworkspace(client, ws);
+                }
+                else if (XCB_MAP_STATE_UNMAPPED != attr->map_state)
+                {
+                    /*
+                     * Not unmapped and not any _NET_WM_DESKTOP set.
+                     * Add it to our current workspace.
+                     */
+                    addtoworkspace(client, curws);  
+                }
+            }
         }
         
         free(attr);
