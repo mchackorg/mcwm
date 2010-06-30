@@ -2,6 +2,11 @@
 
 User visible changes
 
+2010-06-30
+
+  * Virtual workspaces available with Mod2-0,1,2... Fix on all
+    workspaces with Mod2-f.
+
 2010-06-29
 
   * Focus can change from keyboard with Mod2-Tab.
