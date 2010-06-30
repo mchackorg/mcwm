@@ -71,6 +71,7 @@
 
 /* Types. */
 typedef enum {
+    KEY_F,
     KEY_H,
     KEY_J,
     KEY_K,
@@ -80,6 +81,16 @@ typedef enum {
     KEY_RET,
     KEY_X,
     KEY_TAB,
+    KEY_1,
+    KEY_2,
+    KEY_3,
+    KEY_4,
+    KEY_5,
+    KEY_6,
+    KEY_7,
+    KEY_8,
+    KEY_9,
+    KEY_0,
     KEY_MAX
 } key_enum_t;
 
@@ -90,6 +101,7 @@ struct client
     int32_t max_width, max_height;
     int32_t width_inc, height_inc;
     int32_t base_width, base_height;
+    bool fixed;           /* Visible on all workspaces? */
     struct item *winitem; /* Pointer to our place in list of all windows. */
 };
     
@@ -97,8 +109,22 @@ struct client
 /* Globals */
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
+int curws = 1;                  /* Current workspace. */
 struct client *focuswin;        /* Current focus window. */
 struct item *winlist = NULL;
+struct item *wslist[10] =
+{
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
 
 struct keys
 {
@@ -106,6 +132,7 @@ struct keys
     xcb_keycode_t keycode;
 } keys[KEY_MAX] =
 {
+    { USERKEY_FIX, 0 },    
     { USERKEY_MOVE_LEFT, 0 },
     { USERKEY_MOVE_DOWN, 0 },
     { USERKEY_MOVE_UP, 0 },
@@ -113,8 +140,18 @@ struct keys
     { USERKEY_MAXVERT, 0 },
     { USERKEY_RAISE, 0 },
     { USERKEY_TERMINAL, 0 },
-    { USERKEY_MAX, 0 },
-    { USERKEY_CHANGE, 0 }    
+    { USERKEY_MAX, 0 },    
+    { USERKEY_CHANGE, 0, },
+    { USERKEY_WS1, 0 },
+    { USERKEY_WS2, 0 },
+    { USERKEY_WS3, 0 },
+    { USERKEY_WS4, 0 },
+    { USERKEY_WS5, 0 },
+    { USERKEY_WS6, 0 },
+    { USERKEY_WS7, 0 },
+    { USERKEY_WS8, 0 },
+    { USERKEY_WS9, 0 },
+    { USERKEY_WS10, 0 }
 };    
 
 struct conf
@@ -127,6 +164,10 @@ struct conf
 
 
 /* Functions declerations. */
+void addtoworkspace(struct client *client, int ws);
+void delfromworkspace(struct client *client, int ws);
+void changeworkspace(int ws);
+void fixwindow(struct client *client);
 uint32_t getcolor(const char *colstr);
 void forgetwin(xcb_window_t win);
 void newwin(xcb_window_t win);
@@ -156,6 +197,88 @@ void printhelp(void);
 
 /* Function bodies. */
 
+void addtoworkspace(struct client *client, int ws)
+{
+    struct item *item;
+    
+    item = additem(&wslist[ws]);
+    if (NULL == item)
+    {
+        PDEBUG("addtoworkspace: Out of memory.\n");
+        return;
+    }
+
+    item->data = client;
+}
+
+void delfromworkspace(struct client *client, int ws)
+{
+    struct item *item;
+
+    /* Find client in list. */
+    for (item = wslist[ws]; item != NULL; item = item->next)
+    {
+        if (client == item->data)
+        {
+            delitem(&wslist[ws], item);
+        }
+    }
+}
+
+void changeworkspace(int ws)
+{
+    struct item *item;
+    struct client *client;
+
+    if (ws == curws)
+    {
+        PDEBUG("Changing to same workspace!\n");
+        return;
+    }
+
+    PDEBUG("Changing from workspace #%d to #%d\n", curws, ws);
+    
+    /* Go through list of current ws. Unmap everything that isn't fixed. */
+    for (item = wslist[curws]; item != NULL; item = item->next)
+    {
+        client = item->data;
+        if (!client->fixed)
+        {
+            xcb_unmap_window(conn, client->id);
+        }
+    }
+    
+    /* Go through list of new ws. Map everything that isn't fixed. */
+    for (item = wslist[ws]; item != NULL; item = item->next)
+    {
+        client = item->data;
+        if (!client->fixed)
+        {
+            xcb_map_window(conn, client->id);
+        }
+    }
+
+    xcb_flush(conn);
+
+    curws = ws;
+}
+
+void fixwindow(struct client *client)
+{
+    if (client->fixed)
+    {
+        client->fixed = false;
+
+        addtoworkspace(client, curws);
+    }
+    else
+    {
+        client->fixed = true;
+        delfromworkspace(client, curws);
+    }
+}
+
+    
 uint32_t getcolor(const char *colstr)
 {
     xcb_alloc_named_color_reply_t *col_reply;    
@@ -362,6 +485,9 @@ struct client *setupwin(xcb_window_t win,
     PDEBUG("Adding window %d\n", client->id);
     client->winitem = item;
 
+    /* Add this window to the current workspace. */
+    addtoworkspace(client, curws);
+    
     return client;
 }
 
@@ -393,7 +519,7 @@ int setupkeys(void)
     /* Get all the keysymbols. */
     keysyms = xcb_key_symbols_alloc(conn);
 
-    for (i = KEY_H; i < KEY_MAX; i ++)
+    for (i = KEY_F; i < KEY_MAX; i ++)
     {
         keys[i].keycode = keysymtokeycode(keys[i].keysym, keysyms);        
         if (0 == keys[i].keycode)
@@ -548,7 +674,8 @@ void focusnext(void)
 {
     struct client *client;
     bool found = false;
-
+    struct item *item;
+    
 #if DEBUG
     if (NULL != focuswin)
     {
@@ -559,30 +686,38 @@ void focusnext(void)
     /* If we currently focus the root, focus first in list. */
     if (NULL == focuswin)
     {
-        if (NULL == winlist)
+        if (NULL == wslist[curws])
         {
             PDEBUG("No windows to focus on.\n");
             return;
         }
         
-        client = winlist->data;
+        client = wslist[curws]->data;
         found = true;
     }
     else
     {
-        if (NULL != focuswin->winitem->next)
+        /* Find client in list. */
+        /* FIXME: We need special treatment for fixed windows. */
+        for (item = wslist[curws]; item != NULL; item = item->next)
         {
-            client = focuswin->winitem->next->data;
-            found = true;
-        }
-        else
-        {
-            /*
-             * We were at the end of list. Focusing on first window in
-             * list instead.
-             */
-            client = winlist->data;
-            found = true;
+            if (focuswin == item->data)
+            {
+                if (NULL != item->next)
+                {
+                    client = item->next->data;
+                    found = true;            
+                }
+                else
+                {
+                    /*
+                     * We were at the end of list. Focusing on first window in
+                     * list instead.
+                     */
+                    client = wslist[curws]->data;
+                    found = true;
+                }
+            }
         }
     }
 
@@ -1203,7 +1338,7 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
     int i;
     key_enum_t key;
     
-    for (key = KEY_MAX, i = KEY_H; i < KEY_MAX; i ++)
+    for (key = KEY_MAX, i = KEY_F; i < KEY_MAX; i ++)
     {
         if (ev->detail == keys[i].keycode)
         {
@@ -1250,6 +1385,10 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
             start_terminal();
             break;
 
+        case KEY_F: /* f */
+            fixwindow(focuswin);
+            break;
+            
         case KEY_H: /* h */
             movestep(focuswin->id, 'h');
             break;
@@ -1282,6 +1421,46 @@ void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
             maximize(focuswin->id);
             break;
 
+        case KEY_1:
+            changeworkspace(1);
+            break;
+            
+        case KEY_2:
+            changeworkspace(2);            
+            break;
+
+        case KEY_3:
+            changeworkspace(3);            
+            break;
+
+        case KEY_4:
+            changeworkspace(4);            
+            break;
+
+        case KEY_5:
+            changeworkspace(5);            
+            break;
+
+        case KEY_6:
+            changeworkspace(6);            
+            break;
+
+        case KEY_7:
+            changeworkspace(7);            
+            break;
+
+        case KEY_8:
+            changeworkspace(8);            
+            break;
+
+        case KEY_9:
+            changeworkspace(9);            
+            break;
+
+        case KEY_0:
+            changeworkspace(0);            
+            break;
+            
         default:
             /* Ignore other keys. */
             break;            

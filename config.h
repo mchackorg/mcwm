@@ -48,6 +48,7 @@
  * Keysym codes for window operations. Look in X11/keysymdefs.h for
  * actual symbols.
  */
+#define USERKEY_FIX 		XK_F
 #define USERKEY_MOVE_LEFT 	XK_H
 #define USERKEY_MOVE_DOWN 	XK_J
 #define USERKEY_MOVE_UP 	XK_K
@@ -57,3 +58,13 @@
 #define USERKEY_TERMINAL 	XK_Return
 #define USERKEY_MAX 		XK_X
 #define USERKEY_CHANGE 		XK_Tab
+#define USERKEY_WS1		XK_1
+#define USERKEY_WS2		XK_2
+#define USERKEY_WS3		XK_3
+#define USERKEY_WS4		XK_4
+#define USERKEY_WS5		XK_5
+#define USERKEY_WS6		XK_6
+#define USERKEY_WS7		XK_7
+#define USERKEY_WS8		XK_8
+#define USERKEY_WS9		XK_9
+#define USERKEY_WS10		XK_0
