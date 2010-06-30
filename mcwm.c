@@ -294,6 +294,12 @@ void changeworkspace(int ws)
     }
 
     PDEBUG("Changing from workspace #%d to #%d\n", curws, ws);
+
+    if (NULL != focuswin)
+    {
+        setunfocus(focuswin->id);
+        focuswin = NULL;        
+    }
     
     /* Go through list of current ws. Unmap everything that isn't fixed. */
     for (item = wslist[curws]; item != NULL; item = item->next)
@@ -304,8 +310,6 @@ void changeworkspace(int ws)
             xcb_unmap_window(conn, client->id);
         }
     }
-
-    focuswin = NULL;
     
     /* Go through list of new ws. Map everything that isn't fixed. */
     for (item = wslist[ws]; item != NULL; item = item->next)
