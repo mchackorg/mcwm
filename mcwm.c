@@ -86,15 +86,10 @@ typedef enum {
 struct client
 {
     xcb_drawable_t id;
-    int16_t x;
-    int16_t y;
-    uint16_t width;
-    uint16_t height;
     int32_t min_width, min_height;
     int32_t max_width, max_height;
     int32_t width_inc, height_inc;
     int32_t base_width, base_height;
-    int vscreen;                /* Virtual screen. */
     struct item *winitem; /* Pointer to our place in list of all windows. */
 };
     
@@ -219,7 +214,8 @@ void newwin(xcb_window_t win)
     int y;
     int32_t width;
     int32_t height;
-    xcb_get_window_attributes_reply_t *attr;    
+    xcb_get_window_attributes_reply_t *attr;
+    xcb_get_geometry_reply_t *geom;
     struct client *client;
     
     /* Get pointer position so we can move the window to the cursor. */
@@ -258,11 +254,18 @@ void newwin(xcb_window_t win)
         fprintf(stderr, "mcwm: Couldn't set up window. Out of memory.\n");
         return;
     }
-        
-    width = client->width;
-    height = client->height;
-    
-    /* FIXME: XCB_SIZE_HINT_BASE_SIZE */
+
+    geom = xcb_get_geometry_reply(conn,
+                                  xcb_get_geometry(conn, win),
+                                  NULL);
+    if (NULL == geom)
+    {
+        fprintf(stderr, "mcwm: Couldn't get geometry for win %d.\n", win);
+        return;
+    }
+
+    width = geom->width;
+    height = geom->height;
     
     /*
      * If the window is larger than our screen, just place it in the
@@ -292,8 +295,6 @@ void newwin(xcb_window_t win)
     
     /* Move the window to cursor position. */
     movewindow(win, x, y);
-    client->x = x;
-    client->y = y;
     
     /* Show window on screen. */
     xcb_map_window(conn, win);
@@ -303,9 +304,11 @@ void newwin(xcb_window_t win)
      * pointer to another window.
      */
     xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
-                     client->width / 2, client->height / 2);
+                     geom->width / 2, geom->height / 2);
     
     xcb_flush(conn);
+
+    free(geom);
 }
 
 /* set border colour, width and event mask for window. */
@@ -314,7 +317,7 @@ struct client *setupwin(xcb_window_t win,
 {
     uint32_t mask = 0;    
     uint32_t values[2];
-    xcb_get_geometry_reply_t *geom;
+
     struct item *item;
     struct client *client;
     
@@ -337,47 +340,29 @@ struct client *setupwin(xcb_window_t win,
     xcb_flush(conn);
     
     /* Remember window and store a few things about it. */
-    geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, win),
-                                  NULL);
-    if (NULL == geom)
-    {
-        goto bad;
-    }
     
     item = additem(&winlist);
     
     if (NULL == item)
     {
         PDEBUG("newwin: Out of memory.\n");
-        goto bad;
+        return NULL;
     }
 
     client = malloc(sizeof (struct client));
     if (NULL == client)
     {
         PDEBUG("newwin: Out of memory.\n");
-        goto bad;
+        return NULL;
     }
 
     item->data = client;
 
     client->id = win;
     PDEBUG("Adding window %d\n", client->id);
-    client->x = geom->x;
-    client->y = geom->y;
-    client->width = geom->width;
-    client->height = geom->height;
-    client->vscreen = 0;
     client->winitem = item;
 
-    free(geom);
-    
     return client;
-
-bad:
-    free(geom);
-    return NULL;
 }
 
 xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms)
@@ -605,7 +590,7 @@ void focusnext(void)
     {
         raisewindow(client->id);
         xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
-                         client->width / 2, client->height / 2);
+                         0, 0);
         setfocus(client);
     }
     else
