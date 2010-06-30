@@ -113,7 +113,7 @@ struct client
 /* Globals */
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
-int32_t curws = 1;                  /* Current workspace. */
+uint32_t curws = 1;                  /* Current workspace. */
 struct client *focuswin;        /* Current focus window. */
 struct item *winlist = NULL;
 struct item *wslist[10] =
@@ -170,17 +170,16 @@ xcb_atom_t atom_desktop;
 
 
 /* Functions declerations. */
-void setwmdesktop(xcb_drawable_t win, int ws);
+void setwmdesktop(xcb_drawable_t win, uint32_t ws);
 int32_t getwmdesktop(xcb_drawable_t win);
-void addtoworkspace(struct client *client, int ws);
-void delfromworkspace(struct client *client, int ws);
-void changeworkspace(int32_t ws);
+void addtoworkspace(struct client *client, uint32_t ws);
+void delfromworkspace(struct client *client, uint32_t ws);
+void changeworkspace(uint32_t ws);
 void fixwindow(struct client *client);
 uint32_t getcolor(const char *colstr);
 void forgetwin(xcb_window_t win);
 void newwin(xcb_window_t win);
-struct client *setupwin(xcb_window_t win,
-                        xcb_get_window_attributes_reply_t *attr);
+struct client *setupwin(xcb_window_t win);
 xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms);
 int setupkeys(void);
 int setupscreen(void);
@@ -199,13 +198,13 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y);
 void movestep(xcb_drawable_t win, char direction);
 void maximize(xcb_drawable_t win);
 void maxvert(xcb_drawable_t win);
-void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev);
+void handle_keypress(xcb_key_press_event_t *ev);
 void printhelp(void);
 
 
 /* Function bodies. */
 
-void setwmdesktop(xcb_drawable_t win, int ws)
+void setwmdesktop(xcb_drawable_t win, uint32_t ws)
 {
     PDEBUG("Changing _NET_WM_DESKTOP on window %d to %d\n", win, ws);
     
@@ -218,8 +217,8 @@ int32_t getwmdesktop(xcb_drawable_t win)
 {
     xcb_get_property_reply_t *reply;
     xcb_get_property_cookie_t cookie;
-    int32_t *wsp;
-    int32_t ws;
+    uint32_t *wsp;
+    uint32_t ws;
     
     cookie = xcb_get_any_property(conn, false, win, atom_desktop,
                                   sizeof (int32_t));
@@ -253,7 +252,7 @@ bad:
     return MCWM_NOWS;
 }
 
-void addtoworkspace(struct client *client, int ws)
+void addtoworkspace(struct client *client, uint32_t ws)
 {
     struct item *item;
     
@@ -269,7 +268,7 @@ void addtoworkspace(struct client *client, int ws)
     setwmdesktop(client->id, ws);
 }
 
-void delfromworkspace(struct client *client, int ws)
+void delfromworkspace(struct client *client, uint32_t ws)
 {
     struct item *item;
 
@@ -283,7 +282,7 @@ void delfromworkspace(struct client *client, int ws)
     }
 }
 
-void changeworkspace(int32_t ws)
+void changeworkspace(uint32_t ws)
 {
     struct item *item;
     struct client *client;
@@ -435,7 +434,7 @@ void newwin(xcb_window_t win)
         fprintf(stderr, "Couldn't get attributes for window %d.", win);
         return;
     }
-    client = setupwin(win, attr);
+    client = setupwin(win);
     
     if (NULL == client)
     {
@@ -503,8 +502,7 @@ void newwin(xcb_window_t win)
 }
 
 /* set border colour, width and event mask for window. */
-struct client *setupwin(xcb_window_t win,
-                        xcb_get_window_attributes_reply_t *attr)
+struct client *setupwin(xcb_window_t win)
 {
     uint32_t mask = 0;    
     uint32_t values[2];
@@ -613,7 +611,7 @@ int setupscreen(void)
     xcb_window_t *children;
     xcb_get_window_attributes_reply_t *attr;
     struct client *client;
-    int32_t ws;
+    uint32_t ws;
     
     /* Get all children. */
     reply = xcb_query_tree_reply(conn,
@@ -652,7 +650,7 @@ int setupscreen(void)
          */    
         if (!attr->override_redirect)
         {
-            client = setupwin(children[i], attr);
+            client = setupwin(children[i]);
             if (NULL != client)
             {
                 /*
@@ -1423,7 +1421,7 @@ void maxvert(xcb_drawable_t win)
     free(geom);
 }
 
-void handle_keypress(xcb_drawable_t win, xcb_key_press_event_t *ev)
+void handle_keypress(xcb_key_press_event_t *ev)
 {
     int i;
     key_enum_t key;
@@ -1634,9 +1632,9 @@ void events(void)
             xcb_button_press_event_t *e;
                 
             e = ( xcb_button_press_event_t *) ev;
-            PDEBUG ("Button %d pressed in window %ld, subwindow %d "
+            PDEBUG("Button %d pressed in window %ld, subwindow %d "
                     "coordinates (%d,%d)\n",
-                    e->detail, e->event, e->child, e->event_x, e->event_y);
+                   e->detail, (long)e->event, e->child, e->event_x, e->event_y);
 
             if (e->child != 0)
             {
@@ -1797,9 +1795,9 @@ void events(void)
             
             PDEBUG("Key %d pressed in window %ld\n",
                     e->detail,
-                    win);
+                   (long)win);
 
-            handle_keypress(win, e);
+            handle_keypress(e);
         }
         break;
             
