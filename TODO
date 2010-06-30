@@ -19,8 +19,10 @@ In order of importance:
 
   Partially done. Still needed:
 
-  - Handle fixed windows when doing keyboard focus. Do we need them in
-    all lists? Or a special list for fixed windows?
+  - Handle fixed windows when doing keyboard focus.
+
+    Possible solution: Always add them to the current workspace list
+    when going to a new workspace and removing them from the last.
 
   - A window might be on one, several or all virtual screens. Add
     width something like Mod2-f for "all virtual screens" and perhaps
@@ -36,7 +38,6 @@ In order of importance:
 
   Quickly move a window to the corners of the screen, a la evilwm.
 
-* CTWM-like resize, at least with the mouse.
 
 * Use window resizing hints.
 
@@ -56,14 +57,15 @@ In order of importance:
   unclutter -grab works, though, but that mucks with slock. It makes
   slock unlock the screen after ~20 seconds!
 
+* When a screen is detached, root becomes smaller and some windows
+  might be unavailable to the user.
+
+  Handle this, somehow. Just moving all far away windows into the
+  coordinates of the physical screen?
+
+* CTWM-like resize, at least with the mouse.
+
 * Flag to disable dontmoveoff?
-
-* GTK apps has some extra windows that are initially unmapped. How do
-  we handle these? 
-
-  When we're starting and a GTK program is already running, these
-  windows becomes visible on a workspace. How do we handle them? How
-  do we know we're not supposed to map them, ever?
 
 * RandR/Xinerama
 
