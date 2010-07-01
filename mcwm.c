@@ -265,7 +265,16 @@ void addtoworkspace(struct client *client, uint32_t ws)
 
     item->data = client;
 
-    setwmdesktop(client->id, ws);
+    /*
+     * Set window hint property so we can survive a crash.
+     * 
+     * Fixed windows have their own special WM hint. We don't want to
+     * mess with that.
+     */
+    if (!client->fixed)
+    {
+        setwmdesktop(client->id, ws);
+    }
 }
 
 void delfromworkspace(struct client *client, uint32_t ws)
@@ -295,19 +304,52 @@ void changeworkspace(uint32_t ws)
 
     PDEBUG("Changing from workspace #%d to #%d\n", curws, ws);
 
+    /*
+     * We lose our focus temporarily if the window we focus isn't
+     * fixed. An EnterNotify event will get our focus back later.
+     */
     if (NULL != focuswin && !focuswin->fixed)
     {
         setunfocus(focuswin->id);
         focuswin = NULL;        
     }
+
+#if DEBUG
+    PDEBUG("From workspace:\n");
+    listitems(wslist[curws]);
+#endif
+
+
+#if DEBUG
+    PDEBUG("To workspace:\n");
+    listitems(wslist[ws]);
+#endif
     
     /* Go through list of current ws. Unmap everything that isn't fixed. */
     for (item = wslist[curws]; item != NULL; item = item->next)
     {
         client = item->data;
-        if (!client->fixed)
+
+        PDEBUG("changeworkspace. unmap phase. ws #%d, client-fixed: %d\n",
+               curws, client->fixed);
+      
+        if (client->fixed)
         {
-            xcb_unmap_window(conn, client->id);
+#if 0
+            /* We move all fixed windows to every new workspace we go to. */
+            delfromworkspace(client, curws);
+            addtoworkspace(client, ws);
+
+            PDEBUG("After deleting fixed, curws::\n");
+            listitems(wslist[curws]);
+
+            PDEBUG("After deleting fixed, going to ws:\n");
+            listitems(wslist[ws]);            
+#endif
+        }
+        else
+        {
+            xcb_unmap_window(conn, client->id);      
         }
     }
     
@@ -315,6 +357,12 @@ void changeworkspace(uint32_t ws)
     for (item = wslist[ws]; item != NULL; item = item->next)
     {
         client = item->data;
+
+        PDEBUG("changeworkspace. map phase. ws #%d, client-fixed: %d\n",
+               ws, client->fixed);
+
+
+        /* Fixed windows are already mapped. Map everything else. */
         if (!client->fixed)
         {
             xcb_map_window(conn, client->id);
@@ -331,14 +379,12 @@ void fixwindow(struct client *client)
     if (client->fixed)
     {
         client->fixed = false;
-
-        addtoworkspace(client, curws);
+        setwmdesktop(client->id, curws);
     }
     else
     {
         client->fixed = true;
         setwmdesktop(client->id, NET_WM_FIXED);        
-        delfromworkspace(client, curws);
     }
 }
 
@@ -376,6 +422,10 @@ void forgetwin(xcb_window_t win)
     {
         client = item->data;
 
+        /* Delete window from workspace list. */
+        delfromworkspace(client, curws);
+
+        /* Now forget about it completely and free allocated data. */
         PDEBUG("Win %d == client ID %d\n", win, client->id);
         if (win == client->id)
         {
@@ -385,6 +435,7 @@ void forgetwin(xcb_window_t win)
             free(item->data);
 
             delitem(&winlist, item);
+
             return;
         }
     }
@@ -546,10 +597,19 @@ struct client *setupwin(xcb_window_t win)
 
     item->data = client;
 
+    /* Initialize client. */
     client->id = win;
-    PDEBUG("Adding window %d\n", client->id);
+    client->min_width = 0;
+    client->min_height = 0;
+    client->max_width = screen->width_in_pixels;
+    client->max_height = screen->height_in_pixels;
+    client->base_width = 0;
+    client->base_height = 0;
+    client->fixed = false;
     client->winitem = item;
 
+    PDEBUG("Adding window %d\n", client->id);
+    
     return client;
 }
 
@@ -636,7 +696,7 @@ int setupscreen(void)
                     children[i]);
             continue;
         }
-        
+
         /*
          * Don't set up or even bother windows in override redirect
          * mode.
@@ -663,6 +723,7 @@ int setupscreen(void)
                 if (ws == NET_WM_FIXED)
                 {
                     fixwindow(client);
+                    addtoworkspace(client, curws);
                 }
                 else if (MCWM_NOWS != ws && ws < WORKSPACE_MAX)
                 {
@@ -674,7 +735,7 @@ int setupscreen(void)
                      * Not unmapped and not any _NET_WM_DESKTOP set.
                      * Add it to our current workspace.
                      */
-                    addtoworkspace(client, curws);  
+                    addtoworkspace(client, curws);
                 }
             }
         }
@@ -786,7 +847,6 @@ void focusnext(void)
     else
     {
         /* Find client in list. */
-        /* FIXME: We need special treatment for fixed windows. */
         for (item = wslist[curws]; item != NULL; item = item->next)
         {
             if (focuswin == item->data)
