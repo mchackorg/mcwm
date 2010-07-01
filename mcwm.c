@@ -185,7 +185,7 @@ xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms);
 int setupkeys(void);
 int setupscreen(void);
 void raisewindow(xcb_drawable_t win);
-void raiseorlower(xcb_drawable_t win);
+void raiseorlower(struct client *client);
 void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y);
 struct client *findclient(xcb_drawable_t win);
 void focusnext(void);
@@ -193,12 +193,12 @@ void setunfocus(xcb_drawable_t win);
 void setfocus(struct client *client);
 int start_terminal(void);
 void resize(xcb_drawable_t win, uint32_t width, uint32_t height);
-void resizestep(xcb_drawable_t win, char direction);
+void resizestep(struct client *client, char direction);
 void mousemove(xcb_drawable_t win, int rel_x, int rel_y);
 void mouseresize(xcb_drawable_t win, int rel_x, int rel_y);
-void movestep(xcb_drawable_t win, char direction);
-void maximize(xcb_drawable_t win);
-void maxvert(xcb_drawable_t win);
+void movestep(struct client *client, char direction);
+void maximize(struct client *client);
+void maxvert(struct client *client);
 void handle_keypress(xcb_key_press_event_t *ev);
 void printhelp(void);
 
@@ -804,14 +804,17 @@ void raisewindow(xcb_drawable_t win)
     xcb_flush(conn);
 }
 
-void raiseorlower(xcb_drawable_t win)
+void raiseorlower(struct client *client)
 {
     uint32_t values[] = { XCB_STACK_MODE_OPPOSITE };
-
-    if (screen->root == win || 0 == win)
+    xcb_drawable_t win;
+    
+    if (NULL == client)
     {
         return;
     }
+
+    win = client->id;
     
     xcb_configure_window(conn, win,
                          XCB_CONFIG_WINDOW_STACK_MODE,
@@ -1082,7 +1085,7 @@ void resize(xcb_drawable_t win, uint32_t width, uint32_t height)
     xcb_flush(conn);
 }
 
-void resizestep(xcb_drawable_t win, char direction)
+void resizestep(struct client *client, char direction)
 {
     xcb_get_geometry_reply_t *geom;
     int width;
@@ -1090,13 +1093,15 @@ void resizestep(xcb_drawable_t win, char direction)
     xcb_size_hints_t hints;
     int step_x = MOVE_STEP;
     int step_y = MOVE_STEP;
+    xcb_drawable_t win;
     
-    if (0 == win)
+    if (NULL == client)
     {
-        /* Can't resize root. */
         return;
     }
 
+    win = client->id;
+    
     raisewindow(win);
 
     /* Get window geometry. */
@@ -1337,20 +1342,22 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
     free(geom);
 }
     
-void movestep(xcb_drawable_t win, char direction)
+void movestep(struct client *client, char direction)
 {
     xcb_get_geometry_reply_t *geom;
     int x;
     int y;
     int width;
     int height;
+    xcb_drawable_t win;
 
-    if (0 == win)
+    if (NULL == client)
     {
-        /* Can't move root. */
         return;
     }
 
+    win = client->id;
+    
     raisewindow(win);
     
     /* Get window geometry. */
@@ -1421,16 +1428,19 @@ void movestep(xcb_drawable_t win, char direction)
     free(geom);
 }
 
-void maximize(xcb_drawable_t win)
+void maximize(struct client *client)
 {
     xcb_get_geometry_reply_t *geom;
     uint32_t values[2];
     uint32_t mask = 0;    
-
-    if (screen->root == win || 0 == win)
+    xcb_drawable_t win;
+    
+    if (NULL == client)
     {
         return;
     }
+
+    win = client->id;
     
     /* FIXME: Check if maximized already. If so, revert to stored geometry. */
 
@@ -1467,15 +1477,18 @@ void maximize(xcb_drawable_t win)
     free(geom);    
 }
 
-void maxvert(xcb_drawable_t win)
+void maxvert(struct client *client)
 {
     xcb_get_geometry_reply_t *geom;
     uint32_t values[2];
+    xcb_drawable_t win;
 
-    if (screen->root == win || 0 == win)
+    if (NULL == client)
     {
         return;
     }
+
+    win = client->id;
     
     /*
      * FIXME: Check if maximized already. If so, revert to stored
@@ -1533,19 +1546,19 @@ void handle_keypress(xcb_key_press_event_t *ev)
         switch (key)
         {
         case KEY_H: /* h */
-            resizestep(focuswin->id, 'h');
+            resizestep(focuswin, 'h');
             break;
 
         case KEY_J: /* j */
-            resizestep(focuswin->id, 'j');
+            resizestep(focuswin, 'j');
             break;
 
         case KEY_K: /* k */
-            resizestep(focuswin->id, 'k');
+            resizestep(focuswin, 'k');
             break;
 
         case KEY_L: /* l */
-            resizestep(focuswin->id, 'l');
+            resizestep(focuswin, 'l');
             break;
 
         default:
@@ -1566,19 +1579,19 @@ void handle_keypress(xcb_key_press_event_t *ev)
             break;
             
         case KEY_H: /* h */
-            movestep(focuswin->id, 'h');
+            movestep(focuswin, 'h');
             break;
 
         case KEY_J: /* j */
-            movestep(focuswin->id, 'j');
+            movestep(focuswin, 'j');
             break;
 
         case KEY_K: /* k */
-            movestep(focuswin->id, 'k');
+            movestep(focuswin, 'k');
             break;
 
         case KEY_L: /* l */
-            movestep(focuswin->id, 'l');
+            movestep(focuswin, 'l');
             break;
 
         case KEY_TAB: /* tab */
@@ -1586,15 +1599,15 @@ void handle_keypress(xcb_key_press_event_t *ev)
             break;
 
         case KEY_M: /* m */
-            maxvert(focuswin->id);
+            maxvert(focuswin);
             break;
 
         case KEY_R: /* r*/
-            raiseorlower(focuswin->id);
+            raiseorlower(focuswin);
             break;
                     
         case KEY_X: /* x */
-            maximize(focuswin->id);
+            maximize(focuswin);
             break;
 
         case KEY_1:
@@ -1722,7 +1735,8 @@ void events(void)
             e = ( xcb_button_press_event_t *) ev;
             PDEBUG("Button %d pressed in window %ld, subwindow %d "
                     "coordinates (%d,%d)\n",
-                   e->detail, (long)e->event, e->child, e->event_x, e->event_y);
+                   e->detail, (long)e->event, e->child, e->event_x,
+                   e->event_y);
 
             if (e->child != 0)
             {
@@ -1734,7 +1748,7 @@ void events(void)
                  */
                 if (2 == e->detail)
                 {
-                    raiseorlower(win);                    
+                    raiseorlower(focuswin);
                 }
                 else
                 {
