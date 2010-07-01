@@ -442,16 +442,16 @@ void forgetwin(xcb_window_t win)
     {
         client = item->data;
 
-        /* Delete window from workspace list. */
-        delfromworkspace(client, curws);
-
         /* Now forget about it completely and free allocated data. */
         PDEBUG("Win %d == client ID %d\n", win, client->id);
         if (win == client->id)
         {
             /* Found it. */
             PDEBUG("Found it. Forgetting...\n");
-          
+
+            /* Delete window from workspace list. */
+            delfromworkspace(client, curws);
+            
             free(item->data);
 
             delitem(&winlist, item);
