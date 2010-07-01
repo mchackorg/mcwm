@@ -1,4 +1,4 @@
-VERSION=201000630
+VERSION=20100701
 DIST=mcwm-$(VERSION)
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST config.h mcwm.c \
 	list.c list.h events.h mcwm.man
@@ -18,8 +18,8 @@ all: $(TARGETS)
 mcwm: $(OBJS) config.h events.h Makefile
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
 
-mcwm-static: mcwm.c config.h
-	$(CC) -o mcwm-static mcwm.c -static -g -std=c99 -Wall \
+mcwm-static: mcwm.c config.h events.h Makefile
+	$(CC) -o $@ $(OBJS) -static -g -std=c99 -Wextra -Wall \
 	-I/usr/local/include/ -L/usr/local/lib \
 	-lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom  -lxcb-property \
 	-lxcb-event -lXau -lXdmcp
