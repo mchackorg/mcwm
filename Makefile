@@ -1,4 +1,4 @@
-VERSION=20100701
+VERSION=20100701-2
 DIST=mcwm-$(VERSION)
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST config.h mcwm.c \
 	list.c list.h events.h mcwm.man
