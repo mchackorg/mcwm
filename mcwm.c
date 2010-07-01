@@ -176,7 +176,7 @@ int32_t getwmdesktop(xcb_drawable_t win);
 void addtoworkspace(struct client *client, uint32_t ws);
 void delfromworkspace(struct client *client, uint32_t ws);
 void changeworkspace(uint32_t ws);
-void fixwindow(struct client *client);
+void fixwindow(struct client *client, bool setcolour);
 uint32_t getcolor(const char *colstr);
 void forgetwin(xcb_window_t win);
 void newwin(xcb_window_t win);
@@ -368,7 +368,7 @@ void changeworkspace(uint32_t ws)
     curws = ws;
 }
 
-void fixwindow(struct client *client)
+void fixwindow(struct client *client, bool setcolour)
 {
     uint32_t values[1];
 
@@ -382,10 +382,13 @@ void fixwindow(struct client *client)
         client->fixed = false;
         setwmdesktop(client->id, curws);
 
-        /* Set border color to ordinary focus colour. */
-        values[0] = conf.focuscol;
-        xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
-                                     values);
+        if (setcolour)
+        {
+            /* Set border color to ordinary focus colour. */
+            values[0] = conf.focuscol;
+            xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
+                                         values);
+        }
         
     }
     else
@@ -393,10 +396,13 @@ void fixwindow(struct client *client)
         client->fixed = true;
         setwmdesktop(client->id, NET_WM_FIXED);
 
-        /* Set border color to fixed colour. */
-        values[0] = conf.fixedcol;
-        xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
-                                     values);
+        if (setcolour)
+        {
+            /* Set border color to fixed colour. */
+            values[0] = conf.fixedcol;
+            xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
+                                         values);
+        }
     }
 
     xcb_flush(conn);    
@@ -736,7 +742,7 @@ int setupscreen(void)
 
                 if (ws == NET_WM_FIXED)
                 {
-                    fixwindow(client);
+                    fixwindow(client, false);
                     addtoworkspace(client, curws);
                 }
                 else if (MCWM_NOWS != ws && ws < WORKSPACE_MAX)
@@ -1556,7 +1562,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
             break;
 
         case KEY_F: /* f */
-            fixwindow(focuswin);
+            fixwindow(focuswin, true);
             break;
             
         case KEY_H: /* h */
