@@ -288,6 +288,7 @@ void delfromworkspace(struct client *client, uint32_t ws)
         if (client == item->data)
         {
             delitem(&wslist[ws], item);
+            return;
         }
     }
 }
@@ -295,6 +296,7 @@ void delfromworkspace(struct client *client, uint32_t ws)
 void changeworkspace(uint32_t ws)
 {
     struct item *item;
+    struct item *tmpitem;
     struct client *client;
 
     if (ws == curws)
@@ -314,20 +316,9 @@ void changeworkspace(uint32_t ws)
         setunfocus(focuswin->id);
         focuswin = NULL;        
     }
-
-#if DEBUG
-    PDEBUG("From workspace:\n");
-    listitems(wslist[curws]);
-#endif
-
-
-#if DEBUG
-    PDEBUG("To workspace:\n");
-    listitems(wslist[ws]);
-#endif
     
     /* Go through list of current ws. Unmap everything that isn't fixed. */
-    for (item = wslist[curws]; item != NULL; item = item->next)
+    for (item = wslist[curws]; item != NULL; )
     {
         client = item->data;
 
@@ -336,23 +327,26 @@ void changeworkspace(uint32_t ws)
       
         if (client->fixed)
         {
-#if 0
             /* We move all fixed windows to every new workspace we go to. */
-            delfromworkspace(client, curws);
             addtoworkspace(client, ws);
 
-            PDEBUG("After deleting fixed, curws::\n");
-            listitems(wslist[curws]);
+            /*
+             * NB! Before deleting this item, we need to save the
+             * address to next item so we can continue through the
+             * list.
+             */
+            tmpitem = item;
+            item = item->next;
 
-            PDEBUG("After deleting fixed, going to ws:\n");
-            listitems(wslist[ws]);            
-#endif
+            delitem(&wslist[curws], tmpitem);
         }
         else
         {
-            xcb_unmap_window(conn, client->id);      
+            xcb_unmap_window(conn, client->id);
+            item = item->next;
         }
-    }
+
+    } /* for */
     
     /* Go through list of new ws. Map everything that isn't fixed. */
     for (item = wslist[ws]; item != NULL; item = item->next)
@@ -361,7 +355,6 @@ void changeworkspace(uint32_t ws)
 
         PDEBUG("changeworkspace. map phase. ws #%d, client-fixed: %d\n",
                ws, client->fixed);
-
 
         /* Fixed windows are already mapped. Map everything else. */
         if (!client->fixed)
@@ -378,6 +371,11 @@ void changeworkspace(uint32_t ws)
 void fixwindow(struct client *client)
 {
     uint32_t values[1];
+
+    if (NULL == client)
+    {
+        return;
+    }
     
     if (client->fixed)
     {
