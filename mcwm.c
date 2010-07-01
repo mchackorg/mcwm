@@ -164,6 +164,7 @@ struct conf
     char *terminal; /* Path to terminal to start. */
     uint32_t focuscol;
     uint32_t unfocuscol;
+    uint32_t fixedcol;
 } conf;
 
 xcb_atom_t atom_desktop;
@@ -376,16 +377,31 @@ void changeworkspace(uint32_t ws)
 
 void fixwindow(struct client *client)
 {
+    uint32_t values[1];
+    
     if (client->fixed)
     {
         client->fixed = false;
         setwmdesktop(client->id, curws);
+
+        /* Set border color to ordinary focus colour. */
+        values[0] = conf.focuscol;
+        xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
+                                     values);
+        
     }
     else
     {
         client->fixed = true;
-        setwmdesktop(client->id, NET_WM_FIXED);        
+        setwmdesktop(client->id, NET_WM_FIXED);
+
+        /* Set border color to fixed colour. */
+        values[0] = conf.fixedcol;
+        xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
+                                     values);
     }
+
+    xcb_flush(conn);    
 }
 
     
@@ -949,7 +965,15 @@ void setfocus(struct client *client)
     if (conf.borders)
     {
         /* Set new border colour. */
-        values[0] = conf.focuscol;
+        if (client->fixed)
+        {
+            values[0] = conf.fixedcol;            
+        }
+        else
+        {
+            values[0] = conf.focuscol;
+        }
+
         xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
                                      values);
 
@@ -2114,7 +2138,8 @@ int main(int argc, char **argv)
     /* Get some colours. */
     conf.focuscol = getcolor(focuscol);
     conf.unfocuscol = getcolor(unfocuscol);
-
+    conf.fixedcol = getcolor(FIXEDCOL);
+    
     /* Get an atom. */
     atom_desktop = xcb_atom_get(conn, "_NET_WM_DESKTOP");
     

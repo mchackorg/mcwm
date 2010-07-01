@@ -41,6 +41,8 @@
 /* Ditto for unfocused. Use "-u color". */
 #define UNFOCUSCOL "grey40"
 
+#define FIXEDCOL "red"
+
 /* Width of border window, in pixels. */
 #define BORDERWIDTH 1
 
