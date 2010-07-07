@@ -177,6 +177,7 @@ xcb_atom_t atom_desktop;
 
 
 /* Functions declerations. */
+void arrangewindows(int32_t rootwidth, int32_t rootheight);
 void setwmdesktop(xcb_drawable_t win, uint32_t ws);
 int32_t getwmdesktop(xcb_drawable_t win);
 void addtoworkspace(struct client *client, uint32_t ws);
@@ -203,6 +204,7 @@ void resizestep(struct client *client, char direction);
 void mousemove(xcb_drawable_t win, int rel_x, int rel_y);
 void mouseresize(xcb_drawable_t win, int rel_x, int rel_y);
 void movestep(struct client *client, char direction);
+void unmax(struct client *client);
 void maximize(struct client *client);
 void maxvert(struct client *client);
 void handle_keypress(xcb_key_press_event_t *ev);
@@ -210,6 +212,119 @@ void printhelp(void);
 
 
 /* Function bodies. */
+
+/*
+ *
+ * Rearrange windows to fit new screen size rootwidth x rootheight.
+ */ 
+void arrangewindows(int32_t rootwidth, int32_t rootheight)
+{
+    xcb_query_tree_reply_t *reply;
+    int i;
+    int len;
+    xcb_window_t *children;
+    xcb_get_window_attributes_reply_t *attr;
+    xcb_get_geometry_reply_t *geom;
+    uint32_t mask = 0;
+    uint32_t values[4];
+    bool changed;
+    
+    PDEBUG("Rearranging all windows to fit new screen size %d x %d.\n",
+           rootwidth, rootheight);
+    
+    /* Get all children of the root window */
+    reply = xcb_query_tree_reply(conn,
+                                 xcb_query_tree(conn, screen->root), 0);
+    if (NULL == reply)
+    {
+        return;
+    }
+
+    len = xcb_query_tree_children_length(reply);    
+    children = xcb_query_tree_children(reply);
+
+    /*
+     * Go through all children and look at their coordinates and
+     * geometry. If they don't fit on the new screen, move them around
+     * and resize them as necessary.
+     */
+    for (i = 0; i < len; i ++)
+    {
+        changed = false;
+        
+        attr = xcb_get_window_attributes_reply(
+            conn, xcb_get_window_attributes(conn, children[i]), NULL);
+
+        if (!attr)
+        {
+            fprintf(stderr, "Couldn't get attributes for window %d.",
+                    children[i]);
+            continue;
+        }
+
+        /*
+         * Don't bother with windows in override redirect mode.
+         */    
+        if (!attr->override_redirect)
+        {
+            geom = xcb_get_geometry_reply(conn,
+                                          xcb_get_geometry(conn, children[i]),
+                                          NULL);
+            if (NULL == geom)
+            {
+                fprintf(stderr, "mcwm: Couldn't get geometry for win %d.\n",
+                        children[i]);
+                return;
+            }
+
+            PDEBUG("Win %d at %d,%d %d x %d\n", children[i],
+                   geom->x, geom->y, geom->width,
+                   geom->height);
+
+            if (geom->width > rootwidth)
+            {
+                geom->width = rootwidth - BORDERWIDTH * 2;
+                changed = true;
+            }
+
+            if (geom->height > rootheight)
+            {
+                geom->height = rootheight - BORDERWIDTH * 2;
+                changed = true;
+            }
+
+            /* If x or y + geometry is outside of screen, move window. */
+
+            if (geom->x + geom->width > rootwidth)
+            {
+                geom->x = rootwidth - (geom->width + BORDERWIDTH * 2);
+                changed = true;
+            }
+
+            if (geom->y + geom->height > rootheight)
+            {
+                geom->y = rootheight - (geom->height + BORDERWIDTH * 2);;
+                changed = true;
+            }
+            
+            if (changed)
+            {
+                PDEBUG("--- Win %d going to %d,%d %d x %d\n", children[i],
+                       geom->x, geom->y, geom->width, geom->height);
+
+                mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y
+                    | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
+                values[0] = geom->x;
+                values[1] = geom->y;
+                values[2] = geom->width;
+                values[3] = geom->height;
+                
+                xcb_configure_window(conn, children[i], mask, values);
+                xcb_flush(conn);
+            }
+        } /* if not override_direct */
+    } /* for */
+}
 
 void setwmdesktop(xcb_drawable_t win, uint32_t ws)
 {
@@ -2002,25 +2117,23 @@ void events(void)
             if (e->window == screen->root)
             {
                 /*
-                 * When using RANDR, the root can suddenly change
-                 * geometry when the user adds a new screen, tilts
-                 * their screen 90 degrees or whatnot.
-                 *
-                 * Since mcwm cares about the root edges, we need to
-                 * update our view if this happens.
+                 * When using RANDR, the root can change geometry when
+                 * the user adds a new screen, tilts their screen 90
+                 * degrees or whatnot. We might need to rearrange
+                 * windows to be visible.
                  */
                 PDEBUG("Notify event for root!\n");
 
+                if (e->width < screen->width_in_pixels
+                    || e->height < screen->height_in_pixels)
+                {
+                    arrangewindows(e->width, e->height);
+                }
+                
                 screen->width_in_pixels = e->width;
                 screen->height_in_pixels = e->height;
 
                 PDEBUG("New root geometry: %dx%d\n", e->width, e->height);
-
-                /*
-                 * FIXME: If the root suddenly got a lot smaller and
-                 * some windows are outside of the root window, we
-                 * need to rearrange them to fit the new geometry.
-                 */
             }
         }
         break;
@@ -2071,6 +2184,7 @@ void events(void)
                 values[i] = e->height;
             }
 
+#if 0
             /* We handle a request to change the border width, but
              * only change it to what we think is right.
              */
@@ -2082,7 +2196,8 @@ void events(void)
                 i ++;                
                 values[i] = BORDERWIDTH;
             }
-
+#endif
+            
             if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING)
             {
                 mask |= XCB_CONFIG_WINDOW_SIBLING;
