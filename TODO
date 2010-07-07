@@ -19,11 +19,6 @@ In order of importance:
 
   Partially done. Still needed:
 
-  - Handle fixed windows when doing keyboard focus.
-
-    Possible solution: Always add them to the current workspace list
-    when going to a new workspace and removing them from the last.
-
   - A window might be on one, several or all virtual screens. Add
     width something like Mod2-f for "all virtual screens" and perhaps
     something like Mod2-a <n>, where <n> is 1--9 for virtual screens.
@@ -37,7 +32,6 @@ In order of importance:
 * Move to corners: YU BN.
 
   Quickly move a window to the corners of the screen, a la evilwm.
-
 
 * Use window resizing hints.
 
@@ -71,6 +65,14 @@ In order of importance:
 
   Get physical screen characteristics for every screen. Maximize and
   move to corners should consider the screen it's on.
+
+  xcb_randr_screen_size_t
+
+  xcb_randr_screen_size_iterator_t
+
+  xcb_randr_get_screen_info_reply_t
+
+  xcb_randr_set_screen_size_request_t
 
 * Key to move to another physical screen.
 
