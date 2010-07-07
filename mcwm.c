@@ -101,10 +101,16 @@ typedef enum {
 struct client
 {
     xcb_drawable_t id;
+    uint32_t x;
+    uint32_t y;
+    int32_t width;
+    int32_t height;
     int32_t min_width, min_height;
     int32_t max_width, max_height;
     int32_t width_inc, height_inc;
     int32_t base_width, base_height;
+    bool vertmaxed;
+    bool maxed;
     bool fixed;           /* Visible on all workspaces? */
     struct item *winitem; /* Pointer to our place in list of all windows. */
 };
@@ -619,12 +625,18 @@ struct client *setupwin(xcb_window_t win)
 
     /* Initialize client. */
     client->id = win;
+    client->x = 0;
+    client->y = 0;
+    client->width = 0;
+    client->height = 0;
     client->min_width = 0;
     client->min_height = 0;
     client->max_width = screen->width_in_pixels;
     client->max_height = screen->height_in_pixels;
     client->base_width = 0;
     client->base_height = 0;
+    client->vertmaxed = false;
+    client->maxed = false;
     client->fixed = false;
     client->winitem = item;
 
@@ -1428,25 +1440,52 @@ void movestep(struct client *client, char direction)
     free(geom);
 }
 
+void unmax(struct client *client)
+{
+    uint32_t values[5];
+    uint32_t mask = 0;
+    
+    /* Restore geometry. */
+    values[0] = client->x;
+    values[1] = client->y;
+    values[2] = client->width;
+    values[3] = client->height;    
+
+    /* Set borders again. */
+    values[4] = BORDERWIDTH;
+
+    mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH
+        | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_BORDER_WIDTH;
+    xcb_configure_window(conn, client->id, mask, values);
+
+    xcb_flush(conn);
+}
+
 void maximize(struct client *client)
 {
     xcb_get_geometry_reply_t *geom;
-    uint32_t values[2];
+    uint32_t values[4];
     uint32_t mask = 0;    
-    xcb_drawable_t win;
     
     if (NULL == client)
     {
         return;
     }
 
-    win = client->id;
+    /*
+     * Check if maximized already. If so, revert to stored
+     * geometry.
+     */
+    if (client->maxed)
+    {
+        unmax(client);
+        client->maxed = false;
+        return;
+    }
     
-    /* FIXME: Check if maximized already. If so, revert to stored geometry. */
-
     /* Get window geometry. */
     geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, win),
+                                  xcb_get_geometry(conn, client->id),
                                   NULL);
     if (NULL == geom)
     {
@@ -1454,26 +1493,33 @@ void maximize(struct client *client)
     }
 
     /* Raise first. Pretty silly to maximize below something else. */
-    raisewindow(win);
+    raisewindow(client->id);
     
-    /* FIXME: Store original geom in property. */
+    /* FIXME: Store original geom in property as well? */
+    client->x = geom->x;
+    client->y = geom->y;
+    client->width = geom->width;
+    client->height = geom->height;
 
     /* Remove borders. */
     values[0] = 0;
     mask = XCB_CONFIG_WINDOW_BORDER_WIDTH;
-    xcb_configure_window(conn, win, mask, values);
+    xcb_configure_window(conn, client->id, mask, values);
     
-    /* Move to top left. */
+    /* Move to top left and resize. */
     values[0] = 0;
     values[1] = 0;
+    values[2] = screen->width_in_pixels;
+    values[3] = screen->height_in_pixels;
+    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_X
+                         | XCB_CONFIG_WINDOW_Y
+                         | XCB_CONFIG_WINDOW_WIDTH
+                         | XCB_CONFIG_WINDOW_HEIGHT, values);
 
-    xcb_configure_window(conn, win, XCB_CONFIG_WINDOW_X
-                         | XCB_CONFIG_WINDOW_Y, values);
+    xcb_flush(conn);
 
-    /* Then resize. */
-    resize(win, screen->width_in_pixels,
-           screen->height_in_pixels);
-
+    client->maxed = true;
+    
     free(geom);    
 }
 
@@ -1481,45 +1527,53 @@ void maxvert(struct client *client)
 {
     xcb_get_geometry_reply_t *geom;
     uint32_t values[2];
-    xcb_drawable_t win;
 
     if (NULL == client)
     {
         return;
     }
 
-    win = client->id;
-    
     /*
-     * FIXME: Check if maximized already. If so, revert to stored
-     * geometry.
+     * Check if maximized already. If so, revert to stored geometry.
      */
+    if (client->vertmaxed)
+    {
+        unmax(client);
+        client->vertmaxed = false;
+        return;
+    }
 
     /* Raise first. Pretty silly to maximize below something else. */
-    raisewindow(win);
+    raisewindow(client->id);
 
     /* Get window geometry. */
     geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, win),
+                                  xcb_get_geometry(conn, client->id),
                                   NULL);
     if (NULL == geom)
     {
         return;
     }
     
-    /* FIXME: Store original geom in property. */
+    /* Store original coordinates and geometry.
+     * FIXME: Store in property as well? */
+    client->x = geom->x;
+    client->y = geom->y;
+    client->width = geom->width;
+    client->height = geom->height;
 
-    /* Move to top of screen. */
-    values[0] = geom->x;
-    values[1] = 0;
+    /* Move to top of screen and resize. */
+    values[0] = 0;
+    values[1] = screen->height_in_pixels - BORDERWIDTH * 2;
 
-    xcb_configure_window(conn, win, XCB_CONFIG_WINDOW_X
-                         | XCB_CONFIG_WINDOW_Y, values);
+    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_Y
+                         | XCB_CONFIG_WINDOW_HEIGHT, values);
 
-    /* Then resize. */
-    resize(win, geom->width, screen->height_in_pixels - BORDERWIDTH * 2);
+    xcb_flush(conn);
 
     free(geom);
+    
+    client->vertmaxed = true;    
 }
 
 void handle_keypress(xcb_key_press_event_t *ev)
