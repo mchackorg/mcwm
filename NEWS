@@ -2,6 +2,16 @@
 
 User visible changes
 
+2010-07-07
+
+  * Rearranges windows to be visible and fit on screen if a physical
+    screen is removed or screen is tilted.
+
+  * Maximize and vertical maximize toggles.
+
+  * First virtual workspace, that is 1, is now numbered as 0 as in the
+    rest of the window managers following EWMH.
+
 2010-06-30
 
   * Virtual workspaces available with Mod2-0,1,2... Fix on all
