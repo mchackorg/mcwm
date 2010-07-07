@@ -763,7 +763,7 @@ int setupscreen(void)
         free(attr);
     } /* for */
 
-    changeworkspace(1);
+    changeworkspace(0);
         
     /*
      * Get pointer position so we can set focus on any window which
