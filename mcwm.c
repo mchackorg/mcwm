@@ -113,7 +113,7 @@ struct client
 /* Globals */
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
-uint32_t curws = 1;                  /* Current workspace. */
+uint32_t curws = 0;                  /* Current workspace. */
 struct client *focuswin;        /* Current focus window. */
 struct item *winlist = NULL;
 struct item *wslist[10] =
@@ -1611,43 +1611,43 @@ void handle_keypress(xcb_key_press_event_t *ev)
             break;
 
         case KEY_1:
-            changeworkspace(1);
+            changeworkspace(0);
             break;
             
         case KEY_2:
-            changeworkspace(2);            
+            changeworkspace(1);            
             break;
 
         case KEY_3:
-            changeworkspace(3);            
+            changeworkspace(2);            
             break;
 
         case KEY_4:
-            changeworkspace(4);            
+            changeworkspace(3);            
             break;
 
         case KEY_5:
-            changeworkspace(5);            
+            changeworkspace(4);            
             break;
 
         case KEY_6:
-            changeworkspace(6);            
+            changeworkspace(5);            
             break;
 
         case KEY_7:
-            changeworkspace(7);            
+            changeworkspace(6);            
             break;
 
         case KEY_8:
-            changeworkspace(8);            
+            changeworkspace(7);            
             break;
 
         case KEY_9:
-            changeworkspace(9);            
+            changeworkspace(8);            
             break;
 
         case KEY_0:
-            changeworkspace(0);            
+            changeworkspace(9);            
             break;
             
         default:
