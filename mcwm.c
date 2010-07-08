@@ -1573,6 +1573,10 @@ void unmax(struct client *client)
         | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_BORDER_WIDTH;
     xcb_configure_window(conn, client->id, mask, values);
 
+    /* Warp pointer to window or we might lose it. */
+    xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
+                     1, 1);
+
     xcb_flush(conn);
 }
 
