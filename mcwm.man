@@ -1,4 +1,4 @@
-.TH mcwm 1 "Jun 24, 2010" "" ""
+.TH mcwm 1 "Jul 08, 2010" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
@@ -54,10 +54,10 @@ Mod2 + key:
 raise or lower (toggles)
 .IP \(bu 2
 .B x 
-maximize
+maximize (toggles)
 .IP \(bu 2
 .B m 
-maximize vertically
+maximize vertically (toggles)
 .IP \(bu 2
 .B h 
 move left
