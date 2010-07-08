@@ -9,8 +9,9 @@ User visible changes
 
   * Maximize and vertical maximize toggles.
 
-  * First virtual workspace, that is 1, is now numbered as 0 as in the
-    rest of the window managers following EWMH.
+  * First virtual workspace, that is 1, is now numbered as 0 in the
+    _NET_WM_DESKTOP as in the rest of the window managers following
+    EWMH.
 
 2010-06-30
 
