@@ -2382,6 +2382,7 @@ int main(int argc, char **argv)
     xcb_drawable_t root;
     char *focuscol;
     char *unfocuscol;
+    char *fixedcol;    
     struct sigaction sigact;    /* Signal handler. */
 
 
@@ -2398,10 +2399,11 @@ int main(int argc, char **argv)
     conf.terminal = TERMINAL;
     focuscol = FOCUSCOL;
     unfocuscol = UNFOCUSCOL;
+    fixedcol = FIXEDCOL;
     
     while (1)
     {
-        ch = getopt(argc, argv, "bt:f:u:");
+        ch = getopt(argc, argv, "bt:f:u:x:");
         if (-1 == ch)
         {
                 
@@ -2427,6 +2429,10 @@ int main(int argc, char **argv)
         case 'u':
             unfocuscol = optarg;
             break;
+
+        case 'x':
+            fixedcol = optarg;
+            break;
             
         default:
             printhelp();
@@ -2451,7 +2457,7 @@ int main(int argc, char **argv)
     /* Get some colours. */
     conf.focuscol = getcolor(focuscol);
     conf.unfocuscol = getcolor(unfocuscol);
-    conf.fixedcol = getcolor(FIXEDCOL);
+    conf.fixedcol = getcolor(fixedcol);
     
     /* Get an atom. */
     atom_desktop = xcb_atom_get(conn, "_NET_WM_DESKTOP");

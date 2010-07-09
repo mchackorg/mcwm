@@ -34,13 +34,14 @@
 
 /*
  * Default colour on border for focused windows. Can be set from
- * command line with "-f color".
+ * command line with "-f colour".
  */
 #define FOCUSCOL "chocolate1"
 
-/* Ditto for unfocused. Use "-u color". */
+/* Ditto for unfocused. Use "-u colour". */
 #define UNFOCUSCOL "grey40"
 
+/* Ditto for fixed windows. Use "-x colour". */
 #define FIXEDCOL "grey90"
 
 /* Width of border window, in pixels. */
