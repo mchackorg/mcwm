@@ -1369,8 +1369,8 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
 {
     xcb_get_geometry_reply_t *geom;
     xcb_size_hints_t hints;
-    uint32_t width;
-    uint32_t height;
+    int32_t width;
+    int32_t height;
     uint32_t width_inc = 1;
     uint32_t height_inc = 1;
 
@@ -1417,6 +1417,8 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
      *   width and height in reporting window sizes to users. If a
      *   base size is not provided, the minimum size is to be used in
      *   its place and vice versa.
+     *
+     * FIXME: This should be in the struct client.
      */
     if (!xcb_get_wm_normal_hints_reply(
             conn, xcb_get_wm_normal_hints_unchecked(conn, win), &hints, NULL))
@@ -1450,14 +1452,14 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
         }
     }
 
-    if (width > screen->width_in_pixels)
+    if (geom->x + width > screen->width_in_pixels - BORDERWIDTH * 2)
     {
-        width = (screen->width_in_pixels - geom->x) / width_inc;
+        width = screen->width_in_pixels - (geom->x + BORDERWIDTH * 2);
     }
         
-    if (height > screen->height_in_pixels)
+    if (geom->y + height > screen->height_in_pixels - BORDERWIDTH * 2)
     {
-        height = (screen->height_in_pixels - geom->y) / height_inc;
+        height = screen->height_in_pixels - (geom->y + BORDERWIDTH * 2);
     }
 
     PDEBUG("Resizing to %dx%d (%dx%d)\n", width, height,
