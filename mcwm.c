@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <string.h>
+#include <signal.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -125,6 +126,7 @@ struct client
     
 
 /* Globals */
+int exitcode;
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
 uint32_t curws = 0;             /* Current workspace. */
@@ -187,6 +189,8 @@ int unmaps_to_expect;
 
 
 /* Functions declerations. */
+
+void die(int code);
 void arrangewindows(int32_t rootwidth, int32_t rootheight);
 void setwmdesktop(xcb_drawable_t win, uint32_t ws);
 int32_t getwmdesktop(xcb_drawable_t win);
@@ -220,9 +224,39 @@ void maximize(struct client *client);
 void maxvert(struct client *client);
 void handle_keypress(xcb_key_press_event_t *ev);
 void printhelp(void);
+void sigcatch(int sig);
 
 
 /* Function bodies. */
+
+/*
+ * Map all windows we know about. Set keyboard focus to be wherever
+ * the mouse pointer is. Then exit.
+ */
+void die(int code)
+{
+    struct item *item;
+    struct client *client;
+
+    xcb_set_input_focus(conn, XCB_NONE,
+                        XCB_INPUT_FOCUS_POINTER_ROOT,
+                        XCB_CURRENT_TIME);
+    
+    for (item = winlist; item != NULL; item = item->next)
+    {
+        client = item->data;
+        xcb_map_window(conn, client->id);
+    }
+
+    xcb_flush(conn);
+
+    if (SIGSEGV == code)
+    {
+        abort();
+    }
+    
+    exit(code);
+}
 
 /*
  *
@@ -881,16 +915,18 @@ int setupscreen(void)
          * with a MapRequest if we had been running, so in the
          * normal case we wouldn't have seen them.
          *
+         * Only handle visible windows. 
          */    
-        if (!attr->override_redirect)
+        if (!attr->override_redirect
+            && attr->map_state == XCB_MAP_STATE_VIEWABLE)
         {
             client = setupwin(children[i]);
             if (NULL != client)
             {
                 /*
-                 * Check if this window has a workspace set already.
+                 * Check if this window has a workspace set already as
+                 * a WM hint.
                  *
-                 * If not and it is not mapped either, ignore it.
                  */
                 ws = getwmdesktop(children[i]);
 
@@ -902,12 +938,17 @@ int setupscreen(void)
                 else if (MCWM_NOWS != ws && ws < WORKSPACE_MAX)
                 {
                     addtoworkspace(client, ws);
+                    /* If it's not our current workspace, hide it. */
+                    if (ws != curws)
+                    {
+                        xcb_unmap_window(conn, client->id);
+                    }
                 }
-                else if (XCB_MAP_STATE_UNMAPPED != attr->map_state)
+                else
                 {
                     /*
-                     * Not unmapped and not any _NET_WM_DESKTOP set.
-                     * Add it to our current workspace.
+                     * No workspace hint at all. Just add it to our
+                     * current workspace.
                      */
                     addtoworkspace(client, curws);
                 }
@@ -1102,12 +1143,12 @@ void setfocus(struct client *client)
 {
     uint32_t values[1];
 
-    /* if client is NULL, we focus on the root. */
+    /* if client is NULL, we focus on whatever the pointer is on. */
     if (NULL == client)
     {
         focuswin = NULL;
 
-        xcb_set_input_focus(conn, XCB_INPUT_FOCUS_POINTER_ROOT, screen->root,
+        xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_POINTER_ROOT,
                             XCB_CURRENT_TIME);
         xcb_flush(conn);
         
@@ -1867,8 +1908,8 @@ void events(void)
     int mode = 0;                   /* Internal mode. */
     uint16_t mode_x;
     uint16_t mode_y;
-    
-    for (;;)
+
+    for (exitcode = 0; 0 == exitcode;)
     {
         ev = xcb_wait_for_event(conn);
         if (NULL == ev)
@@ -2216,20 +2257,6 @@ void events(void)
                 i ++;                
                 values[i] = e->height;
             }
-
-#if 0
-            /* We handle a request to change the border width, but
-             * only change it to what we think is right.
-             */
-            if (e->value_mask & XCB_CONFIG_WINDOW_BORDER_WIDTH)
-            {
-                PDEBUG("Changing width to %d, but not really.\n",
-                       e->border_width);
-                mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
-                i ++;                
-                values[i] = BORDERWIDTH;
-            }
-#endif
             
             if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING)
             {
@@ -2278,9 +2305,6 @@ void events(void)
             struct item *item;
             struct client *client;
 
-            PDEBUG("\n  root: %d\n event: %d\n  window: %d\n", screen->root,
-                   e->event, e->window);
-            
             /*
              * If we're currently changing workspace, unmaps_to_expect
              * is larger than 0.
@@ -2343,6 +2367,11 @@ void printhelp(void)
     printf("  -u color sets colour for unfocused window borders.");
 }
 
+void sigcatch(int sig)
+{
+    exitcode = sig;
+}
+
 int main(int argc, char **argv)
 {
     uint32_t mask = 0;
@@ -2353,7 +2382,16 @@ int main(int argc, char **argv)
     xcb_drawable_t root;
     char *focuscol;
     char *unfocuscol;
+    struct sigaction sigact;    /* Signal handler. */
 
+
+    /* Install signal handlers. */
+    sigact.sa_flags = 0;
+    sigact.sa_handler = sigcatch;
+    sigaction(SIGINT, &sigact, NULL);
+    sigaction(SIGSEGV, &sigact, NULL);
+    sigaction(SIGTERM, &sigact, NULL);
+    
     /* Set up defaults. */
     
     conf.borders = true;
@@ -2482,6 +2520,9 @@ int main(int argc, char **argv)
 
     /* Loop over events. */
     events();
+
+    /* Die gracefully. */
+    die(exitcode);
 
     xcb_disconnect(conn);
         
