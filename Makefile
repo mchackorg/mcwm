@@ -1,7 +1,7 @@
-VERSION=20100708
+VERSION=20100710
 DIST=mcwm-$(VERSION)
-DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST config.h mcwm.c \
-	list.c list.h events.h mcwm.man
+SRC=mcwm.c list.c config.h events.h list.h
+DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
 
 CC=gcc
 CFLAGS=-g -std=c99 -Wall -Wextra -I/usr/local/include #-DDEBUG #-DDMALLOC
@@ -10,19 +10,17 @@ LDFLAGS=-L/usr/local/lib -lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom # -ldmalloc
 RM=/bin/rm
 PREFIX=/usr/local
 
-TARGETS=mcwm
+TARGETS=.depend mcwm
 OBJS=mcwm.o list.o
 
 all: $(TARGETS)
 
-mcwm: $(OBJS) config.h events.h Makefile
+mcwm: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
 
-mcwm-static: mcwm.c config.h events.h Makefile
-	$(CC) -o $@ $(OBJS) -static -g -std=c99 -Wextra -Wall \
-	-I/usr/local/include/ -L/usr/local/lib \
-	-lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom  -lxcb-property \
-	-lxcb-event -lXau -lXdmcp
+mcwm-static: $(OBJS)
+	$(CC) -o $@ $(OBJS) -static $(CFLAGS) $(LDFLAGS) \
+	-lxcb-property -lxcb-event -lXau -lXdmcp
 
 install: $(TARGETS)
 	install -m 755 mcwm $(PREFIX)/bin
@@ -44,3 +42,8 @@ clean:
 
 distclean: clean
 	$(RM) -f $(DIST).tar.bz2
+
+.depend:
+	mkdep $(CFLAGS) $(SRC)
+
+depend: .depend
