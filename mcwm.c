@@ -64,12 +64,20 @@
 
 
 /* Internal Constants. */
+
+/* We're currently moving a window with the mouse. */
 #define MCWM_MOVE 2
+
+/* We're currently resizing a window with the mouse. */
 #define MCWM_RESIZE 3
 
+/* Our highest workspace. */
 #define WORKSPACE_MAX 9
 
+/* Value in WM hint which means this window is fixed on all workspaces. */
 #define NET_WM_FIXED 0xffffffff
+
+/* This means we didn't get any window hint at all. */
 #define MCWM_NOWS 0xfffffffe
 
 
@@ -109,8 +117,8 @@ struct client
     int32_t max_width, max_height;
     int32_t width_inc, height_inc;
     int32_t base_width, base_height;
-    bool vertmaxed;
-    bool maxed;
+    bool vertmaxed;             /* Vertically maximized? */
+    bool maxed;                 /* Totally maximized? */
     bool fixed;           /* Visible on all workspaces? */
     struct item *winitem; /* Pointer to our place in list of all windows. */
 };
@@ -119,7 +127,7 @@ struct client
 /* Globals */
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
-uint32_t curws = 0;                  /* Current workspace. */
+uint32_t curws = 0;             /* Current workspace. */
 struct client *focuswin;        /* Current focus window. */
 struct item *winlist = NULL;
 struct item *wslist[10] =
@@ -175,6 +183,8 @@ struct conf
 
 xcb_atom_t atom_desktop;
 
+int unmaps_to_expect;
+
 
 /* Functions declerations. */
 void arrangewindows(int32_t rootwidth, int32_t rootheight);
@@ -185,6 +195,7 @@ void delfromworkspace(struct client *client, uint32_t ws);
 void changeworkspace(uint32_t ws);
 void fixwindow(struct client *client, bool setcolour);
 uint32_t getcolor(const char *colstr);
+void forgetclient(struct client *client);
 void forgetwin(xcb_window_t win);
 void newwin(xcb_window_t win);
 struct client *setupwin(xcb_window_t win);
@@ -439,6 +450,7 @@ void changeworkspace(uint32_t ws)
     }
     
     /* Go through list of current ws. Unmap everything that isn't fixed. */
+    unmaps_to_expect = 0;
     for (item = wslist[curws]; item != NULL; )
     {
         client = item->data;
@@ -465,6 +477,12 @@ void changeworkspace(uint32_t ws)
         {
             xcb_unmap_window(conn, client->id);
             item = item->next;
+
+            /*
+             * Keep track of how many UnmapNotify events we can expect
+             * before going back to ordinary unmap handling.
+             */
+            unmaps_to_expect ++;
         }
 
     } /* for */
@@ -552,6 +570,17 @@ uint32_t getcolor(const char *colstr)
     }
 
     return col_reply->pixel;
+}
+
+void forgetclient(struct client *client)
+{
+
+    /* Delete window from workspace list. */
+    delfromworkspace(client, curws);
+
+    free(client->winitem->data);    
+
+    delitem(&winlist, client->winitem);
 }
 
 void forgetwin(xcb_window_t win)
@@ -852,8 +881,6 @@ int setupscreen(void)
          * with a MapRequest if we had been running, so in the
          * normal case we wouldn't have seen them.
          *
-         * Usually, this mode is used for menu windows and the
-         * like.
          */    
         if (!attr->override_redirect)
         {
@@ -1837,7 +1864,7 @@ void events(void)
     xcb_generic_event_t *ev;
     xcb_drawable_t win;
     xcb_get_geometry_reply_t *geom;
-    int mode = 0;
+    int mode = 0;                   /* Internal mode. */
     uint16_t mode_x;
     uint16_t mode_y;
     
@@ -2243,7 +2270,62 @@ void events(void)
             
         }
         break;
-        
+
+        case XCB_UNMAP_NOTIFY:
+        {
+            xcb_unmap_notify_event_t *e =
+                (xcb_unmap_notify_event_t *)ev;
+            struct item *item;
+            struct client *client;
+
+            PDEBUG("\n  root: %d\n event: %d\n  window: %d\n", screen->root,
+                   e->event, e->window);
+            
+            /*
+             * If we're currently changing workspace, unmaps_to_expect
+             * is larger than 0.
+             *
+             * Count all incoming UnmapNotify events. When we reach
+             * the number of windows that was on the last workspace,
+             * we stop counting and resume ordinary unmap handling.
+             */
+            if (unmaps_to_expect > 0)
+            {
+                unmaps_to_expect --;
+#if DEBUG
+                if (0 == unmaps_to_expect)
+                {
+                    PDEBUG("Got all UnmapNotify events we wanted.\n");
+                }
+#endif
+            }
+            else
+            {
+                /*
+                 * Ordinary unmap handling. Find the window in current
+                 * workspace list, then forget about it. If it gets
+                 * mapped, we add it to our lists again then.
+                 *
+                 * Note that the window we might not know about the
+                 * window we got the UnmapNotify event for. This might
+                 * be an override_redirect window, for example. We
+                 * don't have any way to know.
+                 */
+                for (item = wslist[curws]; item != NULL; item = item->next)
+                {
+                    client = item->data;
+
+                    if (client->id == e->window)
+                    {
+                        PDEBUG("Forgetting about %d\n", e->window);
+                        forgetclient(client);
+                        break;
+                    }
+                } /* for */
+            } 
+        }
+        break;
+            
         } /* switch */
         
         free(ev);
