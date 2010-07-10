@@ -2310,7 +2310,14 @@ void events(void)
              * Note that we might not know about the window we got the
              * UnmapNotify event for. It might be a window we just
              * unmapped on *another* workspace when changing
-             * workspaces, for instance. This is not an error.
+             * workspaces, for instance, or it might be a window with
+             * override redirect set. This is not an error.
+             *
+             * XXX We might need to look in the global window list,
+             * after all. Consider if a window is unmapped on our last
+             * workspace while changing workspaces... If we do this,
+             * we need to keep track of our own windows and inore
+             * UnmapNotify on them.
              */
             for (item = wslist[curws]; item != NULL; item = item->next)
             {
@@ -2334,13 +2341,14 @@ void events(void)
 
 void printhelp(void)
 {
-    printf("mcwm: Usage: mcwm [-b] [-t terminal-program] [-f color] "
-           "[- u color]\n");
+    printf("mcwm: Usage: mcwm [-b] [-t terminal-program] [-f colour] "
+           "[-u colour] [-x colour] \n");
     printf("  -b means draw no borders\n");
     printf("  -t urxvt will start urxvt when MODKEY + Return is pressed\n");
-    printf("  -f color sets colour for focused window borders of focused "
+    printf("  -f colour sets colour for focused window borders of focused "
            "to a named color.\n");
-    printf("  -u color sets colour for unfocused window borders.");
+    printf("  -u colour sets colour for unfocused window borders.");
+    printf("  -x color sets colour for fixed window borders.");    
 }
 
 void sigcatch(int sig)
