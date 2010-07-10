@@ -185,8 +185,6 @@ struct conf
 
 xcb_atom_t atom_desktop;
 
-int unmaps_to_expect;
-
 
 /* Functions declerations. */
 
@@ -484,7 +482,6 @@ void changeworkspace(uint32_t ws)
     }
     
     /* Go through list of current ws. Unmap everything that isn't fixed. */
-    unmaps_to_expect = 0;
     for (item = wslist[curws]; item != NULL; )
     {
         client = item->data;
@@ -509,14 +506,14 @@ void changeworkspace(uint32_t ws)
         }
         else
         {
-            xcb_unmap_window(conn, client->id);
-            item = item->next;
-
             /*
-             * Keep track of how many UnmapNotify events we can expect
-             * before going back to ordinary unmap handling.
+             * This is an ordinary window. Just unmap it. Note that
+             * this will generate an unnecessary UnmapNotify event
+             * which we will try to handle later.
              */
-            unmaps_to_expect ++;
+            xcb_unmap_window(conn, client->id);
+
+            item = item->next;
         }
 
     } /* for */
@@ -2306,48 +2303,27 @@ void events(void)
             struct client *client;
 
             /*
-             * If we're currently changing workspace, unmaps_to_expect
-             * is larger than 0.
+             * Find the window in our *current* workspace list, then
+             * forget about it. If it gets mapped, we add it to our
+             * lists again then.
              *
-             * Count all incoming UnmapNotify events. When we reach
-             * the number of windows that was on the last workspace,
-             * we stop counting and resume ordinary unmap handling.
+             * Note that we might not know about the window we got the
+             * UnmapNotify event for. It might be a window we just
+             * unmapped on *another* workspace when changing
+             * workspaces, for instance. This is not an error.
              */
-            if (unmaps_to_expect > 0)
+            for (item = wslist[curws]; item != NULL; item = item->next)
             {
-                unmaps_to_expect --;
-#if DEBUG
-                if (0 == unmaps_to_expect)
+                client = item->data;
+                
+                if (client->id == e->window)
                 {
-                    PDEBUG("Got all UnmapNotify events we wanted.\n");
+                    PDEBUG("Forgetting about %d\n", e->window);
+                    forgetclient(client);
+                    break;
                 }
-#endif
-            }
-            else
-            {
-                /*
-                 * Ordinary unmap handling. Find the window in current
-                 * workspace list, then forget about it. If it gets
-                 * mapped, we add it to our lists again then.
-                 *
-                 * Note that the window we might not know about the
-                 * window we got the UnmapNotify event for. This might
-                 * be an override_redirect window, for example. We
-                 * don't have any way to know.
-                 */
-                for (item = wslist[curws]; item != NULL; item = item->next)
-                {
-                    client = item->data;
-
-                    if (client->id == e->window)
-                    {
-                        PDEBUG("Forgetting about %d\n", e->window);
-                        forgetclient(client);
-                        break;
-                    }
-                } /* for */
-            } 
-        }
+            } /* for */
+        } 
         break;
             
         } /* switch */
