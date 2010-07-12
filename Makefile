@@ -10,7 +10,7 @@ LDFLAGS=-L/usr/local/lib -lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom # -ldmalloc
 RM=/bin/rm
 PREFIX=/usr/local
 
-TARGETS=.depend mcwm
+TARGETS=mcwm
 OBJS=mcwm.o list.o
 
 all: $(TARGETS)
@@ -21,6 +21,10 @@ mcwm: $(OBJS)
 mcwm-static: $(OBJS)
 	$(CC) -o $@ $(OBJS) -static $(CFLAGS) $(LDFLAGS) \
 	-lxcb-property -lxcb-event -lXau -lXdmcp
+
+mcwm.o: mcwm.c events.h list.h config.h Makefile
+
+list.o: list.c list.h Makefile
 
 install: $(TARGETS)
 	install -m 755 mcwm $(PREFIX)/bin
@@ -42,8 +46,3 @@ clean:
 
 distclean: clean
 	$(RM) -f $(DIST).tar.bz2
-
-.depend:
-	mkdep $(CFLAGS) $(SRC)
-
-depend: .depend
