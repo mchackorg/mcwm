@@ -2,6 +2,18 @@
 
 User visible changes
 
+2010-07-10
+
+  * Border colour of fixed windows can be set from command line with
+    -x colour.
+
+  * Dies gracefully and maps all windows on all workspaces.
+
+  * Handle unmapped, but inactive, windows when changing workspaces.
+    This means that xpdf's and gv's transient windows won't show up
+    again when changing workspaces unless they're currently really
+    active.
+
 2010-07-07
 
   * Rearranges windows to be visible and fit on screen if a physical
