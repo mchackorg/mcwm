@@ -1407,14 +1407,14 @@ void mousemove(xcb_drawable_t win, int rel_x, int rel_y)
     
     x = rel_x;
     y = rel_y;
-    
-    if (x < BORDERWIDTH)
+
+    if (x < 0)
     {
-        x = BORDERWIDTH;
+        x = 0;
     }
-    if (y < BORDERWIDTH)
+    if (y < 0)
     {
-        y = BORDERWIDTH;
+        y = 0;
     }
     if (y + geom->height + BORDERWIDTH * 2 > screen->height_in_pixels)
     {
