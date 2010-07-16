@@ -31,6 +31,11 @@ mcwm \- MC's Window Manager for X11.
 \-u colour sets colour for unfocused window borders.
 
 .SH USE
+Nota bene: For mcwm to be at all useful you need to know how what keys
+generate the Mod1 and Mod2 modifier masks. If you don't know, use
+.B xmodmap(1)
+with the \-pm option to list them.
+
 With the the default configuration, use mcwm like this.
 .PP
 Mod1 + mouse buttons:
