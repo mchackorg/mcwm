@@ -1537,10 +1537,13 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
 void movestep(struct client *client, char direction)
 {
     xcb_get_geometry_reply_t *geom;
-    int x;
-    int y;
-    int width;
-    int height;
+    xcb_query_pointer_reply_t *pointer;
+    int16_t start_x;
+    int16_t start_y;
+    int16_t x;
+    int16_t y;
+    uint16_t width;
+    uint16_t height;
     xcb_drawable_t win;
 
     if (NULL == client)
@@ -1549,6 +1552,19 @@ void movestep(struct client *client, char direction)
     }
 
     win = client->id;
+
+    pointer = xcb_query_pointer_reply(
+        conn, xcb_query_pointer(conn, win), 0);
+
+    if (NULL == pointer)
+    {
+        return;
+    }
+    
+    start_x = pointer->win_x;
+    start_y = pointer->win_y;
+                        
+    free(pointer);
     
     raisewindow(win);
     
@@ -1611,9 +1627,9 @@ void movestep(struct client *client, char direction)
         break;
     } /* switch direction */
 
-    /* Move cursor into the middle of the window after moving. */
+    /* Move pointer back to where it was, relative to the window. */
     xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
-                     width / 2, height / 2);
+                     start_x, start_y);
     
     xcb_flush(conn);
     
@@ -1990,7 +2006,7 @@ void events(void)
                 }
                 else
                 {
-                    xcb_query_pointer_reply_t *pointer;                    
+                    xcb_query_pointer_reply_t *pointer;
 
                     /* We're moving or resizing. */
 
