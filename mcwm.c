@@ -1280,8 +1280,13 @@ void resize(xcb_drawable_t win, uint32_t width, uint32_t height)
 void resizestep(struct client *client, char direction)
 {
     xcb_get_geometry_reply_t *geom;
-    int width;
-    int height;
+    xcb_query_pointer_reply_t *pointer;
+    int16_t start_x;
+    int16_t start_y;
+    int16_t x;
+    int16_t y;
+    int16_t width;
+    int16_t height;
     xcb_size_hints_t hints;
     int step_x = MOVE_STEP;
     int step_y = MOVE_STEP;
@@ -1293,6 +1298,19 @@ void resizestep(struct client *client, char direction)
     }
 
     win = client->id;
+
+    pointer = xcb_query_pointer_reply(
+        conn, xcb_query_pointer(conn, win), 0);
+
+    if (NULL == pointer)
+    {
+        return;
+    }
+    
+    start_x = pointer->win_x;
+    start_y = pointer->win_y;
+                        
+    free(pointer);
     
     raisewindow(win);
 
@@ -1338,7 +1356,7 @@ void resizestep(struct client *client, char direction)
         height = geom->height;
         if (width < 0)
         {
-            width = 0;
+            goto bad;
         }
         break;
 
@@ -1377,11 +1395,32 @@ void resizestep(struct client *client, char direction)
     resize(win, width, height);
 
     /*
-     * Move cursor into the middle of the window so we don't lose the
-     * pointer to another window.
+     * Move pointer to the original position relative window if that's
+     * still inside the window. Otherwise, move to the middle of the
+     * window. If we don't do this we might lose the focus to another
+     * window.
      */
+    
+    if (start_x > geom->width)
+    {
+        x = geom->width / 2;
+    }
+    else
+    {
+        x = start_x;
+    }
+
+    if (start_y > geom->height)
+    {
+        y = geom->height / 2;
+    }
+    else
+    {
+        y = start_y;
+    }
+
     xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
-                     width / 2, height / 2);
+                     x, y);
     
     xcb_flush(conn);
     
