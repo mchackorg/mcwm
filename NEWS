@@ -2,6 +2,11 @@
 
 User visible changes
 
+2010-07-16
+
+  * Move and resize, both with keyboard and mouse, now keeps pointer
+    in place within window if it's possible without losing focus.
+
 2010-07-10
 
   * Border colour of fixed windows can be set from command line with
