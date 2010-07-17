@@ -2,15 +2,19 @@
 
 A wishlist for a window manager:
 
-- Small.
+v Small.
 
-- Few external dependencies, both for running and building.
+v Few external dependencies, both for running and building.
 
-- Fast.
+v Fast.
 
-- Minimal decoration.
+v Minimal decoration.
 
-- Sloppy focus.
+v Sloppy focus.
+
+v Vertical and maximum maximizing.
+
+v Don't move off physical screen. Configurable?
 
 - Changing focus from keyboard which rememebers last focused window.
   Keep on the same physical screen. 
@@ -22,10 +26,6 @@ A wishlist for a window manager:
 
 - Configurable key bindings.
 
-- Vertical and maximum maximizing.
-
-- Don't move off physical screen. Configurable?
-
 - Know about physical screens dynamically (RandR).
 
 - Key binding to change focus to another physical screen.
@@ -34,9 +34,6 @@ A wishlist for a window manager:
 
   A window should be able to occupy one, several or all virtual
   screens.
-
-- Remember where pointer was on virtual screen. Or at least remember
-  what window had focus.
 
 - Quickly move windows to corners.
 
