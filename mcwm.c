@@ -1901,7 +1901,6 @@ void events(void)
 {
     xcb_generic_event_t *ev;
     xcb_drawable_t win;
-    xcb_get_geometry_reply_t *geom;
     int mode = 0;                   /* Internal mode. */
     uint16_t mode_x;
     uint16_t mode_y;
@@ -1971,7 +1970,8 @@ void events(void)
         case XCB_BUTTON_PRESS:
         {
             xcb_button_press_event_t *e;
-                
+            xcb_get_geometry_reply_t *geom;
+            
             e = ( xcb_button_press_event_t *) ev;
             PDEBUG("Button %d pressed in window %ld, subwindow %d "
                     "coordinates (%d,%d)\n",
@@ -2111,21 +2111,35 @@ void events(void)
 
             if (0 != mode)
             {
-                xcb_button_release_event_t *e =
-                    (xcb_button_release_event_t *)ev;
-    
-                /* We're finished moving or resizing. */
+                xcb_get_geometry_reply_t *geom;
+                int x = 0;
+                int y = 0;
+                
+                /* We're finished moving or resizing.
+                 *
+                 * We will get an EnterNotify and focus another window
+                 * if the pointer just happens to be on top of another
+                 * window when we ungrab the pointer, so we have to
+                 * warp the pointer before to prevent this.
+                 */
+                geom = xcb_get_geometry_reply(conn, xcb_get_geometry(conn, win),
+                                              NULL);
+                if (NULL != geom)
+                {
+                    /* Move to middle of window. */
+                    x = geom->width / 2;
+                    y = geom->height / 2;
+                    free(geom);                    
+                }
 
+                xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                                 x, y);
+                
                 xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
                 xcb_flush(conn); /* Important! */
                 
                 mode = 0;
-                free(geom);
-
-                setfocus(findclient(e->event));
-                
                 PDEBUG("mode now = %d\n", mode);
-                
             }
         break;
                 
