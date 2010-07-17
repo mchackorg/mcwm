@@ -1900,6 +1900,8 @@ void events(void)
     xcb_generic_event_t *ev;
     xcb_drawable_t win;
     int mode = 0;                   /* Internal mode. */
+    int16_t mode_x;
+    int16_t mode_y;
     
     for (exitcode = 0; 0 == exitcode;)
     {
@@ -1988,11 +1990,34 @@ void events(void)
                 }
                 else
                 {
+                    xcb_query_pointer_reply_t *pointer;                    
+
                     /* We're moving or resizing. */
 
-                    /* First raise window. */
+                    /*
+                     * Get and save pointer position inside the window
+                     * so we can go back to it when we're done moving
+                     * or resizing.
+                     */
+                    pointer = xcb_query_pointer_reply(
+                        conn, xcb_query_pointer(conn, win), 0);
+
+                    if (NULL == pointer)
+                    {
+                        mode_x = -1;
+                        mode_y = -1;
+                    }
+                    else
+                    {
+                        mode_x = pointer->win_x;
+                        mode_y = pointer->win_y;
+                        
+                        free(pointer);
+                    }
+
+                    /* Raise window. */
                     raisewindow(win);
-                    
+
                     /* Get window geometry. */
                     geom = xcb_get_geometry_reply(conn, xcb_get_geometry(conn,
                                                                          win),
@@ -2002,6 +2027,7 @@ void events(void)
                         break;
                     }
 
+                    /* Mouse button 1 was pressed. */
                     if (1 == e->detail)
                     {
                         mode = MCWM_MOVE;
@@ -2015,6 +2041,8 @@ void events(void)
                     }
                     else
                     {
+                        /* Mouse button 3 was pressed. */
+
                         mode = MCWM_RESIZE;
 
                         /* Warp pointer to lower right. */
@@ -2071,14 +2099,12 @@ void events(void)
              */
             if (mode == MCWM_MOVE)
             {
-                //    mousemove(win, pointer->root_x, pointer->root_y);
                 mousemove(win, e->root_x, e->root_y);
             
             }
             else if (mode == MCWM_RESIZE)
             {
                 /* Resize. */
-                //mouseresize(win, pointer->root_x, pointer->root_y);
                 mouseresize(win, e->root_x, e->root_y);
             }
             else
@@ -2094,8 +2120,8 @@ void events(void)
             if (0 != mode)
             {
                 xcb_get_geometry_reply_t *geom;
-                int x = 0;
-                int y = 0;
+                int x;
+                int y;
                 
                 /* We're finished moving or resizing.
                  *
@@ -2108,10 +2134,30 @@ void events(void)
                                               NULL);
                 if (NULL != geom)
                 {
-                    /* Move to middle of window. */
-                    x = geom->width / 2;
-                    y = geom->height / 2;
-                    free(geom);                    
+                    /*
+                     * Move to saved position or if that is outside
+                     * current window, middle of window.
+                     */
+
+                    if (-1 == mode_x || mode_x > geom->width)
+                    {
+                        x = geom->width / 2;
+                    }
+                    else
+                    {
+                        x = mode_x;
+                    }
+
+                    if (-1 == mode_y || mode_y > geom->height)
+                    {
+                        y = geom->height / 2;
+                    }
+                    else
+                    {
+                        y = mode_y;
+                    }
+
+                    free(geom);
                 }
 
                 xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
