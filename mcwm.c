@@ -1439,8 +1439,6 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
     uint32_t width_inc = 1;
     uint32_t height_inc = 1;
 
-    raisewindow(win);
-
     /* Get window geometry. */
     geom = xcb_get_geometry_reply(conn,
                                   xcb_get_geometry(conn, win),
@@ -1535,7 +1533,7 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
 
     free(geom);
 }
-    
+
 void movestep(struct client *client, char direction)
 {
     xcb_get_geometry_reply_t *geom;
@@ -1902,9 +1900,7 @@ void events(void)
     xcb_generic_event_t *ev;
     xcb_drawable_t win;
     int mode = 0;                   /* Internal mode. */
-    uint16_t mode_x;
-    uint16_t mode_y;
-
+    
     for (exitcode = 0; 0 == exitcode;)
     {
         ev = xcb_wait_for_event(conn);
@@ -1972,7 +1968,7 @@ void events(void)
             xcb_button_press_event_t *e;
             xcb_get_geometry_reply_t *geom;
             
-            e = ( xcb_button_press_event_t *) ev;
+            e = (xcb_button_press_event_t *) ev;
             PDEBUG("Button %d pressed in window %ld, subwindow %d "
                     "coordinates (%d,%d)\n",
                    e->detail, (long)e->event, e->child, e->event_x,
@@ -1994,13 +1990,9 @@ void events(void)
                 {
                     /* We're moving or resizing. */
 
-                    /* Raise window. */
+                    /* First raise window. */
                     raisewindow(win);
                     
-                    /* Save the pointer coordinates when starting. */
-                    mode_x = e->event_x;
-                    mode_y = e->event_y;
-
                     /* Get window geometry. */
                     geom = xcb_get_geometry_reply(conn, xcb_get_geometry(conn,
                                                                          win),
@@ -2034,10 +2026,10 @@ void events(void)
                      * Take control of the pointer in the root window
                      * and confine it to root.
                      *
-                     * Give us events when the button is released or
-                     * if any motion occurs with the button held down,
-                     * but give us only hints about movement. We ask
-                     * for the position ourselves later.
+                     * Give us events when the key is released or if
+                     * any motion occurs with the key held down, but
+                     * give us only hints about movement. We ask for
+                     * the position ourselves later.
                      *
                      * Keep updating everything else.
                      *
@@ -2045,8 +2037,7 @@ void events(void)
                      */
                     xcb_grab_pointer(conn, 0, screen->root,
                                      XCB_EVENT_MASK_BUTTON_RELEASE
-                                     | XCB_EVENT_MASK_BUTTON_MOTION
-                                     | XCB_EVENT_MASK_POINTER_MOTION_HINT, 
+                                     | XCB_EVENT_MASK_BUTTON_MOTION,
                                      XCB_GRAB_MODE_ASYNC,
                                      XCB_GRAB_MODE_ASYNC,
                                      screen->root,
@@ -2070,39 +2061,30 @@ void events(void)
 
         case XCB_MOTION_NOTIFY:
         {
-            xcb_query_pointer_reply_t *pointer;
-            
+            xcb_motion_notify_event_t *e;
+
+            e = (xcb_motion_notify_event_t *) ev;
+
             /*
              * Our pointer is moving and since we even get this event
              * we're resizing or moving a window.
              */
-
-            /* Get current pointer position. */
-            pointer = xcb_query_pointer_reply(
-                conn, xcb_query_pointer(conn, screen->root), 0);
-
-            if (NULL == pointer)
-            {
-                PDEBUG("Couldn't get pointer position.\n");
-                break;
-            }
-
             if (mode == MCWM_MOVE)
             {
-                mousemove(win, pointer->root_x, pointer->root_y);
+                //    mousemove(win, pointer->root_x, pointer->root_y);
+                mousemove(win, e->root_x, e->root_y);
             
             }
             else if (mode == MCWM_RESIZE)
             {
                 /* Resize. */
-                mouseresize(win, pointer->root_x, pointer->root_y);
+                //mouseresize(win, pointer->root_x, pointer->root_y);
+                mouseresize(win, e->root_x, e->root_y);
             }
             else
             {
                 PDEBUG("Motion event when we're not moving our resizing!\n");
             }
-
-            free(pointer);
         }
         break;
 
@@ -2348,7 +2330,8 @@ void events(void)
         break;
             
         } /* switch */
-        
+
+        /* Forget about this event. */
         free(ev);
     }
 }
