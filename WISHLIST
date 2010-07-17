@@ -13,7 +13,7 @@ A wishlist for a window manager:
 - Sloppy focus.
 
 - Changing focus from keyboard which rememebers last focused window.
-  Keep on the same physical screen.
+  Keep on the same physical screen. 
 
 - Focus change from keyboard should restore stacking order after focus
   switch.
@@ -28,6 +28,8 @@ A wishlist for a window manager:
 
 - Know about physical screens dynamically (RandR).
 
+- Key binding to change focus to another physical screen.
+
 - Virtual screens. Separate sets for each physical screen.
 
   A window should be able to occupy one, several or all virtual
@@ -40,3 +42,10 @@ A wishlist for a window manager:
 
 - Window placement on virtual screens should be remembered even if wm
   killed and restarted.
+
+- Snap to border and screen edge, which favours the edge.
+
+- Mouse buttons on root window should start some configurable
+  programs.
+
+- Feedback window for size when resizing.
