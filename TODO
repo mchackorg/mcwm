@@ -1,6 +1,9 @@
 -*- text -*-
 
-In order of importance:
+* Feedback window for resize and move.
+  
+  We need to tell the user the new geometry somehow. Is this what I
+  want?
 
 * Changing focus from keyboard
 
@@ -12,8 +15,9 @@ In order of importance:
 
   We need to re-arrange the list so the last focused window gets to be
   the next in ring. Perhaps simply move the focused window to head of
-  list after finishing focusing? How do we know when we're finished?
-  Both Tab and Mod2 are released. Use a mode?
+  list after finishing focusing? How do we know when we're finished
+  and have the focus we want? Both Tab and Mod2 are released. Use a
+  mode?
 
 * Virtual screens/workspaces
 
@@ -40,6 +44,8 @@ In order of importance:
   
   Possibly set and read hint about maximized state.
 
+* Snap to border and screen edge, which favours the edge.
+
 * Figure out why unclutter doesn't work in default mode
 
   It creates a subwindow and sends a synthetic enter notify back to
@@ -55,7 +61,7 @@ In order of importance:
 * RandR/Xinerama
 
   Get physical screen characteristics for every screen. Maximize and
-  move to corners should consider the screen it's on.
+  move to corners should respect the screen it's on.
 
   xcb_randr_screen_size_t
 
@@ -72,3 +78,12 @@ In order of importance:
 * Configurable keys.
 
 * Configuration file.
+
+* Start configurable programs when clicking on root window.
+
+* Handle Urgency hint
+
+  Some windows might need attention and marks this with an urgency
+  hint (for instance, urxvt can generate such a hint when receiving
+  the BEL character). Do we want to handle it? How do we tell the
+  user? Can this be done with some stand-alone program instead?
