@@ -24,16 +24,19 @@
   and have the focus we want? Both Tab and Mod2 are released. Use a
   mode?
 
+  How do we re-establish stack order after moving around windows to
+  focus on?
+
 * Virtual screens/workspaces
 
   Partially done. Still needed:
 
   - A window might be on one, several or all virtual screens. Add
-    width something like Mod2-f for "all virtual screens" and perhaps
-    something like Mod2-a <n>, where <n> is 1--9 for virtual screens.
-    Better ways? Note that this seems to be mildly incompatible with
-    the EWMH _NET_WM_DESKTOP hint we're currently using: We will only
-    be able to save one of the desktops used.
+    width something like Mod2-f for "all virtual screens" (done) and
+    perhaps something like Mod2-a <n>, where <n> is 1--9 for virtual
+    screens. Better ways? Note that this seems to be mildly
+    incompatible with the EWMH _NET_WM_DESKTOP hint we're currently
+    using: We will only be able to save one of the desktops used.
 
 * Move to corners: YU BN.
 
@@ -41,11 +44,14 @@
 
 * Use window resizing hints.
 
-  Done, but needs looking over. Needs to use the data in the window
-  list instead of asking the server every time.
+  Done, but needs looking over. 
+
+  Needs to use the data in the window list instead of asking the
+  server every time. This means we have to update the window list
+  data, however.
 
 * Special treatment when someone resizes a maximed window... Should it
-  be possible at all? Set new border width when they do it.
+  be possible at all? If so, set new border width when they do it.
   
   Possibly set and read hint about maximized state.
 
@@ -60,6 +66,8 @@
   slock unlock the screen after ~20 seconds!
 
 * CTWM-like resize, at least with the mouse?
+
+  Perhaps not. The current solution is... elegant.
 
 * Flag to disable dontmoveoff?
 
@@ -76,7 +84,10 @@
 
   xcb_randr_set_screen_size_request_t
 
-* Key to move to another physical screen.
+* Key to move pointer to another physical screen.
+
+  How do we handle window moves from one screen to another. Should we
+  snap to the physical screen's edge and then allow move to continue?
 
 * Use xcb-event's event handlers?
 
