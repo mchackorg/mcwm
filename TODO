@@ -1,9 +1,14 @@
 -*- text -*-
 
-* Feedback window for resize and move.
+* Feedback window
   
   We need to tell the user the new geometry somehow. Is this what I
   want?
+
+  The feedback window can also show what workspace we just changed to.
+
+  Can we cooperate with a stand-alone program? Write our status to a
+  root hint than can be picked up by another program?
 
 * Changing focus from keyboard
 
@@ -54,7 +59,7 @@
   unclutter -grab works, though, but that mucks with slock. It makes
   slock unlock the screen after ~20 seconds!
 
-* CTWM-like resize, at least with the mouse.
+* CTWM-like resize, at least with the mouse?
 
 * Flag to disable dontmoveoff?
 
