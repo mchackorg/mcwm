@@ -104,6 +104,10 @@ typedef enum {
     KEY_8,
     KEY_9,
     KEY_0,
+    KEY_Y,
+    KEY_U,
+    KEY_B,
+    KEY_N,
     KEY_MAX
 } key_enum_t;
 
@@ -171,7 +175,11 @@ struct keys
     { USERKEY_WS7, 0 },
     { USERKEY_WS8, 0 },
     { USERKEY_WS9, 0 },
-    { USERKEY_WS10, 0 }
+    { USERKEY_WS10, 0 },
+    { USERKEY_TOPLEFT, 0 },
+    { USERKEY_TOPRIGHT, 0 },
+    { USERKEY_BOTLEFT, 0 },
+    { USERKEY_BOTRIGHT, 0 }
 };    
 
 struct conf
@@ -220,6 +228,13 @@ void movestep(struct client *client, char direction);
 void unmax(struct client *client);
 void maximize(struct client *client);
 void maxvert(struct client *client);
+bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y);
+bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
+             uint16_t *height);
+void topleft(void);
+void topright(void);
+void botleft(void);
+void botright(void);
 void handle_keypress(xcb_key_press_event_t *ev);
 void printhelp(void);
 void sigcatch(int sig);
@@ -267,10 +282,13 @@ void arrangewindows(int32_t rootwidth, int32_t rootheight)
     int len;
     xcb_window_t *children;
     xcb_get_window_attributes_reply_t *attr;
-    xcb_get_geometry_reply_t *geom;
     uint32_t mask = 0;
     uint32_t values[4];
     bool changed;
+    int16_t x;
+    int16_t y;
+    uint16_t width;
+    uint16_t height;
     
     PDEBUG("Rearranging all windows to fit new screen size %d x %d.\n",
            rootwidth, rootheight);
@@ -310,63 +328,65 @@ void arrangewindows(int32_t rootwidth, int32_t rootheight)
          */    
         if (!attr->override_redirect)
         {
-            geom = xcb_get_geometry_reply(conn,
-                                          xcb_get_geometry(conn, children[i]),
-                                          NULL);
-            if (NULL == geom)
+    
+            if (!getgeom(children[i], &x, &y, &width, &height))
             {
-                fprintf(stderr, "mcwm: Couldn't get geometry for win %d.\n",
-                        children[i]);
-                return;
+                free(attr);
+                goto out;
             }
 
             PDEBUG("Win %d at %d,%d %d x %d\n", children[i],
-                   geom->x, geom->y, geom->width,
-                   geom->height);
+                   x, y, width,
+                   height);
 
-            if (geom->width > rootwidth)
+            if (width > rootwidth)
             {
-                geom->width = rootwidth - BORDERWIDTH * 2;
+                width = rootwidth - BORDERWIDTH * 2;
                 changed = true;
             }
 
-            if (geom->height > rootheight)
+            if (height > rootheight)
             {
-                geom->height = rootheight - BORDERWIDTH * 2;
+                height = rootheight - BORDERWIDTH * 2;
                 changed = true;
             }
 
             /* If x or y + geometry is outside of screen, move window. */
 
-            if (geom->x + geom->width > rootwidth)
+            if (x + width > rootwidth)
             {
-                geom->x = rootwidth - (geom->width + BORDERWIDTH * 2);
+                x = rootwidth - (width + BORDERWIDTH * 2);
                 changed = true;
             }
 
-            if (geom->y + geom->height > rootheight)
+            if (y + height > rootheight)
             {
-                geom->y = rootheight - (geom->height + BORDERWIDTH * 2);;
+                y = rootheight - (height + BORDERWIDTH * 2);;
                 changed = true;
             }
             
             if (changed)
             {
                 PDEBUG("--- Win %d going to %d,%d %d x %d\n", children[i],
-                       geom->x, geom->y, geom->width, geom->height);
+                       x, y, width, height);
 
                 mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y
                     | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
-                values[0] = geom->x;
-                values[1] = geom->y;
-                values[2] = geom->width;
-                values[3] = geom->height;
+                values[0] = x;
+                values[1] = y;
+                values[2] = width;
+                values[3] = height;
                 
                 xcb_configure_window(conn, children[i], mask, values);
                 xcb_flush(conn);
             }
         } /* if not override_direct */
+
+        free(attr);
     } /* for */
+
+out:
+    free(reply);
 }
 
 void setwmdesktop(xcb_drawable_t win, uint32_t ws)
@@ -1813,6 +1833,150 @@ void maxvert(struct client *client)
     client->vertmaxed = true;    
 }
 
+bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y)
+{
+    xcb_query_pointer_reply_t *pointer;
+    
+    pointer = xcb_query_pointer_reply(
+        conn, xcb_query_pointer(conn, win), 0);
+
+    if (NULL == pointer)
+    {
+        return false;
+    }
+
+    *x = pointer->win_x;
+    *y = pointer->win_y;
+
+    free(pointer);
+
+    return true;
+}
+
+bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
+             uint16_t *height)
+{
+    xcb_get_geometry_reply_t *geom;
+    
+    geom = xcb_get_geometry_reply(conn,
+                                  xcb_get_geometry(conn, win), NULL);
+    
+    if (NULL == geom)
+    {
+        return false;
+    }
+
+    *x = geom->x;
+    *y = geom->y;
+    *width = geom->width;
+    *height = geom->height;
+    
+    free(geom);
+
+    return true;
+}
+
+void topleft(void)
+{
+    int16_t pointx;
+    int16_t pointy;
+
+    if (!getpointer(focuswin->id, &pointx, &pointy))
+    {
+        return;
+    }
+    
+    movewindow(focuswin->id, 0, 0);
+    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                     pointx, pointy);
+    xcb_flush(conn);
+}
+
+void topright(void)
+{
+    int16_t x;
+    int16_t y;
+    uint16_t width;
+    uint16_t height;
+    int16_t pointx;
+    int16_t pointy;
+    
+    if (!getpointer(focuswin->id, &pointx, &pointy))
+    {
+        return;
+    }
+    
+    if (!getgeom(focuswin->id, &x, &y, &width, &height))
+    {
+        return;
+    }
+
+    movewindow(focuswin->id, screen->width_in_pixels
+               - (width + BORDERWIDTH * 2), 0);
+
+    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                     pointx, pointy);
+    xcb_flush(conn);
+}
+
+
+void botleft(void)
+{
+    int16_t x;
+    int16_t y;
+    uint16_t width;
+    uint16_t height;
+    int16_t pointx;
+    int16_t pointy;
+    
+    if (!getpointer(focuswin->id, &pointx, &pointy))
+    {
+        return;
+    }
+    
+    if (!getgeom(focuswin->id, &x, &y, &width, &height))
+    {
+        return;
+    }
+    
+    movewindow(focuswin->id, 0, screen->height_in_pixels
+               - (height + BORDERWIDTH * 2));
+
+    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                     pointx, pointy);
+    xcb_flush(conn);
+}
+
+void botright(void)
+{
+    int16_t x;
+    int16_t y;
+    uint16_t width;
+    uint16_t height;
+    int16_t pointx;
+    int16_t pointy;
+    
+    if (!getpointer(focuswin->id, &pointx, &pointy))
+    {
+        return;
+    }
+    
+    if (!getgeom(focuswin->id, &x, &y, &width, &height))
+    {
+        return;
+    }
+    
+    movewindow(focuswin->id,
+               screen->width_in_pixels
+               - (width + BORDERWIDTH * 2),
+               screen->height_in_pixels
+               - (height + BORDERWIDTH * 2));
+
+    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                     pointx, pointy);
+    xcb_flush(conn);
+}
+
 void handle_keypress(xcb_key_press_event_t *ev)
 {
     int i;
@@ -1939,6 +2103,22 @@ void handle_keypress(xcb_key_press_event_t *ev)
 
         case KEY_0:
             changeworkspace(9);            
+            break;
+
+        case KEY_Y:
+            topleft();
+            break;
+
+        case KEY_U:
+            topright();
+            break;
+
+        case KEY_B:
+            botleft();
+            break;
+
+        case KEY_N:
+            botright();
             break;
             
         default:

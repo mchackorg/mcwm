@@ -71,3 +71,8 @@
 #define USERKEY_WS8		XK_8
 #define USERKEY_WS9		XK_9
 #define USERKEY_WS10		XK_0
+#define USERKEY_TOPLEFT         XK_Y
+#define USERKEY_TOPRIGHT        XK_U
+#define USERKEY_BOTLEFT         XK_B
+#define USERKEY_BOTRIGHT        XK_N
+
