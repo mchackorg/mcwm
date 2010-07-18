@@ -1291,6 +1291,7 @@ void resizestep(struct client *client, char direction)
     int step_x = MOVE_STEP;
     int step_y = MOVE_STEP;
     xcb_drawable_t win;
+    bool warp = false;
     
     if (NULL == client)
     {
@@ -1395,34 +1396,31 @@ void resizestep(struct client *client, char direction)
     resize(win, width, height);
 
     /*
-     * Move pointer to the original position relative window if that's
-     * still inside the window. Otherwise, move to the middle of the
-     * window. If we don't do this we might lose the focus to another
-     * window.
+     * Don't mess with pointer if it's still inside the window.
+     * Otherwise, move it. If we don't do this we might lose the focus
+     * to another window.
      */
-    
-    if (start_x > geom->width)
+    x = start_x;
+    y = start_y;
+
+    if (start_x > geom->width - step_x)
     {
         x = geom->width / 2;
-    }
-    else
-    {
-        x = start_x;
+        warp = true;
     }
 
-    if (start_y > geom->height)
+    if (start_y > geom->height - step_y)
     {
         y = geom->height / 2;
-    }
-    else
-    {
-        y = start_y;
+        warp = true;        
     }
 
-    xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
-                     x, y);
-    
-    xcb_flush(conn);
+    if (warp)
+    {
+        xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
+                         x, y);
+        xcb_flush(conn);
+    }
     
 bad:
     free(geom);
