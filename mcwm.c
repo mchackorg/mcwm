@@ -668,46 +668,28 @@ void forgetwin(xcb_window_t win)
  */
 void newwin(xcb_window_t win)
 {
-    xcb_query_pointer_reply_t *pointer;
-    int x;
-    int y;
-    int32_t width;
-    int32_t height;
-    xcb_get_window_attributes_reply_t *attr;
-    xcb_get_geometry_reply_t *geom;
+    int16_t pointx;
+    int16_t pointy;
+    int16_t x;
+    int16_t y;
+    uint16_t width;
+    uint16_t height;
     struct client *client;
     
     /* Get pointer position so we can move the window to the cursor. */
-    pointer = xcb_query_pointer_reply(
-        conn, xcb_query_pointer(conn, screen->root), 0);
 
-    if (NULL == pointer)
+    if (!getpointer(screen->root, &pointx, &pointy))
     {
-        x = 0;
-        y = 0;
+        pointx = 0;
+        pointy = 0;
     }
-    else
-    {
-        x = pointer->root_x;
-        y = pointer->root_y;
-
-        free(pointer);
-    }
-
+    
     /*
      * Set up stuff, like borders, add the window to the client list,
      * et cetera.
      */
-    attr = xcb_get_window_attributes_reply(
-        conn, xcb_get_window_attributes(conn, win), NULL);
-
-    if (!attr)
-    {
-        fprintf(stderr, "Couldn't get attributes for window %d.", win);
-        return;
-    }
-    client = setupwin(win);
     
+    client = setupwin(win);
     if (NULL == client)
     {
         fprintf(stderr, "mcwm: Couldn't set up window. Out of memory.\n");
@@ -716,18 +698,12 @@ void newwin(xcb_window_t win)
 
     /* Add this window to the current workspace. */
     addtoworkspace(client, curws);
-    
-    geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, win),
-                                  NULL);
-    if (NULL == geom)
+
+    if (!getgeom(win, &x, &y, &width, &height))
     {
-        fprintf(stderr, "mcwm: Couldn't get geometry for win %d.\n", win);
+        PDEBUG("Couldn't get geometry\n");
         return;
     }
-
-    width = geom->width;
-    height = geom->height;
     
     /*
      * If the window is larger than our screen, just place it in the
@@ -735,28 +711,28 @@ void newwin(xcb_window_t win)
      */
     if (width > screen->width_in_pixels)
     {
-        x = 0;
+        pointx = 0;
         width = screen->width_in_pixels - BORDERWIDTH * 2;;
         resize(win, width, height);
     }
-    else if (x + width + BORDERWIDTH * 2 > screen->width_in_pixels)
+    else if (pointx + width + BORDERWIDTH * 2 > screen->width_in_pixels)
     {
-        x = screen->width_in_pixels - (width + BORDERWIDTH * 2);
+        pointx = screen->width_in_pixels - (width + BORDERWIDTH * 2);
     }
 
     if (height > screen->height_in_pixels)
     {
-        y = 0;
+        pointy = 0;
         height = screen->height_in_pixels - BORDERWIDTH * 2;
         resize(win, width, height);
     }
-    else if (y + height + BORDERWIDTH * 2 > screen->height_in_pixels)
+    else if (pointy + height + BORDERWIDTH * 2 > screen->height_in_pixels)
     {
-        y = screen->height_in_pixels - (height + BORDERWIDTH * 2);
+        pointy = screen->height_in_pixels - (height + BORDERWIDTH * 2);
     }
     
     /* Move the window to cursor position. */
-    movewindow(win, x, y);
+    movewindow(win, pointx, pointy);
     
     /* Show window on screen. */
     xcb_map_window(conn, win);
@@ -766,11 +742,9 @@ void newwin(xcb_window_t win)
      * pointer to another window.
      */
     xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
-                     geom->width / 2, geom->height / 2);
+                     width / 2, height / 2);
     
     xcb_flush(conn);
-
-    free(geom);
 }
 
 /* set border colour, width and event mask for window. */
@@ -2201,7 +2175,10 @@ void events(void)
         case XCB_BUTTON_PRESS:
         {
             xcb_button_press_event_t *e;
-            xcb_get_geometry_reply_t *geom;
+            int16_t x;
+            int16_t y;
+            uint16_t width;
+            uint16_t height;
             
             e = (xcb_button_press_event_t *) ev;
             PDEBUG("Button %d pressed in window %ld, subwindow %d "
@@ -2223,7 +2200,8 @@ void events(void)
                 }
                 else
                 {
-                    xcb_query_pointer_reply_t *pointer;
+                    int16_t pointx;
+                    int16_t pointy;
 
                     /* We're moving or resizing. */
 
@@ -2232,30 +2210,19 @@ void events(void)
                      * so we can go back to it when we're done moving
                      * or resizing.
                      */
-                    pointer = xcb_query_pointer_reply(
-                        conn, xcb_query_pointer(conn, win), 0);
+                    if (!getpointer(win, &pointx, &pointy))
+                    {
+                        break;
+                    }
 
-                    if (NULL == pointer)
-                    {
-                        mode_x = -1;
-                        mode_y = -1;
-                    }
-                    else
-                    {
-                        mode_x = pointer->win_x;
-                        mode_y = pointer->win_y;
-                        
-                        free(pointer);
-                    }
+                    mode_x = pointx;
+                    mode_y = pointy;
 
                     /* Raise window. */
                     raisewindow(win);
 
                     /* Get window geometry. */
-                    geom = xcb_get_geometry_reply(conn, xcb_get_geometry(conn,
-                                                                         win),
-                                                  NULL);
-                    if (NULL == geom)
+                    if (!getgeom(win, &x, &y, &width, &height))
                     {
                         break;
                     }
@@ -2280,7 +2247,7 @@ void events(void)
 
                         /* Warp pointer to lower right. */
                         xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
-                                         geom->width, geom->height);
+                                         width, height);
                     }
 
                     /*
@@ -2352,9 +2319,10 @@ void events(void)
 
             if (0 != mode)
             {
-                xcb_get_geometry_reply_t *geom;
-                int x;
-                int y;
+                int16_t x;
+                int16_t y;
+                uint16_t width;
+                uint16_t height;
                 
                 /* We're finished moving or resizing.
                  *
@@ -2363,34 +2331,41 @@ void events(void)
                  * window when we ungrab the pointer, so we have to
                  * warp the pointer before to prevent this.
                  */
-                geom = xcb_get_geometry_reply(conn, xcb_get_geometry(conn, win),
-                                              NULL);
-                if (NULL != geom)
+                if (!getgeom(win, &x, &y, &width, &height))
                 {
-                    /*
-                     * Move to saved position or if that is outside
-                     * current window, middle of window.
-                     */
+                    break;
+                }
 
-                    if (-1 == mode_x || mode_x > geom->width)
+                /*
+                 * Move to saved position within window or if that
+                 * position is now outside current window, move inside
+                 * window.
+                 */
+                if (mode_x > width)
+                {
+                    x = width / 2;
+                    if (0 == x)
                     {
-                        x = geom->width / 2;
+                        x = 1;
                     }
-                    else
-                    {
-                        x = mode_x;
-                    }
+                    
+                }
+                else
+                {
+                    x = mode_x;
+                }
 
-                    if (-1 == mode_y || mode_y > geom->height)
+                if (mode_y > height)
+                {
+                    y = height / 2;
+                    if (0 == y)
                     {
-                        y = geom->height / 2;
+                        y = 1;
                     }
-                    else
-                    {
-                        y = mode_y;
-                    }
-
-                    free(geom);
+                }
+                else
+                {
+                    y = mode_y;
                 }
 
                 xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
