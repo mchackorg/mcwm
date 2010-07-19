@@ -7,6 +7,8 @@ User visible changes
   * Move and resize, both with keyboard and mouse, now keeps pointer
     in place within window if it's possible without losing focus.
 
+  * Move window to screen corners with YUBN.
+
 2010-07-10
 
   * Border colour of fixed windows can be set from command line with
