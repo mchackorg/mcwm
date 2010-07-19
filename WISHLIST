@@ -1,6 +1,7 @@
 -*- text -*-
 
-A wishlist for a window manager (v marks what mcwm fulfills):
+A wishlist for a window manager (v marks what mcwm fulfills
+completely):
 
 v Small.
 
@@ -14,10 +15,12 @@ v Sloppy focus.
 
 v Vertical and maximum maximizing.
 
-v Don't move off physical screen. Configurable?
+v Don't move windows off of physical screen. Configurable?
 
 v Window placement on virtual screens should be remembered even if wm
   killed and restarted.
+
+v Quickly move windows to corners.
 
 - Changing focus from keyboard which rememebers last focused window.
   Keep on the same physical screen. 
@@ -37,8 +40,6 @@ v Window placement on virtual screens should be remembered even if wm
 
   A window should be able to occupy one, several or all virtual
   screens.
-
-- Quickly move windows to corners.
 
 - Snap to border and screen edge, which favours the edge.
 
