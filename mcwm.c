@@ -2100,7 +2100,6 @@ void handle_keypress(xcb_key_press_event_t *ev)
 void events(void)
 {
     xcb_generic_event_t *ev;
-    xcb_drawable_t win;
     int mode = 0;                   /* Internal mode. */
     int16_t mode_x;
     int16_t mode_y;
@@ -2183,8 +2182,6 @@ void events(void)
 
             if (e->child != 0)
             {
-                win = e->child; 
-                
                 /*
                  * If middle button was pressed, raise window or lower
                  * it if it was already on top.
@@ -2205,7 +2202,7 @@ void events(void)
                      * so we can go back to it when we're done moving
                      * or resizing.
                      */
-                    if (!getpointer(win, &pointx, &pointy))
+                    if (!getpointer(e->child, &pointx, &pointy))
                     {
                         break;
                     }
@@ -2214,10 +2211,10 @@ void events(void)
                     mode_y = pointy;
 
                     /* Raise window. */
-                    raisewindow(win);
+                    raisewindow(e->child);
 
                     /* Get window geometry. */
-                    if (!getgeom(win, &x, &y, &width, &height))
+                    if (!getgeom(e->child, &x, &y, &width, &height))
                     {
                         break;
                     }
@@ -2231,7 +2228,7 @@ void events(void)
                          * Warp pointer to upper left of window before
                          * starting move.
                          */
-                        xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
+                        xcb_warp_pointer(conn, XCB_NONE, e->child, 0, 0, 0, 0,
                                          1, 1);
                     }
                     else
@@ -2241,7 +2238,7 @@ void events(void)
                         mode = MCWM_RESIZE;
 
                         /* Warp pointer to lower right. */
-                        xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
+                        xcb_warp_pointer(conn, XCB_NONE, e->child, 0, 0, 0, 0,
                                          width, height);
                     }
 
@@ -2294,13 +2291,19 @@ void events(void)
              */
             if (mode == MCWM_MOVE)
             {
-                mousemove(win, e->root_x, e->root_y);
+                if (NULL != focuswin)
+                {
+                    mousemove(focuswin->id, e->root_x, e->root_y);
+                }
             
             }
             else if (mode == MCWM_RESIZE)
             {
                 /* Resize. */
-                mouseresize(win, e->root_x, e->root_y);
+                if (NULL != focuswin)
+                {
+                    mouseresize(focuswin->id, e->root_x, e->root_y);
+                }
             }
             else
             {
@@ -2319,14 +2322,26 @@ void events(void)
                 uint16_t width;
                 uint16_t height;
                 
-                /* We're finished moving or resizing.
-                 *
+                /* We're finished moving or resizing. */
+
+                if (NULL == focuswin)
+                {
+                    /*
+                     * Something's seriously wrong. We don't seem to
+                     * have a focused window!
+                     */
+                    PDEBUG("No focused window when finished moving or "
+                           "resizing!");
+                    break;
+                }
+                
+                /*
                  * We will get an EnterNotify and focus another window
                  * if the pointer just happens to be on top of another
                  * window when we ungrab the pointer, so we have to
                  * warp the pointer before to prevent this.
                  */
-                if (!getgeom(win, &x, &y, &width, &height))
+                if (!getgeom(focuswin->id, &x, &y, &width, &height))
                 {
                     break;
                 }
@@ -2378,11 +2393,7 @@ void events(void)
         {
             xcb_key_press_event_t *e = (xcb_key_press_event_t *)ev;
             
-            win = e->child;
-            
-            PDEBUG("Key %d pressed in window %ld\n",
-                    e->detail,
-                   (long)win);
+            PDEBUG("Key %d pressed\n", e->detail)
 
             handle_keypress(e);
         }
