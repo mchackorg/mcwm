@@ -116,10 +116,10 @@ struct client
     xcb_drawable_t id;
     uint32_t x;
     uint32_t y;
-    int32_t width;
-    int32_t height;
-    int32_t min_width, min_height;
-    int32_t max_width, max_height;
+    uint16_t width;
+    uint16_t height;
+    uint16_t min_width, min_height;
+    uint16_t max_width, max_height;
     int32_t width_inc, height_inc;
     int32_t base_width, base_height;
     bool vertmaxed;             /* Vertically maximized? */
@@ -197,7 +197,7 @@ xcb_atom_t atom_desktop;
 /* Functions declerations. */
 
 void die(int code);
-void arrangewindows(int32_t rootwidth, int32_t rootheight);
+void arrangewindows(uint16_t rootwidth, uint16_t rootheight);
 void setwmdesktop(xcb_drawable_t win, uint32_t ws);
 int32_t getwmdesktop(xcb_drawable_t win);
 void addtoworkspace(struct client *client, uint32_t ws);
@@ -220,7 +220,7 @@ void focusnext(void);
 void setunfocus(xcb_drawable_t win);
 void setfocus(struct client *client);
 int start_terminal(void);
-void resize(xcb_drawable_t win, uint32_t width, uint32_t height);
+void resize(xcb_drawable_t win, uint16_t width, uint16_t height);
 void resizestep(struct client *client, char direction);
 void mousemove(xcb_drawable_t win, int rel_x, int rel_y);
 void mouseresize(xcb_drawable_t win, int rel_x, int rel_y);
@@ -275,7 +275,7 @@ void die(int code)
  *
  * Rearrange windows to fit new screen size rootwidth x rootheight.
  */ 
-void arrangewindows(int32_t rootwidth, int32_t rootheight)
+void arrangewindows(uint16_t rootwidth, uint16_t rootheight)
 {
     xcb_query_tree_reply_t *reply;
     int i;
@@ -1252,7 +1252,7 @@ int start_terminal(void)
     return 0;
 }
 
-void resize(xcb_drawable_t win, uint32_t width, uint32_t height)
+void resize(xcb_drawable_t win, uint16_t width, uint16_t height)
 {
     uint32_t values[2];
 
@@ -1273,14 +1273,12 @@ void resize(xcb_drawable_t win, uint32_t width, uint32_t height)
 
 void resizestep(struct client *client, char direction)
 {
-    xcb_get_geometry_reply_t *geom;
-    xcb_query_pointer_reply_t *pointer;
     int16_t start_x;
     int16_t start_y;
     int16_t x;
     int16_t y;
-    int16_t width;
-    int16_t height;
+    uint16_t width;
+    uint16_t height;
     xcb_size_hints_t hints;
     int step_x = MOVE_STEP;
     int step_y = MOVE_STEP;
@@ -1294,30 +1292,20 @@ void resizestep(struct client *client, char direction)
 
     win = client->id;
 
-    pointer = xcb_query_pointer_reply(
-        conn, xcb_query_pointer(conn, win), 0);
-
-    if (NULL == pointer)
+    if (!getpointer(win, &start_x, &start_y))
     {
         return;
     }
-    
-    start_x = pointer->win_x;
-    start_y = pointer->win_y;
-                        
-    free(pointer);
     
     raisewindow(win);
 
     /* Get window geometry. */
-    geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, win),
-                                  NULL);
-    if (NULL == geom)
+    
+    if (!getgeom(client->id, &x, &y, &width, &height))
     {
         return;
     }
-
+    
     /*
      * Get the window's incremental size step, if any, and use that
      * when resizing.
@@ -1347,38 +1335,39 @@ void resizestep(struct client *client, char direction)
     switch (direction)
     {
     case 'h':
-        width = geom->width - step_x;
-        height = geom->height;
-        if (width < 0)
+        if (step_x >= width)
         {
-            goto bad;
+            return;
         }
+
+        width = width - step_x;
+        height = height;
+
         break;
 
     case 'j':
-        width = geom->width;
-        height = geom->height + step_y;
-        if (height + geom->y > screen->height_in_pixels)
+        width = width;
+        height = height + step_y;
+        if (height + y > screen->height_in_pixels)
         {
-            goto bad;
+            return;
         }
         break;
 
     case 'k':
-        width = geom->width;
-        height = geom->height - step_y;
-        if (height < 0)
+        if (step_y >= height)
         {
-            goto bad;
+            return;
         }
+        height = height - step_y;
         break;
 
     case 'l':
-        width = geom->width + step_x;
-        height = geom->height;
-        if (width + geom->x > screen->width_in_pixels)
+        width = width + step_x;
+        height = height;
+        if (width + x > screen->width_in_pixels)
         {
-            goto bad;
+            return;
         }
         break;
 
@@ -1386,7 +1375,8 @@ void resizestep(struct client *client, char direction)
         PDEBUG("resizestep in unknown direction.\n");
         break;
     } /* switch direction */
-           
+
+    PDEBUG("Resizing to %dx%d\n", width, height);
     resize(win, width, height);
 
     /*
@@ -1397,15 +1387,23 @@ void resizestep(struct client *client, char direction)
     x = start_x;
     y = start_y;
 
-    if (start_x > geom->width - step_x)
+    if (start_x > width - step_x)
     {
-        x = geom->width / 2;
+        x = width / 2;
+        if (0 == x)
+        {
+            x = 1;
+        }
         warp = true;
     }
 
-    if (start_y > geom->height - step_y)
+    if (start_y > height - step_y)
     {
-        y = geom->height / 2;
+        y = height / 2;
+        if (0 == y)
+        {
+            y = 1;
+        }        
         warp = true;        
     }
 
@@ -1415,9 +1413,6 @@ void resizestep(struct client *client, char direction)
                          x, y);
         xcb_flush(conn);
     }
-    
-bad:
-    free(geom);
 }
 
 void mousemove(xcb_drawable_t win, int rel_x, int rel_y)
