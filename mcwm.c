@@ -267,6 +267,8 @@ void die(int code)
     {
         abort();
     }
+
+    xcb_disconnect(conn);
     
     exit(code);
 }
@@ -1134,7 +1136,13 @@ void setfocus(struct client *client)
 {
     uint32_t values[1];
 
-    /* if client is NULL, we focus on whatever the pointer is on. */
+    /*
+     * If client is NULL, we focus on whatever the pointer is on.
+     *
+     * This is a pathological case, but it will make the poor user
+     * able to focus on windows anyway, even though this window
+     * manager might be buggy.
+     */
     if (NULL == client)
     {
         focuswin = NULL;
@@ -2435,7 +2443,9 @@ void events(void)
                 if (NULL == focuswin || e->event != focuswin->id)
                 {
                     /*
-                     * Otherwise, set focus to the window we just entered.
+                     * Otherwise, set focus to the window we just
+                     * entered. Note that setfocus() will handle the
+                     * case if we didn't find the client.
                      */
                     client = findclient(e->event);
                     setfocus(client);
@@ -2792,8 +2802,4 @@ int main(int argc, char **argv)
 
     /* Die gracefully. */
     die(exitcode);
-
-    xcb_disconnect(conn);
-        
-    exit(0);
 }
