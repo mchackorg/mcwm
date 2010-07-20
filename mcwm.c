@@ -426,7 +426,7 @@ int32_t getwmdesktop(xcb_drawable_t win)
 
     ws = *wsp;
 
-    PDEBUG("got _NET_WM_DESKTOP: %d stored at %p.\n", ws, wsp);
+    PDEBUG("got _NET_WM_DESKTOP: %d stored at %p.\n", ws, (void *)wsp);
     
     free(reply);
 
@@ -2628,15 +2628,26 @@ int main(int argc, char **argv)
     char *focuscol;
     char *unfocuscol;
     char *fixedcol;    
-    struct sigaction sigact;    /* Signal handler. */
-
 
     /* Install signal handlers. */
-    sigact.sa_flags = 0;
-    sigact.sa_handler = sigcatch;
-    sigaction(SIGINT, &sigact, NULL);
-    sigaction(SIGSEGV, &sigact, NULL);
-    sigaction(SIGTERM, &sigact, NULL);
+
+    if (SIG_ERR == signal(SIGINT, sigcatch))
+    {
+        perror("mcwm: signal");
+        exit(1);
+    }
+
+    if (SIG_ERR == signal(SIGSEGV, sigcatch))
+    {
+        perror("mcwm: signal");
+        exit(1);
+    }
+
+    if (SIG_ERR == signal(SIGTERM, sigcatch))
+    {
+        perror("mcwm: signal");
+        exit(1);
+    }
     
     /* Set up defaults. */
     
