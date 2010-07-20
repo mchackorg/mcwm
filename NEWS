@@ -2,7 +2,18 @@
 
 User visible changes
 
-2010-07-16
+2010-07-20
+
+  * Grabbed keypresses that mcwm doesn't know what to do with will be
+    sent to the focused window.
+
+  * More bug fixes.
+
+2010-07-19-2
+
+  * Many bug fixes. Including crashing bugs, triggered under Linux.
+
+2010-07-18
 
   * Move and resize, both with keyboard and mouse, now keeps pointer
     in place within window if it's possible without losing focus.
