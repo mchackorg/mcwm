@@ -1965,7 +1965,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
     }
 
     /* Is it shifted? */
-    if (ev->state & XCB_MOD_MASK_SHIFT)
+    if (ev->state & SHIFTMOD)
     {
         switch (key)
         {
