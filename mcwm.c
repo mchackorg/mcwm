@@ -2576,7 +2576,7 @@ void events(void)
              * XXX We might need to look in the global window list,
              * after all. Consider if a window is unmapped on our last
              * workspace while changing workspaces... If we do this,
-             * we need to keep track of our own windows and inore
+             * we need to keep track of our own windows and ignore
              * UnmapNotify on them.
              */
             for (item = wslist[curws]; item != NULL; item = item->next)
