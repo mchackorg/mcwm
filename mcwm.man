@@ -1,4 +1,4 @@
-.TH mcwm 1 "Jul 08, 2010" "" ""
+.TH mcwm 1 "Jul 20, 2010" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
@@ -15,20 +15,27 @@ mcwm \- MC's Window Manager for X11.
 ] [ 
 .B \-u 
 .I colour
+] [ 
+.B \-x
+.I colour
 ]
 
 .SH DESCRIPTION
 .B mcwm\fP is a window manager for the X Window System.
 
 .SH OPTIONS
-.TP
+.PP
 \-b means draw no window borders.
-.TP
+.PP
 \-t urxvt will start urxvt when MODKEY + Return is pressed.
-.TP
-\-f colour sets colour for focused window borders to a named colour.
-.TP
-\-u colour sets colour for unfocused window borders.
+.PP
+\-f colour sets border colour for focused window to a named colour,
+such as "red".
+.PP
+\-u colour sets border colour for unfocused windows.
+.PP
+\-x colour sets border colour for fixed windows, that is, windows that
+are visible on all workspaces.
 
 .SH USE
 Nota bene: For mcwm to be at all useful you need to know how what keys
@@ -52,7 +59,6 @@ resize
 .RE
 .PP
 Mod2 + key:
-.PP
 .RS
 .IP \(bu 2
 .B r 
@@ -96,6 +102,18 @@ go to next visible window.
 .IP \(bu 2
 .B f
 fix window so it is visible on all workspaces.
+.IP \(bu 2
+.B y
+move to upper left corner.
+.IP \(bu 2
+.B u
+move  to upper right corner.
+.IP \(bu 2
+.B b
+move to lower left corner.
+.IP \(bu 2
+.B n
+move to lower right corner.
 .IP \(bu 2
 .B 0\-9
 go to workspace n, 0-9.
