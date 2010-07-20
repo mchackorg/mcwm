@@ -1961,7 +1961,14 @@ void handle_keypress(xcb_key_press_event_t *ev)
     if (key == KEY_MAX)
     {
         PDEBUG("Unknown key pressed.\n");
-        /* FIXME: Send this key on to the focused window. */
+
+        /*
+         * We don't know what to do with this key. Send this key press
+         * event to the focused window.
+         */
+        xcb_send_event(conn, false, XCB_SEND_EVENT_DEST_ITEM_FOCUS,
+                       XCB_EVENT_MASK_NO_EVENT, (char *) ev);
+        xcb_flush(conn);
         return;
     }
 
