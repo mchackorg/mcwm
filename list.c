@@ -102,7 +102,7 @@ void listitems(struct item *mainlist)
     
     for (item = mainlist, i = 1; item != NULL; item = item->next, i ++)
     {
-        printf("item #%d (stored at %p).\n", i, item);
+        printf("item #%d (stored at %p).\n", i, (void *)item);
     }
 }
 
