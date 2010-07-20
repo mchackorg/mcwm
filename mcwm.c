@@ -1961,6 +1961,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
     if (key == KEY_MAX)
     {
         PDEBUG("Unknown key pressed.\n");
+        /* FIXME: Send this key on to the focused window. */
         return;
     }
 
@@ -2393,7 +2394,7 @@ void events(void)
         {
             xcb_key_press_event_t *e = (xcb_key_press_event_t *)ev;
             
-            PDEBUG("Key %d pressed\n", e->detail)
+            PDEBUG("Key %d pressed\n", e->detail);
 
             handle_keypress(e);
         }
@@ -2475,7 +2476,10 @@ void events(void)
             
             PDEBUG("event: Configure request. mask = %d\n", e->value_mask);
 
-            /* Check if it's anything we care about, like a resize or move. */
+            /*
+             * We ignore border width configurations, but handle all
+             * others.
+             */
 
             if (e->value_mask & XCB_CONFIG_WINDOW_X)
             {
@@ -2510,7 +2514,7 @@ void events(void)
                 i ++;                
                 values[i] = e->height;
             }
-            
+
             if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING)
             {
                 mask |= XCB_CONFIG_WINDOW_SIBLING;
