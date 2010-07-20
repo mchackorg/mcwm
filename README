@@ -1,11 +1,13 @@
 -*- text -*-
 
-This is a small window manager for the X Window System written
-entirely with XCB, the straight X protocol binding to the C language.
+This is a window manager for the X Window System written entirely with
+XCB, the straight X protocol binding to the C language. It doesn't use
+libX11 at all.
 
-It's a traditional 'floating' window manager. It doesn't really give
-anything new to the user experience. It is pretty stupid, but can
-probably be useful for some people.
+It's a minimalistic, floating window manager. The only window
+decoration is a thin border. All functions can be done with the
+keyboard, but moving, resizing, raising and lowering can also be done
+with the mouse.
 
 If you don't like the default key bindings, border width, et cetera,
 look in the config.h file, change and recompile.
