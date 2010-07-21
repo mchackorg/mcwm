@@ -2,6 +2,12 @@
 
 User visible changes
 
+2010-07-21
+
+  * Will react on signals directly instead of waiting for next X event.
+
+  * Raises windows before moving to corner.
+
 2010-07-20
 
   * Grabbed keypresses that mcwm doesn't know what to do with will be
