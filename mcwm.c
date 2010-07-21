@@ -33,6 +33,7 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/select.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_keysyms.h>
@@ -2147,14 +2148,48 @@ void events(void)
     int mode = 0;                   /* Internal mode. */
     int16_t mode_x;
     int16_t mode_y;
+    int fd;
+    fd_set in;
+    int found;
     
+    fd = xcb_get_file_descriptor(conn);
+
     for (exitcode = 0; 0 == exitcode;)
     {
-        ev = xcb_wait_for_event(conn);
+        FD_ZERO(&in);
+        FD_SET(fd, &in);
+
+        /*
+         * Check for events, again and again. When poll returns NULL,
+         * we block on select() until the event file descriptor gets
+         * readable again.
+         *
+         * We do it this way instead of xcb_wait_for_event() since
+         * select() will return if we we're interrupted by a signal.
+         * We like that.
+         */
+        ev = xcb_poll_for_event(conn);
         if (NULL == ev)
         {
-            fprintf(stderr, "mcwm: Couldn't get event. Exiting...\n");
-            exit(1);
+            found = select(fd + 1, &in, NULL, NULL, NULL);
+            if (-1 == found)
+            {
+                if (EINTR != errno)
+                {
+                    fprintf(stderr, "mcwm: select failed.");
+                    die(1);
+                }
+                else
+                {
+                    /* We received a signal. Goto start of loop. */
+                    continue;
+                }
+            }
+            else
+            {
+                /* We found more events. Goto start of loop. */
+                continue;
+            }
         }
 
 #ifdef DEBUG
