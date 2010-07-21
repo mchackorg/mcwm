@@ -1862,6 +1862,8 @@ void topleft(void)
     {
         return;
     }
+
+    raisewindow(focuswin->id);
     
     if (!getpointer(focuswin->id, &pointx, &pointy))
     {
@@ -1887,6 +1889,8 @@ void topright(void)
     {
         return;
     }
+
+    raisewindow(focuswin->id);
     
     if (!getpointer(focuswin->id, &pointx, &pointy))
     {
@@ -1920,6 +1924,8 @@ void botleft(void)
     {
         return;
     }
+
+    raisewindow(focuswin->id);
     
     if (!getpointer(focuswin->id, &pointx, &pointy))
     {
@@ -1952,6 +1958,8 @@ void botright(void)
     {
         return;
     }
+
+    raisewindow(focuswin->id);
     
     if (!getpointer(focuswin->id, &pointx, &pointy))
     {
