@@ -1576,8 +1576,6 @@ void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
 
 void movestep(struct client *client, char direction)
 {
-    xcb_get_geometry_reply_t *geom;
-    xcb_query_pointer_reply_t *pointer;
     int16_t start_x;
     int16_t start_y;
     int16_t x;
@@ -1593,73 +1591,75 @@ void movestep(struct client *client, char direction)
 
     win = client->id;
 
-    pointer = xcb_query_pointer_reply(
-        conn, xcb_query_pointer(conn, win), 0);
-
-    if (NULL == pointer)
+    /* Save pointer position so we can warp pointer here later. */
+    if (!getpointer(win, &start_x, &start_y))
     {
         return;
     }
-    
-    start_x = pointer->win_x;
-    start_y = pointer->win_y;
-                        
-    free(pointer);
-    
+
+    if (!getgeom(win, &x, &y, &width, &height))
+    {
+        return;
+    }
+
+    width = width + BORDERWIDTH * 2;
+    height = height + BORDERWIDTH * 2;
+
+    /*
+     * ...but if the pointer is outside the window, move in, otherwise
+     * we might happen to focus on another window when passing.
+     */
+    if (start_x > width)
+    {
+        start_x = width / 2;
+    }
+
+    if (start_y > height)
+    {
+        start_y = height / 2;
+    }
+
     raisewindow(win);
-    
-    /* Get window geometry. */
-    geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, win),
-                                  NULL);
-
-    width = geom->width + BORDERWIDTH * 2;
-    height = geom->height + BORDERWIDTH * 2;
-
-    if (NULL == geom)
-    {
-        return;
-    }
-    
+        
     switch (direction)
     {
     case 'h':
-        x = geom->x - MOVE_STEP;
+        x = x - MOVE_STEP;
         if (x < 0)
         {
             x = 0;
         }
 
-        movewindow(win, x, geom->y);
+        movewindow(win, x, y);
         break;
 
     case 'j':
-        y = geom->y + MOVE_STEP;
+        y = y + MOVE_STEP;
         if (y + height > screen->height_in_pixels)
         {
             y = screen->height_in_pixels - height;
         }
-        movewindow(win, geom->x, y);
+        movewindow(win, x, y);
         break;
 
     case 'k':
-        y = geom->y - MOVE_STEP;
+        y = y - MOVE_STEP;
         if (y < 0)
         {
             y = 0;
         }
         
-        movewindow(win, geom->x, y);
+        movewindow(win, x, y);
         break;
 
     case 'l':
-        x = geom->x + MOVE_STEP;
+        x = x + MOVE_STEP;
         if (x + width > screen->width_in_pixels)
         {
             x = screen->width_in_pixels - width;
         }
 
-        movewindow(win, x, geom->y);
+        movewindow(win, x, y);
         break;
 
     default:
@@ -1672,8 +1672,6 @@ void movestep(struct client *client, char direction)
                      start_x, start_y);
     
     xcb_flush(conn);
-    
-    free(geom);
 }
 
 void unmax(struct client *client)
