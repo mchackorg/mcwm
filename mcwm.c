@@ -1583,7 +1583,7 @@ void movestep(struct client *client, char direction)
     uint16_t width;
     uint16_t height;
     xcb_drawable_t win;
-
+    
     if (NULL == client)
     {
         return;
@@ -1604,20 +1604,6 @@ void movestep(struct client *client, char direction)
 
     width = width + BORDERWIDTH * 2;
     height = height + BORDERWIDTH * 2;
-
-    /*
-     * ...but if the pointer is outside the window, move in, otherwise
-     * we might happen to focus on another window when passing.
-     */
-    if (start_x > width)
-    {
-        start_x = width / 2;
-    }
-
-    if (start_y > height)
-    {
-        start_y = height / 2;
-    }
 
     raisewindow(win);
         
@@ -1667,11 +1653,16 @@ void movestep(struct client *client, char direction)
         break;
     } /* switch direction */
 
-    /* Move pointer back to where it was, relative to the window. */
-    xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
-                     start_x, start_y);
-    
-    xcb_flush(conn);
+    /*
+     * If the pointer was inside the window to begin with, move
+     * pointer back to where it was, relative to the window.
+     */
+    if (start_x > 0 && start_x < width && start_y > 0 && start_y < height )
+    {
+        xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
+                         start_x, start_y);
+        xcb_flush(conn);        
+    }
 }
 
 void unmax(struct client *client)
