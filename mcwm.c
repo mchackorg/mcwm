@@ -131,7 +131,7 @@ struct client
     
 
 /* Globals */
-int exitcode;
+int sigcode;
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
 uint32_t curws = 0;             /* Current workspace. */
@@ -197,7 +197,7 @@ xcb_atom_t atom_desktop;
 
 /* Functions declerations. */
 
-void die(int code);
+void cleanup(int code);
 void arrangewindows(uint16_t rootwidth, uint16_t rootheight);
 void setwmdesktop(xcb_drawable_t win, uint32_t ws);
 int32_t getwmdesktop(xcb_drawable_t win);
@@ -247,7 +247,7 @@ void sigcatch(int sig);
  * Map all windows we know about. Set keyboard focus to be wherever
  * the mouse pointer is. Then exit.
  */
-void die(int code)
+void cleanup(int code)
 {
     struct item *item;
     struct client *client;
@@ -2157,7 +2157,7 @@ void events(void)
     
     fd = xcb_get_file_descriptor(conn);
 
-    for (exitcode = 0; 0 == exitcode;)
+    for (sigcode = 0; 0 == sigcode;)
     {
         FD_ZERO(&in);
         FD_SET(fd, &in);
@@ -2180,7 +2180,8 @@ void events(void)
                 if (EINTR != errno)
                 {
                     fprintf(stderr, "mcwm: select failed.");
-                    die(1);
+                    cleanup(0);
+                    exit(1);
                 }
                 else
                 {
@@ -2697,7 +2698,7 @@ void printhelp(void)
 
 void sigcatch(int sig)
 {
-    exitcode = sig;
+    sigcode = sig;
 }
 
 int main(int argc, char **argv)
@@ -2867,5 +2868,7 @@ int main(int argc, char **argv)
     events();
 
     /* Die gracefully. */
-    die(exitcode);
+    cleanup(sigcode);
+
+    exit(0);
 }
