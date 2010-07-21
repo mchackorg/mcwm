@@ -48,8 +48,14 @@
   server every time. This means we have to update the window list
   data, however.
 
-* Special treatment when someone resizes a maximed window... Should it
-  be possible at all? If so, set new border width when they do it.
+  When maximizing windows, we need to consider the window resizing
+  hints. Either that or special treatment when starting to resize a
+  maximized window. As it is, we can get off by a few pixels when
+  resizing a maximized window and leave trails...
+
+  Special treatment when someone resizes a fully maximed window...
+  Should it be possible at all? If so, we need to set new border width
+  when they do it.
   
   Possibly set and read hint about maximized state.
 
