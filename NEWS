@@ -2,6 +2,13 @@
 
 User visible changes
 
+2010-07-21-2
+
+  * When moving by keyboard, we don't warp the pointer along with the
+    window if the pointer was outside the window to begin with.
+
+  * Don't allow moving or resizing of fully maximized windows.
+
 2010-07-21
 
   * Will react on signals directly instead of waiting for next X event.
