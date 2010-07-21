@@ -1304,6 +1304,12 @@ void resizestep(struct client *client, char direction)
         return;
     }
 
+    if (client->maxed)
+    {
+        /* Can resize a fully maximized window. */
+        return;
+    }
+    
     win = client->id;
 
     if (!getpointer(win, &start_x, &start_y))
@@ -1586,6 +1592,12 @@ void movestep(struct client *client, char direction)
     
     if (NULL == client)
     {
+        return;
+    }
+
+    if (client->maxed)
+    {
+        /* We can't move a fully maximized window. */
         return;
     }
 
@@ -2370,20 +2382,23 @@ void events(void)
 
             /*
              * Our pointer is moving and since we even get this event
-             * we're resizing or moving a window.
+             * we're either resizing or moving a window.
+             *
+             * We don't bother actually doing anything if we don't
+             * have a focused window or if the focused window is
+             * totally maximized.
              */
             if (mode == MCWM_MOVE)
             {
-                if (NULL != focuswin)
+                if (NULL != focuswin && !focuswin->maxed)
                 {
                     mousemove(focuswin->id, e->root_x, e->root_y);
                 }
-            
             }
             else if (mode == MCWM_RESIZE)
             {
                 /* Resize. */
-                if (NULL != focuswin)
+                if (NULL != focuswin && !focuswin->maxed)
                 {
                     mouseresize(focuswin->id, e->root_x, e->root_y);
                 }
