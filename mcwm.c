@@ -1858,6 +1858,11 @@ void topleft(void)
     int16_t pointx;
     int16_t pointy;
 
+    if (NULL == focuswin)
+    {
+        return;
+    }
+    
     if (!getpointer(focuswin->id, &pointx, &pointy))
     {
         return;
@@ -1877,6 +1882,11 @@ void topright(void)
     uint16_t height;
     int16_t pointx;
     int16_t pointy;
+
+    if (NULL == focuswin)
+    {
+        return;
+    }
     
     if (!getpointer(focuswin->id, &pointx, &pointy))
     {
@@ -1905,6 +1915,11 @@ void botleft(void)
     uint16_t height;
     int16_t pointx;
     int16_t pointy;
+
+    if (NULL == focuswin)
+    {
+        return;
+    }
     
     if (!getpointer(focuswin->id, &pointx, &pointy))
     {
@@ -1932,6 +1947,11 @@ void botright(void)
     uint16_t height;
     int16_t pointx;
     int16_t pointy;
+
+    if (NULL == focuswin)
+    {
+        return;
+    }
     
     if (!getpointer(focuswin->id, &pointx, &pointy))
     {
