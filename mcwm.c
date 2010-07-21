@@ -628,7 +628,12 @@ uint32_t getcolor(const char *colstr)
 
 void forgetclient(struct client *client)
 {
-
+    if (NULL == client)
+    {
+        PDEBUG("forgetclient: client was NULL\n");
+        return;
+    }
+    
     /* Delete window from workspace list. */
     delfromworkspace(client, curws);
 
@@ -1675,6 +1680,12 @@ void unmax(struct client *client)
 {
     uint32_t values[5];
     uint32_t mask = 0;
+
+    if (NULL == client)
+    {
+        PDEBUG("unmax: client was NULL!\n");
+        return;
+    }
     
     /* Restore geometry. */
     values[0] = client->x;
@@ -1704,6 +1715,7 @@ void maximize(struct client *client)
     
     if (NULL == client)
     {
+        PDEBUG("maximize: client was NULL!\n");
         return;
     }
 
@@ -1765,6 +1777,7 @@ void maxvert(struct client *client)
 
     if (NULL == client)
     {
+        PDEBUG("maxvert: client was NULL\n");
         return;
     }
 
