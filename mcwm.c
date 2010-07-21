@@ -1657,7 +1657,8 @@ void movestep(struct client *client, char direction)
      * If the pointer was inside the window to begin with, move
      * pointer back to where it was, relative to the window.
      */
-    if (start_x > 0 && start_x < width && start_y > 0 && start_y < height )
+    if (start_x > 0 - BORDERWIDTH && start_x < width + BORDERWIDTH
+        && start_y > 0 - BORDERWIDTH && start_y < height + BORDERWIDTH )
     {
         xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
                          start_x, start_y);
