@@ -1306,7 +1306,7 @@ void resizestep(struct client *client, char direction)
 
     if (client->maxed)
     {
-        /* Can resize a fully maximized window. */
+        /* Can't resize a fully maximized window. */
         return;
     }
     
