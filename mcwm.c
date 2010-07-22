@@ -1312,6 +1312,7 @@ void resizestep(struct client *client, char direction)
     
     win = client->id;
 
+    /* Save pointer position so we can warp back later, if necessary. */
     if (!getpointer(win, &start_x, &start_y))
     {
         return;
@@ -1320,7 +1321,6 @@ void resizestep(struct client *client, char direction)
     raisewindow(win);
 
     /* Get window geometry. */
-    
     if (!getgeom(client->id, &x, &y, &width, &height))
     {
         return;
@@ -1342,8 +1342,8 @@ void resizestep(struct client *client, char direction)
         if (0 == hints.width_inc || 0 == hints.height_inc)
         {
             PDEBUG("Client lied. No size inc hints.\n");
-            step_x = 1;
-            step_y = 1;
+            step_x = MOVE_STEP;
+            step_y = MOVE_STEP;
         }
         else
         {
