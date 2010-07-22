@@ -1293,6 +1293,8 @@ void resizestep(struct client *client, char direction)
     int16_t y;
     uint16_t width;
     uint16_t height;
+    uint16_t origwidth;
+    uint16_t origheight;    
     xcb_size_hints_t hints;
     int step_x = MOVE_STEP;
     int step_y = MOVE_STEP;
@@ -1325,6 +1327,9 @@ void resizestep(struct client *client, char direction)
     {
         return;
     }
+
+    origwidth = width;
+    origheight = height;
     
     /*
      * Get the window's incremental size step, if any, and use that
@@ -1398,40 +1403,49 @@ void resizestep(struct client *client, char direction)
 
     PDEBUG("Resizing to %dx%d\n", width, height);
     resize(win, width, height);
-
+    
     /*
-     * Don't mess with pointer if it's still inside the window.
-     * Otherwise, move it. If we don't do this we might lose the focus
-     * to another window.
-     */
-    x = start_x;
-    y = start_y;
-
-    if (start_x > width - step_x)
+     * We might need to warp the pointer to keep the focus.
+     *
+     * Don't do anything if the pointer was outside the window when we
+     * began resizing.
+     *
+     * If the pointer was inside the window when we began and it still
+     * is, don't do anything. However, if we're about to lose the
+     * pointer, move in.
+     */    
+    if (start_x > 0 - BORDERWIDTH && start_x < origwidth + BORDERWIDTH
+        && start_y > 0 - BORDERWIDTH && start_y < origheight + BORDERWIDTH )
     {
-        x = width / 2;
-        if (0 == x)
+        x = start_x;
+        y = start_y;
+
+        if (start_x > width - step_x)
         {
-            x = 1;
+            x = width / 2;
+            if (0 == x)
+            {
+                x = 1;
+            }
+            warp = true;
         }
-        warp = true;
-    }
 
-    if (start_y > height - step_y)
-    {
-        y = height / 2;
-        if (0 == y)
+        if (start_y > height - step_y)
         {
-            y = 1;
-        }        
-        warp = true;        
-    }
+            y = height / 2;
+            if (0 == y)
+            {
+                y = 1;
+            }
+            warp = true;        
+        }
 
-    if (warp)
-    {
-        xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
-                         x, y);
-        xcb_flush(conn);
+        if (warp)
+        {
+            xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
+                             x, y);
+            xcb_flush(conn);
+        }
     }
 }
 
