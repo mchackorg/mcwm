@@ -2,6 +2,16 @@
 
 User visible changes
 
+2010-07-23
+
+  * Better use of size increments.
+
+2010-07-22
+
+  * When resizing by keyboard we don't warp the pointer along with the
+    window if the pointer was outside the window when we started
+    resizing.
+
 2010-07-21-2
 
   * When moving by keyboard, we don't warp the pointer along with the
