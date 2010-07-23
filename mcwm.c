@@ -1446,6 +1446,12 @@ void resizestep(struct client *client, char direction)
     
     PDEBUG("Resizing to %dx%d\n", width, height);
     resize(win, width, height);
+
+    /* If this window was vertically maximized, remember that it isn't now. */
+    if (client->vertmaxed)
+    {
+        client->vertmaxed = false;
+    }
     
     /*
      * We might need to warp the pointer to keep the focus.
@@ -1590,6 +1596,12 @@ void mouseresize(struct client *client, int rel_x, int rel_y)
            (height - client->base_height) / client->height_inc);
     
     resize(client->id, width, height);
+
+    /* If this window was vertically maximized, remember that it isn't now. */
+    if (client->vertmaxed)
+    {
+        client->vertmaxed = false;
+    }
 }
 
 void movestep(struct client *client, char direction)
@@ -1786,9 +1798,12 @@ void maximize(struct client *client)
 
 void maxvert(struct client *client)
 {
-    xcb_get_geometry_reply_t *geom;
     uint32_t values[2];
-
+    uint16_t width;
+    uint16_t height;
+    int16_t x;
+    int16_t y;
+    
     if (NULL == client)
     {
         PDEBUG("maxvert: client was NULL\n");
@@ -1809,32 +1824,33 @@ void maxvert(struct client *client)
     raisewindow(client->id);
 
     /* Get window geometry. */
-    geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, client->id),
-                                  NULL);
-    if (NULL == geom)
+    if (!getgeom(client->id, &x, &y, &width, &height))
     {
         return;
     }
     
-    /* Store original coordinates and geometry.
-     * FIXME: Store in property as well? */
-    client->x = geom->x;
-    client->y = geom->y;
-    client->width = geom->width;
-    client->height = geom->height;
+    /*
+     * Store original coordinates and geometry.
+     * FIXME: Store in property as well?
+     */
+    client->x = x;
+    client->y = y;
+    client->width = width;
+    client->height = height;
+
+    /* Compute new height considering height increments and screen height. */
+    height = screen->height_in_pixels - BORDERWIDTH * 2;
+    height -= (height - client->base_height) % client->height_inc;
 
     /* Move to top of screen and resize. */
     values[0] = 0;
-    values[1] = screen->height_in_pixels - BORDERWIDTH * 2;
-
+    values[1] = height;
+    
     xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_Y
                          | XCB_CONFIG_WINDOW_HEIGHT, values);
-
     xcb_flush(conn);
 
-    free(geom);
-    
+    /* Remember that this client is vertically maximized. */
     client->vertmaxed = true;    
 }
 
