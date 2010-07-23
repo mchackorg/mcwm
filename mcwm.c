@@ -224,7 +224,7 @@ int start_terminal(void);
 void resize(xcb_drawable_t win, uint16_t width, uint16_t height);
 void resizestep(struct client *client, char direction);
 void mousemove(xcb_drawable_t win, int rel_x, int rel_y);
-void mouseresize(xcb_drawable_t win, int rel_x, int rel_y);
+void mouseresize(struct client *client, int rel_x, int rel_y);
 void movestep(struct client *client, char direction);
 void unmax(struct client *client);
 void maximize(struct client *client);
@@ -762,6 +762,7 @@ struct client *setupwin(xcb_window_t win)
     uint32_t values[2];
     struct item *item;
     struct client *client;
+    xcb_size_hints_t hints;
     
     if (conf.borders)
     {
@@ -812,13 +813,53 @@ struct client *setupwin(xcb_window_t win)
     client->max_height = screen->height_in_pixels;
     client->base_width = 0;
     client->base_height = 0;
+    client->width_inc = 1;
+    client->height_inc = 1;
     client->vertmaxed = false;
     client->maxed = false;
     client->fixed = false;
     client->winitem = item;
 
     PDEBUG("Adding window %d\n", client->id);
+
+    /*
+     * Get the window's incremental size step, if any.
+     */
+    if (!xcb_get_wm_normal_hints_reply(
+            conn, xcb_get_wm_normal_hints_unchecked(
+                conn, win), &hints, NULL))
+    {
+        PDEBUG("Couldn't get size hints.");
+    }
     
+    if (hints.flags & XCB_SIZE_HINT_P_MIN_SIZE)
+    {
+        client->min_width = hints.min_width;
+        client->min_height = hints.min_height;
+    }
+
+    if (hints.flags & XCB_SIZE_HINT_P_MAX_SIZE)
+    {
+        
+        client->max_width = hints.max_width;
+        client->max_height = hints.max_height;
+    }
+    
+    if (hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)
+    {
+        client->width_inc = hints.width_inc;
+        client->height_inc = hints.height_inc;
+
+        PDEBUG("widht_inc %d\nheight_inc %d\n", client->width_inc,
+               client->height_inc);
+    }
+
+    if (hints.flags & XCB_SIZE_HINT_BASE_SIZE)
+    {
+        client->base_width = hints.base_width;
+        client->base_height = hints.base_height;
+    }
+
     return client;
 }
 
@@ -1295,7 +1336,6 @@ void resizestep(struct client *client, char direction)
     uint16_t height;
     uint16_t origwidth;
     uint16_t origheight;    
-    xcb_size_hints_t hints;
     int step_x = MOVE_STEP;
     int step_y = MOVE_STEP;
     xcb_drawable_t win;
@@ -1330,31 +1370,23 @@ void resizestep(struct client *client, char direction)
 
     origwidth = width;
     origheight = height;
-    
-    /*
-     * Get the window's incremental size step, if any, and use that
-     * when resizing.
-     */
-    if (!xcb_get_wm_normal_hints_reply(
-            conn, xcb_get_wm_normal_hints_unchecked(
-                conn, win), &hints, NULL))
+
+    if (client->width_inc > 0)
     {
-        PDEBUG("Couldn't get size hints.");
+        step_x = client->width_inc;
+    }
+    else
+    {
+        step_x = MOVE_STEP;
     }
 
-    if (hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)
+    if (client->height_inc > 0)
     {
-        if (0 == hints.width_inc || 0 == hints.height_inc)
-        {
-            PDEBUG("Client lied. No size inc hints.\n");
-            step_x = MOVE_STEP;
-            step_y = MOVE_STEP;
-        }
-        else
-        {
-            step_x = hints.width_inc;
-            step_y = hints.height_inc;
-        }
+        step_y = client->height_inc;
+    }
+    else
+    {
+        step_y = MOVE_STEP;        
     }
     
     switch (direction)
@@ -1490,108 +1522,58 @@ void mousemove(xcb_drawable_t win, int rel_x, int rel_y)
     free(geom);
 }
 
-void mouseresize(xcb_drawable_t win, int rel_x, int rel_y)
+void mouseresize(struct client *client, int rel_x, int rel_y)
 {
-    xcb_get_geometry_reply_t *geom;
-    xcb_size_hints_t hints;
-    int32_t width;
-    int32_t height;
-    uint32_t width_inc = 1;
-    uint32_t height_inc = 1;
-
-    /* Get window geometry. */
-    geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, win),
-                                  NULL);
-    if (NULL == geom)
-    {
-        return;
-    }
+    uint16_t width;
+    uint16_t height;
+    int16_t x;
+    int16_t y;
     
-    if (rel_x - geom->x <= 1)
+    /* Get window geometry. We throw away width and height values. */
+    if (!getgeom(client->id, &x, &y, &width, &height))
     {
         return;
     }
-
-    if (rel_y - geom->y <= 1)
-    {
-        return;
-    }
-
-    width = rel_x - geom->x;
-    height = rel_y - geom->y;
 
     /*
-     * Get the window's incremental size step, if any, and use that
-     * when resizing.
+     * Calculate new width and height. If we have WM hints, we use
+     * them. Otherwise these are set to 1 pixel when initializing
+     * client.
      *
-     * FIXME: Do this right. ICCCM v2.0, 4.1.2.3. WM_NORMAL_HINTS
-     * Property says:
-     *
-     *   The base_width and base_height elements in conjunction with
-     *   width_inc and height_inc define an arithmetic progression of
-     *   preferred window widths and heights for nonnegative integers
-     *   i and j:
-     *
-     *   width = base_width + (i × width_inc)
-     *   height = base_height + (j × height_inc)
-     *
-     *   Window managers are encouraged to use i and j instead of
-     *   width and height in reporting window sizes to users. If a
-     *   base size is not provided, the minimum size is to be used in
-     *   its place and vice versa.
-     *
-     * FIXME: This should be in the struct client.
+     * Note that we need to take the absolute of the difference since
+     * we're dealing with unsigned integers. This has the interesting
+     * side effect that we resize the window even if the mouse pointer
+     * is at the other side of the window.
      */
-    if (!xcb_get_wm_normal_hints_reply(
-            conn, xcb_get_wm_normal_hints_unchecked(conn, win), &hints, NULL))
+
+    width = abs(rel_x - x);
+    height = abs(rel_y - y);
+
+    width -= (width - client->base_width) % client->width_inc;
+    height -= (height - client->base_height) % client->height_inc;
+    
+    /* Is it smaller than it says it can be? */
+    if (0 != client->min_height && height < client->min_height)
     {
-        PDEBUG("Couldn't get size hints.");
-
-    }
-    if (hints.flags & XCB_SIZE_HINT_P_RESIZE_INC)
-    {
-        if (0 == hints.width_inc || 0 == hints.height_inc)
-        {
-            PDEBUG("The client lied. There is no resize inc here.\n");
-
-            hints.width_inc = 1;
-            hints.height_inc = 1;
-        }
-        else
-        {
-            width_inc = hints.width_inc;
-            height_inc = hints.height_inc;
-
-            if (0 != width % width_inc)
-            {
-                width -= width % width_inc;
-            }
-
-            if (0 != height % height_inc)
-            {        
-                height -= height % height_inc;
-            }
-        }
+        height = client->min_height;
     }
 
-    if (geom->x + width > screen->width_in_pixels - BORDERWIDTH * 2)
+    /* Check if the window fits on screen. */
+    if (x + width > screen->width_in_pixels - BORDERWIDTH * 2)
     {
-        width = screen->width_in_pixels - (geom->x + BORDERWIDTH * 2);
+        width = screen->width_in_pixels - (x + BORDERWIDTH * 2);
     }
         
-    if (geom->y + height > screen->height_in_pixels - BORDERWIDTH * 2)
+    if (y + height > screen->height_in_pixels - BORDERWIDTH * 2)
     {
-        height = screen->height_in_pixels - (geom->y + BORDERWIDTH * 2);
+        height = screen->height_in_pixels - (y + BORDERWIDTH * 2);
     }
-
+    
     PDEBUG("Resizing to %dx%d (%dx%d)\n", width, height,
-           width / width_inc,
-           height / height_inc);
-
-    resize(win, width, height);
-
-    free(geom);
+           (width - client->base_width) / client->width_inc,
+           (height - client->base_height) / client->height_inc);
+    
+    resize(client->id, width, height);
 }
 
 void movestep(struct client *client, char direction)
@@ -2414,7 +2396,7 @@ void events(void)
                 /* Resize. */
                 if (NULL != focuswin && !focuswin->maxed)
                 {
-                    mouseresize(focuswin->id, e->root_x, e->root_y);
+                    mouseresize(focuswin, e->root_x, e->root_y);
                 }
             }
             else
