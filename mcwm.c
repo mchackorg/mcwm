@@ -1371,7 +1371,7 @@ void resizestep(struct client *client, char direction)
     origwidth = width;
     origheight = height;
 
-    if (client->width_inc > 0)
+    if (client->width_inc > 1)
     {
         step_x = client->width_inc;
     }
@@ -1380,7 +1380,7 @@ void resizestep(struct client *client, char direction)
         step_x = MOVE_STEP;
     }
 
-    if (client->height_inc > 0)
+    if (client->height_inc > 1)
     {
         step_y = client->height_inc;
     }
