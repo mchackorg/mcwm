@@ -1433,6 +1433,17 @@ void resizestep(struct client *client, char direction)
         break;
     } /* switch direction */
 
+    /* Is it smaller than it wants to be? */
+    if (0 != client->min_height && height < client->min_height)
+    {
+        height = client->min_height;
+    }
+
+    if (0 != client->min_width && width < client->min_width)
+    {
+        width = client->min_width;
+    }
+    
     PDEBUG("Resizing to %dx%d\n", width, height);
     resize(win, width, height);
     
@@ -1552,12 +1563,17 @@ void mouseresize(struct client *client, int rel_x, int rel_y)
     width -= (width - client->base_width) % client->width_inc;
     height -= (height - client->base_height) % client->height_inc;
     
-    /* Is it smaller than it says it can be? */
+    /* Is it smaller than it wants to  be? */
     if (0 != client->min_height && height < client->min_height)
     {
         height = client->min_height;
     }
 
+    if (0 != client->min_width && width < client->min_width)
+    {
+        width = client->min_width;
+    }
+    
     /* Check if the window fits on screen. */
     if (x + width > screen->width_in_pixels - BORDERWIDTH * 2)
     {
