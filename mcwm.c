@@ -2217,16 +2217,17 @@ void events(void)
             found = select(fd + 1, &in, NULL, NULL, NULL);
             if (-1 == found)
             {
-                if (EINTR != errno)
+                if (EINTR == errno)
                 {
-                    fprintf(stderr, "mcwm: select failed.");
-                    cleanup(0);
-                    exit(1);
+                    /* We received a signal. Break out of loop. */
+                    break;
                 }
                 else
                 {
-                    /* We received a signal. Goto start of loop. */
-                    continue;
+                    /* Something was seriously wrong with select(). */
+                    fprintf(stderr, "mcwm: select failed.");
+                    cleanup(0);
+                    exit(1);
                 }
             }
             else
