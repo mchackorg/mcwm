@@ -647,11 +647,18 @@ void forgetwin(xcb_window_t win)
     struct item *item;
     struct client *client;
 
+    /* Find window in client list. */
     for (item = winlist; item != NULL; item = item->next)
     {
         client = item->data;
 
-        /* Now forget about it completely and free allocated data. */
+        /*
+         * Forget about it completely and free allocated data.
+         *
+         * Note that it might already be freed by handling an
+         * UnmapNotify, so it isn't necessarily an error if we don't
+         * find it.
+         */
         PDEBUG("Win %d == client ID %d\n", win, client->id);
         if (win == client->id)
         {
@@ -2284,9 +2291,6 @@ void events(void)
              * it.
              */
             forgetwin(e->window);
-#if DEBUG
-            listitems(winlist);
-#endif
         }
         break;
             
@@ -2531,9 +2535,10 @@ void events(void)
             xcb_enter_notify_event_t *e = (xcb_enter_notify_event_t *)ev;
             struct client *client;
             
-            PDEBUG("event: Enter notify eventwin %d child %d.\n",
+            PDEBUG("event: Enter notify eventwin %d, child %d, detail %d.\n",
                    e->event,
-                   e->child);
+                   e->child,
+                   e->detail);
 
             /*
              * If this isn't a normal enter notify, don't bother.
