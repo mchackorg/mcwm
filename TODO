@@ -42,14 +42,6 @@
 
 * Snap to border and screen edge, which favours the edge.
 
-* Figure out why unclutter doesn't work in default mode
-
-  It creates a subwindow and sends a synthetic enter notify back to
-  the client.
-
-  unclutter -grab works, though, but that mucks with slock. It makes
-  slock unlock the screen after ~20 seconds!
-
 * Flag to disable dontmoveoff?
 
 * RandR/Xinerama
