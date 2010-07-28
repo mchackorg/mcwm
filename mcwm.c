@@ -84,6 +84,8 @@
 
 
 /* Types. */
+
+/* All our key shortcuts. */
 typedef enum {
     KEY_F,
     KEY_H,
@@ -112,14 +114,15 @@ typedef enum {
     KEY_MAX
 } key_enum_t;
 
+/* Everything we know about a window. */
 struct client
 {
-    xcb_drawable_t id;
-    uint32_t x;
-    uint32_t y;
-    uint16_t width;
-    uint16_t height;
-    uint16_t min_width, min_height;
+    xcb_drawable_t id;          /* ID of this window. */
+    uint32_t x;                 /* X coordinate. Only updated when maxed. */
+    uint32_t y;                 /* Y coordinate. Ditto.  */
+    uint16_t width;             /* Width in pixels. Ditto. */
+    uint16_t height;            /* Height in pixels. Ditto. */
+    uint16_t min_width, min_height; /* Hints from application. */
     uint16_t max_width, max_height;
     int32_t width_inc, height_inc;
     int32_t base_width, base_height;
@@ -131,13 +134,20 @@ struct client
     
 
 /* Globals */
-int sigcode;
+
+int sigcode;                    /* Signal code. Non-zero if we've been
+                                 * interruped by a signal. */
 xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
 uint32_t curws = 0;             /* Current workspace. */
 struct client *focuswin;        /* Current focus window. */
-struct item *winlist = NULL;
-struct item *wslist[10] =
+struct item *winlist = NULL;    /* Global list of all client windows. */
+
+/*
+ * Workspace list: Every workspace has a list of all visible
+ * windows.
+ */
+struct item *wslist[10] =       
 {
     NULL,
     NULL,
@@ -151,6 +161,7 @@ struct item *wslist[10] =
     NULL
 };
 
+/* Shortcut key type and initializiation. */
 struct keys
 {
     xcb_keysym_t keysym;
@@ -183,16 +194,21 @@ struct keys
     { USERKEY_BOTRIGHT, 0 }
 };    
 
+/* Global configuration. */
 struct conf
 {
-    bool borders;
-    char *terminal; /* Path to terminal to start. */
-    uint32_t focuscol;
-    uint32_t unfocuscol;
-    uint32_t fixedcol;
+    bool borders;               /* Do we draw borders? */
+    char *terminal;             /* Path to terminal to start. */
+    uint32_t focuscol;          /* Focused bored colour. */
+    uint32_t unfocuscol;        /* Unfocused border colour.  */
+    uint32_t fixedcol;          /* Fixed windows border colour. */
 } conf;
 
-xcb_atom_t atom_desktop;
+xcb_atom_t atom_desktop;        /*
+                                 * EWMH _NET_WM_DESKTOP hint that says
+                                 * what workspace a window should be
+                                 * on.
+                                 */
 
 
 /* Functions declerations. */
@@ -392,6 +408,7 @@ out:
     free(reply);
 }
 
+/* Set the EWMH hint that window win belongs on workspace ws. */
 void setwmdesktop(xcb_drawable_t win, uint32_t ws)
 {
     PDEBUG("Changing _NET_WM_DESKTOP on window %d to %d\n", win, ws);
@@ -401,6 +418,13 @@ void setwmdesktop(xcb_drawable_t win, uint32_t ws)
                         &ws);
 }
 
+/*
+ * Get EWWM hint so we might know what workspace window win should be
+ * visible on.
+ *
+ * Returns either workspace, NET_WM_FIXED if this window should be
+ * visible on all workspaces or MCWM_NOWS if we didn't find any hints.
+ */
 int32_t getwmdesktop(xcb_drawable_t win)
 {
     xcb_get_property_reply_t *reply;
@@ -440,6 +464,7 @@ bad:
     return MCWM_NOWS;
 }
 
+/* Add a window, specified by client, to workspace ws. */
 void addtoworkspace(struct client *client, uint32_t ws)
 {
     struct item *item;
@@ -465,6 +490,7 @@ void addtoworkspace(struct client *client, uint32_t ws)
     }
 }
 
+/* Delete window client from workspace ws. */
 void delfromworkspace(struct client *client, uint32_t ws)
 {
     struct item *item;
@@ -480,6 +506,7 @@ void delfromworkspace(struct client *client, uint32_t ws)
     }
 }
 
+/* Change current workspace to ws. */
 void changeworkspace(uint32_t ws)
 {
     struct item *item;
@@ -561,6 +588,10 @@ void changeworkspace(uint32_t ws)
     curws = ws;
 }
 
+/*
+ * Fix or unfix a window client from all workspaces. If setcolour is
+ * set, also change back to ordinary focus colour when unfixing.
+ */
 void fixwindow(struct client *client, bool setcolour)
 {
     uint32_t values[1];
@@ -601,7 +632,11 @@ void fixwindow(struct client *client, bool setcolour)
     xcb_flush(conn);    
 }
 
-    
+/*
+ * Get the pixel values of a named colour colstr.
+ *
+ * Returns pixel values.
+ * */
 uint32_t getcolor(const char *colstr)
 {
     xcb_alloc_named_color_reply_t *col_reply;    
@@ -626,6 +661,7 @@ uint32_t getcolor(const char *colstr)
     return col_reply->pixel;
 }
 
+/* Forget everything about client client. */
 void forgetclient(struct client *client)
 {
     if (NULL == client)
@@ -642,6 +678,7 @@ void forgetclient(struct client *client)
     delitem(&winlist, client->winitem);
 }
 
+/* Forget everything about a client with client->id win. */
 void forgetwin(xcb_window_t win)
 {
     struct item *item;
@@ -762,7 +799,7 @@ void newwin(xcb_window_t win)
     xcb_flush(conn);
 }
 
-/* set border colour, width and event mask for window. */
+/* Set border colour, width and event mask for window. */
 struct client *setupwin(xcb_window_t win)
 {
     uint32_t mask = 0;    
@@ -870,6 +907,11 @@ struct client *setupwin(xcb_window_t win)
     return client;
 }
 
+/*
+ * Get a keycode from a keysym.
+ *
+ * Returns keycode value. 
+ */
 xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms)
 {
     xcb_keycode_t *keyp;
@@ -890,6 +932,11 @@ xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms)
     return key;
 }
 
+/*
+ * Set up all shortcut keys.
+ *
+ * Returns 0 on success, non-zero otherwise. 
+ */
 int setupkeys(void)
 {
     xcb_key_symbols_t *keysyms;
@@ -918,7 +965,11 @@ int setupkeys(void)
     return 0;
 }
 
-/* Walk through all existing windows and set them up. */
+/*
+ * Walk through all existing windows and set them up.
+ *
+ * Returns 0 on success. 
+ */
 int setupscreen(void)
 {
     xcb_query_tree_reply_t *reply;
@@ -1031,6 +1082,7 @@ int setupscreen(void)
     return 0;
 }
 
+/* Raise window win to top of stack. */
 void raisewindow(xcb_drawable_t win)
 {
     uint32_t values[] = { XCB_STACK_MODE_ABOVE };
@@ -1046,6 +1098,10 @@ void raisewindow(xcb_drawable_t win)
     xcb_flush(conn);
 }
 
+/*
+ * Set window client to either top or bottom of stack depending on
+ * where it is now.
+ */
 void raiseorlower(struct client *client)
 {
     uint32_t values[] = { XCB_STACK_MODE_OPPOSITE };
@@ -1064,6 +1120,7 @@ void raiseorlower(struct client *client)
     xcb_flush(conn);
 }
 
+/* Move window win to root coordinates x,y. */
 void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
 {
     uint32_t values[2];
@@ -1084,6 +1141,7 @@ void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
 
 }
 
+/* Change focus to next in window ring. */
 void focusnext(void)
 {
     struct client *client;
@@ -1147,6 +1205,7 @@ void focusnext(void)
     }
 }
 
+/* Mark window win as unfocused. */
 void setunfocus(xcb_drawable_t win)
 {
     uint32_t values[1];
@@ -1168,6 +1227,11 @@ void setunfocus(xcb_drawable_t win)
     xcb_flush(conn);
 }
 
+/*
+ * Find client with client->id win in global window list.
+ *
+ * Returns client pointer or NULL if not found.
+ */
 struct client *findclient(xcb_drawable_t win)
 {
     struct item *item;
@@ -1186,6 +1250,7 @@ struct client *findclient(xcb_drawable_t win)
     return NULL;
 }
 
+/* Set focus on window client. */
 void setfocus(struct client *client)
 {
     uint32_t values[1];
@@ -1249,6 +1314,11 @@ void setfocus(struct client *client)
     focuswin = client;
 }
 
+/*
+ * Start a program specified in conf.terminal.
+ *
+ * Returns 0 on success. 
+ */
 int start_terminal(void)
 {
     pid_t pid;
@@ -1314,6 +1384,7 @@ int start_terminal(void)
     return 0;
 }
 
+/* Resize window win to width,height. */
 void resize(xcb_drawable_t win, uint16_t width, uint16_t height)
 {
     uint32_t values[2];
@@ -1333,6 +1404,17 @@ void resize(xcb_drawable_t win, uint16_t width, uint16_t height)
     xcb_flush(conn);
 }
 
+/*
+ * Resize window client in direction direction. Direction is:
+ *
+ * h = left, that is decrease width.
+ *
+ * j = down, that is, increase height.
+ *
+ * k = up, that is, decrease height.
+ *
+ * l = right, that is, increase width.
+ */
 void resizestep(struct client *client, char direction)
 {
     int16_t start_x;
@@ -1505,6 +1587,10 @@ void resizestep(struct client *client, char direction)
     }
 }
 
+/*
+ * Move window win as a result of pointer motion to coordinates
+ * rel_x,rel_y.
+ */
 void mousemove(xcb_drawable_t win, int rel_x, int rel_y)
 {
     xcb_get_geometry_reply_t *geom;    
