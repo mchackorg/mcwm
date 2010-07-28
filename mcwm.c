@@ -2554,13 +2554,18 @@ void events(void)
                 {
                     /*
                      * Otherwise, set focus to the window we just
-                     * entered. Note that setfocus() will handle the
-                     * case if we didn't find the client.
+                     * entered if we can find it among the windows we
+                     * know about. If not, just keep focus in the old
+                     * window.
                      */
                     client = findclient(e->event);
-                    setfocus(client);
+                    if (NULL != client)
+                    {
+                        setfocus(client);
+                    }
                 }
             }
+
         }
         break;        
         
