@@ -2543,8 +2543,7 @@ void events(void)
              * focus in these cases.
              *
              */
-            if (e->mode == XCB_NOTIFY_MODE_NORMAL
-                || e->mode == XCB_NOTIFY_MODE_UNGRAB)
+            if (e->mode == XCB_NOTIFY_MODE_NORMAL)
             {
                 /*
                  * If we're entering the same window we focus now,
