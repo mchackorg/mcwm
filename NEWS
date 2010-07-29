@@ -2,6 +2,10 @@
 
 User visible changes
 
+2010-07-28
+
+  * Now works with unclutter.
+
 2010-07-23
 
   * Better use of size increments.
