@@ -77,3 +77,12 @@
   hint (for instance, urxvt can generate such a hint when receiving
   the BEL character). Do we want to handle it? How do we tell the
   user? Can this be done with some stand-alone program instead?
+
+* Support sensible portions of ICCCM and EWMH
+
+  At least user set position and geometry.
+
+  EWMH hints that tells applications about active workspace and
+  focused window...
+
+  And a few others.
