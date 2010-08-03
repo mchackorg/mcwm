@@ -1264,6 +1264,8 @@ void setfocus(struct client *client)
      */
     if (NULL == client)
     {
+        PDEBUG("setfocus: client was NULL!\n");
+
         focuswin = NULL;
 
         xcb_set_input_focus(conn, XCB_NONE, XCB_INPUT_FOCUS_POINTER_ROOT,
@@ -2544,11 +2546,16 @@ void events(void)
                 if (NULL == focuswin)
                 {
                     /*
-                     * Something's seriously wrong. We don't seem to
-                     * have a focused window!
+                     * We don't seem to have a focused window! Just
+                     * ungrab and reset the mode.
                      */
                     PDEBUG("No focused window when finished moving or "
                            "resizing!");
+                
+                    xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
+                    xcb_flush(conn); /* Important! */
+                    
+                    mode = 0;
                     break;
                 }
                 
@@ -2629,13 +2636,19 @@ void events(void)
             /*
              * If this isn't a normal enter notify, don't bother.
              *
+             * We also need ungrab events, since these will be
+             * generated on button and key grabs and if the user for
+             * some reason presses a button on the root and then moves
+             * the pointer to our window and releases the button, we
+             * get an Ungrab EnterNotify.
+             * 
              * The other cases means the pointer is grabbed and that
              * either means someone is using it for menu selections or
              * that we're moving or resizing. We don't want to change
-             * focus in these cases.
-             *
+             * focus in those cases.
              */
-            if (e->mode == XCB_NOTIFY_MODE_NORMAL)
+            if (e->mode == XCB_NOTIFY_MODE_NORMAL
+                || e->mode == XCB_NOTIFY_MODE_UNGRAB)
             {
                 /*
                  * If we're entering the same window we focus now,
