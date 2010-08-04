@@ -727,7 +727,18 @@ void newwin(xcb_window_t win)
     uint16_t width;
     uint16_t height;
     struct client *client;
-    
+
+    if (NULL != findclient(win))
+    {
+        /*
+         * We know this window from before. It's trying to map itself
+         * on the current workspace, but since it's unmapped it
+         * probably belongs on another workspace. We don't like that.
+         * Silently ignore.
+         */
+        return;
+    }
+
     /* Get pointer position so we can move the window to the cursor. */
 
     if (!getpointer(screen->root, &pointx, &pointy))
