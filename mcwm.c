@@ -1166,7 +1166,7 @@ void focusnext(void)
     }
 #endif
     
-    /* If we currently focus the root, focus first in list. */
+    /* If we currently have no focus, focus first in list. */
     if (NULL == focuswin)
     {
         if (NULL == wslist[curws])
@@ -1180,7 +1180,10 @@ void focusnext(void)
     }
     else
     {
-        /* Find client in list. */
+        /*
+         * Find our current focused window in list of windows on the
+         * current workspace and focus the next.
+         */
         for (item = wslist[curws]; item != NULL; item = item->next)
         {
             if (focuswin == item->data)
@@ -1203,17 +1206,23 @@ void focusnext(void)
         }
     }
 
-    if (found)
+    if (!found)
     {
-        raisewindow(client->id);
-        xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
-                         0, 0);
-        setfocus(client);
+        PDEBUG("Couldn't find any new window to focus on. Focusing first in "
+               "list...\n");
+        client = wslist[curws]->data;
     }
-    else
-    {
-        PDEBUG("Couldn't find any new window to focus on.\n");
-    }
+
+    /*
+     * Raise window if it's occluded, then warp pointer into it and
+     * set keyboard focus to it.
+     */
+    uint32_t values[] = { XCB_STACK_MODE_TOP_IF };    
+
+    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_STACK_MODE,
+                         values);
+    xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0, 0, 0);
+    setfocus(client);
 }
 
 /* Mark window win as unfocused. */
