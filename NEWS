@@ -2,6 +2,18 @@
 
 User visible changes
 
+2010-08-10
+
+  * Mod2-Tab no longer raises a window unless it's necessary for the
+    window to be visible.
+
+  * We no longer obey clients trying to map themselves on the current
+    workspace when they belong to another workspace. Notably, this
+    affects Emacs frames used with emacsclient if server-raise-frame
+    is non-nil. The mouse pointer will still be warped, though, but at
+    least we stop the window on the other workspace to suddenly move
+    to the current workspace.
+
 2010-07-28
 
   * Now works with unclutter.
