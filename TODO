@@ -1,5 +1,9 @@
 -*- text -*-
 
+* Geometry
+
+  Support user position hints, -geom ...
+
 * Feedback window
   
   We need to tell the user the new geometry somehow. Is this what I
@@ -40,7 +44,34 @@
     the EWMH _NET_WM_DESKTOP hint we're currently using: We will only
     be able to save one of the desktops used.
 
+* Hide windows
+
+  Instead of iconifying, hide them à la 9wm. Even if we use a key to
+  hide them, this probably means we have to have a menu to get them
+  back.
+
+* Menu
+
+  We might need a menu for hidden windows (see above). Since I'm z
+  probably implementing menu windows anyway, perhaps I should add a
+  menu with basic window functions, like 9wm and twm. This way, one
+  might use the window manager without keyboard, if necessary. Not
+  much work if I have to do the menu anyway...
+
+* Close/Destroy.
+
+  We need the function. What key it might be bound to is an open
+  question. ESC is too close to 1 on my keyboard. Perhaps the default
+  should be no binding at all and users who want this dangerous
+  function can bind it.
+
 * Snap to border and screen edge, which favours the edge.
+
+* Gaps on borders for docks, status windows et cetera.
+
+  Keep space reserverd for Conky, dzen2 et cetera.
+  
+  Also handle EWMH hints _NET_WM_TYPE_DOCK and _NET_WM_TYPE_DESKTOP.
 
 * Flag to disable dontmoveoff?
 
