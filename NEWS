@@ -2,6 +2,11 @@
 
 User visible changes
 
+2010-08-23
+
+  * Obey window coordinates when doing initial mapping if the client
+    says the user specified them, for instance with a -geometry.
+
 2010-08-10
 
   * Mod2-Tab no longer raises a window unless it's necessary for the
