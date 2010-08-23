@@ -118,6 +118,7 @@ typedef enum {
 struct client
 {
     xcb_drawable_t id;          /* ID of this window. */
+    bool usercoord;             /* X,Y was set by -geom. */
     uint32_t x;                 /* X coordinate. Only updated when maxed. */
     uint32_t y;                 /* Y coordinate. Ditto.  */
     uint16_t width;             /* Width in pixels. Ditto. */
@@ -767,6 +768,17 @@ void newwin(xcb_window_t win)
         PDEBUG("Couldn't get geometry\n");
         return;
     }
+
+    /*
+     * If the client says the user specified the coordinates, we
+     * override the pointer position and place the window where the
+     * client specifies instead.
+     */
+    if (client->usercoord)
+    {
+        pointx = x;
+        pointy = y;
+    }
     
     /*
      * If the window is larger than our screen, just place it in the
@@ -858,6 +870,7 @@ struct client *setupwin(xcb_window_t win)
 
     /* Initialize client. */
     client->id = win;
+    client->usercoord = false;
     client->x = 0;
     client->y = 0;
     client->width = 0;
@@ -886,13 +899,22 @@ struct client *setupwin(xcb_window_t win)
     {
         PDEBUG("Couldn't get size hints.");
     }
-    
+
+    /*
+     * The user specified the position coordinates. Remember that so
+     * we can use geometry later.
+     */
+    if (hints.flags & XCB_SIZE_HINT_US_POSITION)
+    {
+        client->usercoord = true;
+    }
+
     if (hints.flags & XCB_SIZE_HINT_P_MIN_SIZE)
     {
         client->min_width = hints.min_width;
         client->min_height = hints.min_height;
     }
-
+    
     if (hints.flags & XCB_SIZE_HINT_P_MAX_SIZE)
     {
         
