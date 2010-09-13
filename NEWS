@@ -2,6 +2,11 @@
 
 User visible changes
 
+2010-09-08
+
+  * New key: MODKEY + End closes window. Patch from Christian
+    Neukirchen, who used MODKEY + ESC instead.
+
 2010-08-23
 
   * Obey window coordinates when doing initial mapping if the client

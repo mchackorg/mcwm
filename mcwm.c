@@ -111,6 +111,7 @@ typedef enum {
     KEY_U,
     KEY_B,
     KEY_N,
+    KEY_END,
     KEY_MAX
 } key_enum_t;
 
@@ -192,7 +193,8 @@ struct keys
     { USERKEY_TOPLEFT, 0 },
     { USERKEY_TOPRIGHT, 0 },
     { USERKEY_BOTLEFT, 0 },
-    { USERKEY_BOTRIGHT, 0 }
+    { USERKEY_BOTRIGHT, 0 },
+    { USERKEY_DELETE, 0 }
 };    
 
 /* Global configuration. */
@@ -210,6 +212,9 @@ xcb_atom_t atom_desktop;        /*
                                  * what workspace a window should be
                                  * on.
                                  */
+
+xcb_atom_t wm_delete_window;    /* WM_DELETE_WINDOW event to close windows.  */
+xcb_atom_t wm_protocols;        /* WM_PROTOCOLS.  */
 
 
 /* Functions declerations. */
@@ -253,6 +258,7 @@ void topleft(void);
 void topright(void);
 void botleft(void);
 void botright(void);
+void deletewin(void);
 void handle_keypress(xcb_key_press_event_t *ev);
 void printhelp(void);
 void sigcatch(int sig);
@@ -2163,6 +2169,50 @@ void botright(void)
     xcb_flush(conn);
 }
 
+void deletewin(void)
+{
+    xcb_get_property_cookie_t cookie;
+    xcb_get_wm_protocols_reply_t protocols;
+    bool use_delete = false;
+    uint32_t i;
+
+    if (NULL == focuswin)
+    {
+        return;
+    }
+
+    /* Check if WM_DELETE is supported.  */
+    cookie = xcb_get_wm_protocols_unchecked(conn, focuswin->id, wm_protocols);
+    if (xcb_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1) {
+        for (i = 0; i < protocols.atoms_len; i++)
+            if (protocols.atoms[i] == wm_delete_window)
+                 use_delete = true;
+    }
+
+    xcb_get_wm_protocols_reply_wipe(&protocols);
+
+    if (use_delete)
+    {
+        xcb_client_message_event_t ev = {
+          .response_type = XCB_CLIENT_MESSAGE,
+          .format = 32,
+          .sequence = 0,
+          .window = focuswin->id,
+          .type = wm_protocols,
+          .data.data32 = { wm_delete_window, XCB_CURRENT_TIME }
+        };
+
+        xcb_send_event(conn, false, focuswin->id,
+                       XCB_EVENT_MASK_NO_EVENT, (char *) &ev);
+    }
+    else
+    {
+        xcb_kill_client(conn, focuswin->id);
+    }
+
+    xcb_flush(conn);    
+}
+
 void handle_keypress(xcb_key_press_event_t *ev)
 {
     int i;
@@ -2313,6 +2363,10 @@ void handle_keypress(xcb_key_press_event_t *ev)
 
         case KEY_N:
             botright();
+            break;
+
+        case KEY_END:
+            deletewin();
             break;
             
         default:
@@ -2993,8 +3047,10 @@ int main(int argc, char **argv)
     conf.unfocuscol = getcolor(unfocuscol);
     conf.fixedcol = getcolor(fixedcol);
     
-    /* Get an atom. */
+    /* Get some atoms. */
     atom_desktop = xcb_atom_get(conn, "_NET_WM_DESKTOP");
+    wm_delete_window = xcb_atom_get(conn, "WM_DELETE_WINDOW");
+    wm_protocols = xcb_atom_get(conn, "WM_PROTOCOLS");
     
     /* Loop over all clients and set up stuff. */
     if (0 != setupscreen())

@@ -75,4 +75,4 @@
 #define USERKEY_TOPRIGHT        XK_U
 #define USERKEY_BOTLEFT         XK_B
 #define USERKEY_BOTRIGHT        XK_N
-
+#define USERKEY_DELETE          XK_End
