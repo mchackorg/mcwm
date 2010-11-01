@@ -13,6 +13,11 @@
 
 void movetohead(struct item **mainlist, struct item *item)
 {
+    if (NULL == item || NULL == mainlist || NULL == *mainlist)
+    {
+        return;
+    }
+    
     if (*mainlist == item)
     {
         /* Already at head. Do nothing. */
@@ -74,7 +79,7 @@ void delitem(struct item **mainlist, struct item *item)
 {
     struct item *ml = *mainlist;
     
-    if (NULL == mainlist)
+    if (NULL == mainlist || NULL == *mainlist || NULL == item)
     {
         return;
     }
