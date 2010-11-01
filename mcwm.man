@@ -117,6 +117,9 @@ move to lower right corner.
 .IP \(bu 2
 .B 0\-9
 go to workspace n, 0-9.
+.IP \(bu 2
+.B End
+close focused window.
 .RE
 .PP
 If you don't like the default key bindings, border width, et cetera,
