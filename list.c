@@ -33,6 +33,9 @@ void movetohead(struct item **mainlist, struct item *item)
     /* Now at head. */
     item->prev = NULL;
     item->next = *mainlist;
+
+    /* Remember the new head. */
+    *mainlist = item;
 }
 
 /*
@@ -107,57 +110,92 @@ void listitems(struct item *mainlist)
 }
 
 #if 0
+
+void listall(struct item *mainlist)
+{
+    struct item *item;
+    int i;
+    
+    for (item = mainlist, i = 1; item != NULL; item = item->next, i ++)
+    {
+        printf("%d at %p: %s.\n", i, (void *)item, (char *)item->data);
+    }
+}
+
 int main(void)
 {
     struct item *mainlist = NULL;
     struct item *item1;
     struct item *item2;
     struct item *item3;
+    struct item *item4;    
     char *foo1 = "1";
     char *foo2 = "2";
     char *foo3 = "3";
-
-    item1 = addhead(&mainlist);
+    char *foo4 = "4";
+    
+    item1 = additem(&mainlist);
     if (NULL == item1)
     {
         printf("Couldn't allocate.\n");
         exit(1);
     }
     item1->data = foo1;
-    listitems(mainlist);
+    printf("Current elements:\n");
+    listall(mainlist);
     
-    item2 = addhead(&mainlist);
+    item2 = additem(&mainlist);
     if (NULL == item2)
     {
         printf("Couldn't allocate.\n");
         exit(1);
     }
     item2->data = foo2;
-    listitems(mainlist);
+    printf("Current elements:\n");    
+    listall(mainlist);
     
-    item3 = addhead(&mainlist);
+    item3 = additem(&mainlist);
     if (NULL == item3)
     {
         printf("Couldn't allocate.\n");
         exit(1);
     }
     item3->data = foo3;
-    listitems(mainlist);
+    printf("Current elements:\n");    
+    listall(mainlist);
 
-    printf("DELETING.\n");
-        
+    item4 = additem(&mainlist);
+    if (NULL == item4)
+    {
+        printf("Couldn't allocate.\n");
+        exit(1);
+    }
+    item4->data = foo4;
+    printf("Current elements:\n");    
+    listall(mainlist);
+
+    movetohead(&mainlist, item2);
+    printf("Current elements:\n");    
+    listall(mainlist);
+    
+    printf("----------------------------------------------------------------------\n");
+
+    printf("Deleting item stored at %p\n", item3);
+    delitem(&mainlist, item3);
+    printf("Current elements:\n");    
+    listall(mainlist);
+
+    puts("");
+    
     delitem(&mainlist, item2);
-    listitems(mainlist);
+    printf("Current elements:\n");    
+    listall(mainlist);
 
     puts("");
     
     delitem(&mainlist, item1);
-    listitems(mainlist);
-
-    puts("");
-    
-    delitem(&mainlist, item3);
-    listitems(mainlist);
+    printf("Current elements:\n");    
+    listall(mainlist);
 
     puts("");
     
