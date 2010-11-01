@@ -131,7 +131,9 @@ struct client
     bool vertmaxed;             /* Vertically maximized? */
     bool maxed;                 /* Totally maximized? */
     bool fixed;           /* Visible on all workspaces? */
-    struct item *winitem; /* Pointer to our place in list of all windows. */
+    struct item *winitem; /* Pointer to our place in global windows list. */
+    struct item *wsitem[WORKSPACE_MAX + 1]; /* Pointer to our place in every
+                                             * workspace window list. */
 };
     
 
@@ -149,7 +151,7 @@ struct item *winlist = NULL;    /* Global list of all client windows. */
  * Workspace list: Every workspace has a list of all visible
  * windows.
  */
-struct item *wslist[10] =       
+struct item *wslist[WORKSPACE_MAX + 1] =
 {
     NULL,
     NULL,
@@ -483,6 +485,10 @@ void addtoworkspace(struct client *client, uint32_t ws)
         return;
     }
 
+    /* Remember our place in the workspace window list. */
+    client->wsitem[ws] = item;
+
+    /* Remember the data. */
     item->data = client;
 
     /*
@@ -500,26 +506,18 @@ void addtoworkspace(struct client *client, uint32_t ws)
 /* Delete window client from workspace ws. */
 void delfromworkspace(struct client *client, uint32_t ws)
 {
-    struct item *item;
+    delitem(&wslist[ws], client->wsitem[ws]);
 
-    /* Find client in list. */
-    for (item = wslist[ws]; item != NULL; item = item->next)
-    {
-        if (client == item->data)
-        {
-            delitem(&wslist[ws], item);
-            return;
-        }
-    }
+    /* Reset our place in the workspace window list. */
+    client->wsitem[ws] = NULL;
 }
 
 /* Change current workspace to ws. */
 void changeworkspace(uint32_t ws)
 {
     struct item *item;
-    struct item *tmpitem;
     struct client *client;
-
+    
     if (ws == curws)
     {
         PDEBUG("Changing to same workspace!\n");
@@ -548,9 +546,22 @@ void changeworkspace(uint32_t ws)
       
         if (client->fixed)
         {
-            /* We move all fixed windows to every new workspace we go to. */
+            /* Add the fixed window to the new workspace window list. */
             addtoworkspace(client, ws);
 
+            /*
+             * Remove the fixed window from the current workspace
+             * list.
+             *  
+             * NB! Before deleting this item, we need to save the
+             * address to next item so we can continue through the
+             * list.
+             */      
+            item = item->next;
+
+            delfromworkspace(client, curws);
+            
+#if 0
             /*
              * NB! Before deleting this item, we need to save the
              * address to next item so we can continue through the
@@ -560,6 +571,7 @@ void changeworkspace(uint32_t ws)
             item = item->next;
 
             delitem(&wslist[curws], tmpitem);
+#endif
         }
         else
         {
@@ -690,8 +702,9 @@ void forgetwin(xcb_window_t win)
 {
     struct item *item;
     struct client *client;
-
-    /* Find window in client list. */
+    uint32_t ws;
+    
+    /* Find this window in the global window list. */
     for (item = winlist; item != NULL; item = item->next)
     {
         client = item->data;
@@ -709,8 +722,24 @@ void forgetwin(xcb_window_t win)
             /* Found it. */
             PDEBUG("Found it. Forgetting...\n");
 
-            /* Delete window from workspace list. */
-            delfromworkspace(client, curws);
+            /*
+             * Delete window from whatever workspace lists it belonged
+             * to. Note that it's OK to be on several workspaces at
+             * once.
+             */
+            for (ws = 0; ws != WORKSPACE_MAX; ws ++)
+            {
+                PDEBUG("Looking in ws #%d.\n", ws);
+                if (NULL == client->wsitem[ws])
+                {
+                    PDEBUG("  but it wasn't there.\n");
+                }
+                else
+                {
+                    PDEBUG("  found it here. Deleting!\n");
+                    delfromworkspace(client, ws);                    
+                }
+            }
             
             free(item->data);
 
@@ -836,6 +865,7 @@ struct client *setupwin(xcb_window_t win)
     struct item *item;
     struct client *client;
     xcb_size_hints_t hints;
+    uint32_t ws;
     
     if (conf.borders)
     {
@@ -894,6 +924,11 @@ struct client *setupwin(xcb_window_t win)
     client->fixed = false;
     client->winitem = item;
 
+    for (ws = 0; ws != WORKSPACE_MAX; ws ++)
+    {
+        client->wsitem[ws] = NULL;
+    }
+    
     PDEBUG("Adding window %d\n", client->id);
 
     /*
@@ -1193,7 +1228,7 @@ void focusnext(void)
         PDEBUG("Focus now in win %d\n", focuswin->id);
     }
 #endif
-    
+
     /* If we currently have no focus, focus first in list. */
     if (NULL == focuswin)
     {
@@ -1217,9 +1252,10 @@ void focusnext(void)
             if (focuswin == item->data)
             {
                 if (NULL != item->next)
-                {
+                { 
                     client = item->next->data;
-                    found = true;            
+                    found = true;
+                    break;
                 }
                 else
                 {
@@ -1229,11 +1265,12 @@ void focusnext(void)
                      */
                     client = wslist[curws]->data;
                     found = true;
+                    break;
                 }
             }
         }
     }
-
+    
     if (!found)
     {
         PDEBUG("Couldn't find any new window to focus on. Focusing first in "
@@ -1360,7 +1397,8 @@ void setfocus(struct client *client)
                         XCB_CURRENT_TIME);
 
     xcb_flush(conn);
-
+    
+    /* Remember the new window as the current focused window. */
     focuswin = client;
 }
 
