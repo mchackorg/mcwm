@@ -560,18 +560,6 @@ void changeworkspace(uint32_t ws)
             item = item->next;
 
             delfromworkspace(client, curws);
-            
-#if 0
-            /*
-             * NB! Before deleting this item, we need to save the
-             * address to next item so we can continue through the
-             * list.
-             */
-            tmpitem = item;
-            item = item->next;
-
-            delitem(&wslist[curws], tmpitem);
-#endif
         }
         else
         {
