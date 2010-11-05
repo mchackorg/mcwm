@@ -1,9 +1,5 @@
 -*- text -*-
 
-* Geometry
-
-  Support user position hints, -geom ...
-
 * Feedback window
   
   We need to tell the user the new geometry somehow. Is this what I
@@ -57,13 +53,6 @@
   menu with basic window functions, like 9wm and twm. This way, one
   might use the window manager without keyboard, if necessary. Not
   much work if I have to do the menu anyway...
-
-* Close/Destroy.
-
-  We need the function. What key it might be bound to is an open
-  question. ESC is too close to 1 on my keyboard. Perhaps the default
-  should be no binding at all and users who want this dangerous
-  function can bind it.
 
 * Snap to border and screen edge, which favours the edge.
 
