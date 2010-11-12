@@ -2,6 +2,16 @@
 
 User visible changes
 
+2010-11-01
+
+  * Fixed bug. We mangled a list when a window was destroyed on
+    another workspace. This would lead to sticky windows that we
+    didn't seem to know about. 
+
+    The same code also prepares for the possibility that a window
+    might occupy several, but not all, workspaces at the same time. We
+    still don't have any user interface to control this, however.
+
 2010-09-08
 
   * New key: MODKEY + End closes window. Patch from Christian
