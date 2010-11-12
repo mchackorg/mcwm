@@ -22,13 +22,13 @@ v Window placement on virtual screens should be remembered even if wm
 
 v Quickly move windows to corners.
 
+v Key bindings for all window functions.
+
 - Changing focus from keyboard which rememebers last focused window.
   Keep on the same physical screen. 
 
 - Focus change from keyboard should restore stacking order after focus
   switch.
-
-- Key bindings for all window functions.
 
 - Configurable key bindings.
 
