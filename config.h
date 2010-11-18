@@ -8,10 +8,10 @@
 
 /*
  * Use this modifier combined with other keys to control wm from
- * keyboard. Default is Mod2, which on my keyboard is the Alt/Windows
+ * keyboard. Default is Mod4, which on my keyboard is the Alt/Windows
  * key.
  */
-#define MODKEY XCB_MOD_MASK_2
+#define MODKEY XCB_MOD_MASK_4
 
 /* Extra modifier for resizing. Default is Shift. */
 #define SHIFTMOD XCB_MOD_MASK_SHIFT

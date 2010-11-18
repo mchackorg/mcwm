@@ -39,7 +39,7 @@ are visible on all workspaces.
 
 .SH USE
 Nota bene: For mcwm to be at all useful you need to know how what keys
-generate the Mod1 and Mod2 modifier masks. If you don't know, use
+generate the Mod1 and Mod4 modifier masks. If you don't know, use
 .B xmodmap(1)
 with the \-pm option to list them.
 
@@ -58,7 +58,7 @@ raise
 resize
 .RE
 .PP
-Mod2 + key:
+Mod4 + key:
 .RS
 .IP \(bu 2
 .B r 
