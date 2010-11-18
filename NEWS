@@ -2,6 +2,13 @@
 
 User visible changes
 
+2010-11-18
+
+   NOTA BENE! Modifier key changed! Now using Mod4 instead of Mod2 for
+   key bindnings. I've been using my own key maps for so long that I
+   forgot all about NumLock usually being Mod2 and users complained.
+   I'm sorry.
+
 2010-11-01
 
   * Fixed bug. We mangled a list when a window was destroyed on
