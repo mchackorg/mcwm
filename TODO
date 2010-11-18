@@ -1,5 +1,9 @@
 -*- text -*-
 
+* MappingNotify
+
+  Need to handle any changes of the keyboard mapping.
+
 * Feedback window
   
   We need to tell the user the new geometry somehow. Is this what I
