@@ -2405,17 +2405,19 @@ void handle_keypress(xcb_key_press_event_t *ev)
 void events(void)
 {
     xcb_generic_event_t *ev;
-    int mode = 0;                   /* Internal mode. */
-    int16_t mode_x;
-    int16_t mode_y;
-    int fd;
-    fd_set in;
-    int found;
-    
+    int mode = 0;                   /* Internal mode, such as move or resize */
+    int16_t mode_x = 0;             /* X coord when in special mode */
+    int16_t mode_y = 0;             /* Y coord when in special mode */
+    int fd;                         /* Our X file descriptor */
+    fd_set in;                      /* For select */
+    int found;                      /* Ditto. */
+
+    /* Get the file descriptor so we can do select() on it. */
     fd = xcb_get_file_descriptor(conn);
 
     for (sigcode = 0; 0 == sigcode;)
     {
+        /* Prepare for select(). */
         FD_ZERO(&in);
         FD_SET(fd, &in);
 
@@ -2511,7 +2513,7 @@ void events(void)
             int16_t y;
             uint16_t width;
             uint16_t height;
-            
+
             e = (xcb_button_press_event_t *) ev;
             PDEBUG("Button %d pressed in window %ld, subwindow %d "
                     "coordinates (%d,%d)\n",
@@ -2656,7 +2658,15 @@ void events(void)
         case XCB_BUTTON_RELEASE:
             PDEBUG("Mouse button released! mode = %d\n", mode);
 
-            if (0 != mode)
+            if (0 == mode)
+            {
+                /*
+                 * Mouse button released, but not in a saved mode. Do
+                 * nothing.
+                 */
+                break;
+            }
+            else
             {
                 int16_t x;
                 int16_t y;
