@@ -101,7 +101,10 @@ start terminal
 go to next visible window.
 .IP \(bu 2
 .B f
-fix window so it is visible on all workspaces.
+fix window so it is visible on all workspaces. Toggles. Press again to
+unfix window. Also used to move windows between workspaces: First fix
+the window, change to the workspace you want, then unfix the window on
+the new workspace.
 .IP \(bu 2
 .B y
 move to upper left corner.
