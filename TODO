@@ -1,5 +1,15 @@
 -*- text -*-
 
+* Reset windows
+
+  When physical screens change, reset sense of maximum, virtmax et
+  cetera.
+
+* Grab keys specifically
+
+  Current code grabs modifier keys and any other keypress. Need to
+  specifically grab keys we need to work OK with xbindkeys.
+
 * MappingNotify
 
   Need to handle any changes of the keyboard mapping.
@@ -52,11 +62,18 @@
 
 * Menu
 
-  We might need a menu for hidden windows (see above). Since I'm z
+  We might need a menu for hidden windows (see above). Since I'm
   probably implementing menu windows anyway, perhaps I should add a
   menu with basic window functions, like 9wm and twm. This way, one
   might use the window manager without keyboard, if necessary. Not
-  much work if I have to do the menu anyway...
+  much work if I have to do the menu anyway... But also chords?
+
+* Chords
+
+  Maybe have mouse button chords to do move and resize? Configurable
+  if on or off?
+
+  Idea from Christian Neukirchen.
 
 * Snap to border and screen edge, which favours the edge.
 
