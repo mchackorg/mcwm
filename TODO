@@ -5,10 +5,11 @@
   When physical screens change, reset sense of maximum, virtmax et
   cetera.
 
-* Grab keys specifically
+* Grab specific keys 
 
-  Current code grabs modifier keys and any other keypress. Need to
-  specifically grab keys we need to work OK with xbindkeys.
+  Current code grabs modifier keys and any other keypress. We need to
+  specifically grab the keycodes we need. xbindkeys and possibly other
+  programs don't work.
 
 * MappingNotify
 
@@ -33,8 +34,9 @@
   around them in a simple window ring.
 
   We need to re-arrange the list so the last focused window gets to be
-  the next in ring. Perhaps simply move the focused window to head of
-  list after finishing focusing? How do we know when we're finished
+  the next in ring. Perhaps just change direction in the list? Needs
+  double linked list... Perhaps simply move the focused window to head
+  of list after finishing focusing? How do we know when we're finished
   and have the focus we want? Both Tab and Mod2 are released. Use a
   mode?
 
@@ -79,9 +81,9 @@
 
 * Gaps on borders for docks, status windows et cetera.
 
-  Keep space reserverd for Conky, dzen2 et cetera.
+  Keep space reserved for Conky, dzen2 et cetera.
   
-  Also handle EWMH hints _NET_WM_TYPE_DOCK and _NET_WM_TYPE_DESKTOP.
+  Also respect EWMH hints _NET_WM_TYPE_DOCK and _NET_WM_TYPE_DESKTOP.
 
 * Flag to disable dontmoveoff?
 
@@ -101,6 +103,10 @@
 
   How do we handle window moves from one screen to another. Should we
   snap to the physical screen's edge and then allow move to continue?
+
+  An idea from Christian: Use a huge virtual screen and make physical
+  screens map to it. Perhaps we can actually manage to have a window
+  on two physical screens at once?
 
 * Key to move pointer to another physical screen.
 
@@ -127,3 +133,7 @@
   focused window...
 
   And a few others.
+
+* Use bitfields instead of extra lists for virtual screens?
+
+* Dispatch table for key bindings instead of keysym->enum->case?
