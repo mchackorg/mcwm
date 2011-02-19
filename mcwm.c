@@ -204,7 +204,7 @@ struct conf
 {
     bool borders;               /* Do we draw borders? */
     char *terminal;             /* Path to terminal to start. */
-    uint32_t focuscol;          /* Focused bored colour. */
+    uint32_t focuscol;          /* Focused border colour. */
     uint32_t unfocuscol;        /* Unfocused border colour.  */
     uint32_t fixedcol;          /* Fixed windows border colour. */
 } conf;
