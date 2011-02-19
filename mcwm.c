@@ -305,116 +305,95 @@ void cleanup(int code)
  */ 
 void arrangewindows(uint16_t rootwidth, uint16_t rootheight)
 {
-    xcb_query_tree_reply_t *reply;
-    int i;
-    int len;
-    xcb_window_t *children;
-    xcb_get_window_attributes_reply_t *attr;
     uint32_t mask = 0;
-    uint32_t values[4];
+    uint32_t values[5];
     bool changed;
     int16_t x;
     int16_t y;
     uint16_t width;
     uint16_t height;
+    struct item *item;
+    struct client *client;
     
     PDEBUG("Rearranging all windows to fit new screen size %d x %d.\n",
            rootwidth, rootheight);
-    
-    /* Get all children of the root window */
-    reply = xcb_query_tree_reply(conn,
-                                 xcb_query_tree(conn, screen->root), 0);
-    if (NULL == reply)
-    {
-        return;
-    }
-
-    len = xcb_query_tree_children_length(reply);    
-    children = xcb_query_tree_children(reply);
 
     /*
-     * Go through all children and look at their coordinates and
-     * geometry. If they don't fit on the new screen, move them around
-     * and resize them as necessary.
+     * Go through all windows we care about and look at their
+     * coordinates and geometry. If they don't fit on the new screen,
+     * move them around and resize them as necessary.
      */
-    for (i = 0; i < len; i ++)
+    for (item = winlist; item != NULL; item = item->next)
     {
-        changed = false;
-        
-        attr = xcb_get_window_attributes_reply(
-            conn, xcb_get_window_attributes(conn, children[i]), NULL);
+        client = item->data;
 
-        if (!attr)
+        changed = false;
+    
+        if (!getgeom(client->id, &x, &y, &width, &height))
         {
-            fprintf(stderr, "Couldn't get attributes for window %d.",
-                    children[i]);
-            continue;
+            return;
         }
 
-        /*
-         * Don't bother with windows in override redirect mode.
-         */    
-        if (!attr->override_redirect)
+        PDEBUG("Win %d at %d,%d %d x %d\n", client->id, x, y, width, height);
+
+        if (width > rootwidth)
         {
-    
-            if (!getgeom(children[i], &x, &y, &width, &height))
-            {
-                free(attr);
-                goto out;
-            }
+            width = rootwidth - BORDERWIDTH * 2;
+            changed = true;
+        }
 
-            PDEBUG("Win %d at %d,%d %d x %d\n", children[i],
-                   x, y, width,
-                   height);
+        if (height > rootheight)
+        {
+            height = rootheight - BORDERWIDTH * 2;
+            changed = true;
+        }
 
-            if (width > rootwidth)
-            {
-                width = rootwidth - BORDERWIDTH * 2;
-                changed = true;
-            }
+        /* If x or y + geometry is outside of screen, move window. */
 
-            if (height > rootheight)
-            {
-                height = rootheight - BORDERWIDTH * 2;
-                changed = true;
-            }
+        if (x + width > rootwidth)
+        {
+            x = rootwidth - (width + BORDERWIDTH * 2);
+            changed = true;
+        }
 
-            /* If x or y + geometry is outside of screen, move window. */
+        if (y + height > rootheight)
+        {
+            y = rootheight - (height + BORDERWIDTH * 2);;
+            changed = true;
+        }
 
-            if (x + width > rootwidth)
-            {
-                x = rootwidth - (width + BORDERWIDTH * 2);
-                changed = true;
-            }
+        /* Reset sense of maximized. */
+        client->vertmaxed = false;
 
-            if (y + height > rootheight)
-            {
-                y = rootheight - (height + BORDERWIDTH * 2);;
-                changed = true;
-            }
-            
-            if (changed)
-            {
-                PDEBUG("--- Win %d going to %d,%d %d x %d\n", children[i],
-                       x, y, width, height);
-
-                mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y
-                    | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
-                values[0] = x;
-                values[1] = y;
-                values[2] = width;
-                values[3] = height;
+        if (client->maxed)
+        {
+            client->maxed = false;
                 
-                xcb_configure_window(conn, children[i], mask, values);
-                xcb_flush(conn);
-            }
-        } /* if not override_direct */
+            /* Set borders again. */
+            values[0] = BORDERWIDTH;
 
-        free(attr);
+            mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
+    
+            xcb_configure_window(conn, client->id, mask, &values[0]);
+            xcb_flush(conn);            
+        }
+        
+        if (changed)
+        {
+            PDEBUG("--- Win %d going to %d,%d %d x %d\n", children[i],
+                   x, y, width, height);
+
+            mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y
+                | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
+            values[0] = x;
+            values[1] = y;
+            values[2] = width;
+            values[3] = height;
+            
+            xcb_configure_window(conn, client->id, mask, values);
+            xcb_flush(conn);
+        }
     } /* for */
-
-out:
-    free(reply);
 }
 
 /* Set the EWMH hint that window win belongs on workspace ws. */
@@ -1894,16 +1873,35 @@ void unmax(struct client *client)
     }
     
     /* Restore geometry. */
-    values[0] = client->x;
-    values[1] = client->y;
-    values[2] = client->width;
-    values[3] = client->height;    
+    if (client->maxed)
+    {
 
-    /* Set borders again. */
-    values[4] = BORDERWIDTH;
+        values[0] = client->x;
+        values[1] = client->y;        
+        values[2] = client->width;
+        values[3] = client->height;
 
-    mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH
-        | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_BORDER_WIDTH;
+        /* Set borders again. */
+        values[4] = BORDERWIDTH;
+        
+        mask =
+            XCB_CONFIG_WINDOW_X
+            | XCB_CONFIG_WINDOW_Y
+            | XCB_CONFIG_WINDOW_WIDTH
+            | XCB_CONFIG_WINDOW_HEIGHT
+            | XCB_CONFIG_WINDOW_BORDER_WIDTH;
+    }
+    else
+    {
+        values[0] = client->y;
+        values[1] = client->width;
+        values[2] = client->height;
+
+        mask = XCB_CONFIG_WINDOW_Y
+            | XCB_CONFIG_WINDOW_WIDTH
+            | XCB_CONFIG_WINDOW_HEIGHT;
+    }
+
     xcb_configure_window(conn, client->id, mask, values);
 
     /* Warp pointer to window or we might lose it. */
@@ -2828,15 +2826,13 @@ void events(void)
                  * the user adds a new screen, tilts their screen 90
                  * degrees or whatnot. We might need to rearrange
                  * windows to be visible.
+                 *
+                 * Always call this function since we also need to
+                 * reset any maximized state.
                  */
                 PDEBUG("Notify event for root!\n");
+                arrangewindows(e->width, e->height);
 
-                if (e->width < screen->width_in_pixels
-                    || e->height < screen->height_in_pixels)
-                {
-                    arrangewindows(e->width, e->height);
-                }
-                
                 screen->width_in_pixels = e->width;
                 screen->height_in_pixels = e->height;
 
