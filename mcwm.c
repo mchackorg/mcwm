@@ -1019,7 +1019,11 @@ int setupkeys(void)
 
             return -1;
         }
-    }
+
+        /* Grab this key. */
+        xcb_grab_key(conn, 1, screen->root, MODKEY, keys[i].keycode,
+                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    } /* for */
     
     /* Get rid of the key symbols table. */
     free(keysyms);
@@ -3102,10 +3106,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    /* Grab some keys and mouse buttons. */
-
-    xcb_grab_key(conn, 1, root, MODKEY, XCB_NO_SYMBOL,
-                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+    /* Grab mouse buttons. */
 
     xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
                     | XCB_EVENT_MASK_BUTTON_RELEASE,
