@@ -1023,6 +1023,13 @@ int setupkeys(void)
         /* Grab this key. */
         xcb_grab_key(conn, 1, screen->root, MODKEY, keys[i].keycode,
                      XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+
+        /*
+         * XXX Also grab it's shifted counterpart. A bit ugly here
+         * because we grab all of them not just the ones we want.
+         */
+        xcb_grab_key(conn, 1, screen->root, MODKEY | SHIFTMOD, keys[i].keycode,
+                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     } /* for */
     
     /* Get rid of the key symbols table. */
