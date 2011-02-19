@@ -380,7 +380,7 @@ void arrangewindows(uint16_t rootwidth, uint16_t rootheight)
         
         if (changed)
         {
-            PDEBUG("--- Win %d going to %d,%d %d x %d\n", children[i],
+            PDEBUG("--- Win %d going to %d,%d %d x %d\n", client->id,
                    x, y, width, height);
 
             mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y
@@ -2827,15 +2827,27 @@ void events(void)
                  * degrees or whatnot. We might need to rearrange
                  * windows to be visible.
                  *
-                 * Always call this function since we also need to
-                 * reset any maximized state.
+                 * We might get notified for several reasons, not just
+                 * if the geometry changed. If the geometry is
+                 * unchanged, do nothing.
+                 * 
                  */
                 PDEBUG("Notify event for root!\n");
-                PDEBUG("New root geometry: %dx%d\n", e->width, e->height);
-                
-                arrangewindows(e->width, e->height);
-                screen->width_in_pixels = e->width;
-                screen->height_in_pixels = e->height;
+                PDEBUG("Possibly a new root geometry: %dx%d\n",
+                       e->width, e->height);
+
+                if (e->width == screen->width_in_pixels
+                    && e->height == screen->height_in_pixels)
+                {
+                    /* Root geometry is really unchanged. Do nothing. */
+                    PDEBUG("Hey! Geometry didn't change.\n");
+                }
+                else
+                {
+                    arrangewindows(e->width, e->height);
+                    screen->width_in_pixels = e->width;
+                    screen->height_in_pixels = e->height;
+                }
             }
         }
         break;
