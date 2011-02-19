@@ -5,11 +5,17 @@
   When physical screens change, reset sense of maximum, virtmax et
   cetera.
 
+  This probably means we will have to go through the client list
+  instead of asking the X server for all windows.
+
 * Grab specific keys 
 
   Current code grabs modifier keys and any other keypress. We need to
   specifically grab the keycodes we need. xbindkeys and possibly other
   programs don't work.
+
+  Partially done. Now grabs all our keys unshifted as well as shifted.
+  Needs a way to tell in config.h what extra modifier is used.
 
 * MappingNotify
 
@@ -126,8 +132,6 @@
   user? Can this be done with some stand-alone program instead?
 
 * Support sensible portions of ICCCM and EWMH
-
-  At least user set position and geometry.
 
   EWMH hints that tells applications about active workspace and
   focused window...
