@@ -2831,12 +2831,11 @@ void events(void)
                  * reset any maximized state.
                  */
                 PDEBUG("Notify event for root!\n");
+                PDEBUG("New root geometry: %dx%d\n", e->width, e->height);
+                
                 arrangewindows(e->width, e->height);
-
                 screen->width_in_pixels = e->width;
                 screen->height_in_pixels = e->height;
-
-                PDEBUG("New root geometry: %dx%d\n", e->width, e->height);
             }
         }
         break;
@@ -2862,7 +2861,6 @@ void events(void)
                 mask |= XCB_CONFIG_WINDOW_X;
                 i ++;                
                 values[i] = e->x;
-
             }
 
             if (e->value_mask & XCB_CONFIG_WINDOW_Y)
@@ -2871,7 +2869,6 @@ void events(void)
                 mask |= XCB_CONFIG_WINDOW_Y;
                 i ++;                
                 values[i] = e->y;
-
             }
             
             if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
@@ -2926,7 +2923,6 @@ void events(void)
              * XCB_PLACE_ON_TOP or _ON_BOTTOM. We don't care.
              */
             xcb_circulate_window(conn, e->window, e->place);
-            
         }
         break;
 
