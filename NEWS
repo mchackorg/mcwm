@@ -2,6 +2,16 @@
 
 User visible changes
 
+2011-02-19
+
+   * Resets per window state of max or vertical max when physical
+     screen size changes.
+
+   * Doesn't reset x coordinate when unmaxing vertically.
+
+   * Specifically grab the keycodes we use and keycodes + shift
+     modifier. Now works OK with xbindkeys.
+
 2010-11-18
 
    NOTA BENE! Modifier key changed! Now using Mod4 instead of Mod2 for
