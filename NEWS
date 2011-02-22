@@ -2,6 +2,13 @@
 
 User visible changes
 
+2011-02-23
+
+   * If you change focus window mcwm remembers where we last had
+     focus. If you start using MODKEY+Tab to move around the window
+     list the first Tab will always bring you to where we last had
+     focus.
+
 2011-02-19
 
    * Resets per window state of max or vertical max when physical

@@ -30,6 +30,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <signal.h>
+#include <assert.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -73,6 +74,12 @@
 /* We're currently resizing a window with the mouse. */
 #define MCWM_RESIZE 3
 
+/*
+ * We're currently tabbing around the window list, looking for a new
+ * window to focus on.
+ */
+#define MCWM_TABBING 4
+
 /* Our highest workspace. */
 #define WORKSPACE_MAX 9
 
@@ -112,6 +119,7 @@ typedef enum {
     KEY_B,
     KEY_N,
     KEY_END,
+    KEY_ALT,    
     KEY_MAX
 } key_enum_t;
 
@@ -145,7 +153,12 @@ xcb_connection_t *conn;         /* Connection to X server. */
 xcb_screen_t *screen;           /* Our current screen.  */
 uint32_t curws = 0;             /* Current workspace. */
 struct client *focuswin;        /* Current focus window. */
+struct client *lastfocuswin;        /* Last focused window. NOTE! Only
+                                     * used to communicate between
+                                     * start and end of tabbing
+                                     * mode. */
 struct item *winlist = NULL;    /* Global list of all client windows. */
+int mode = 0;                   /* Internal mode, such as move or resize */
 
 /*
  * Workspace list: Every workspace has a list of all visible
@@ -172,7 +185,7 @@ struct keys
     xcb_keycode_t keycode;
 } keys[KEY_MAX] =
 {
-    { USERKEY_FIX, 0 },    
+    { USERKEY_FIX, 0 },
     { USERKEY_MOVE_LEFT, 0 },
     { USERKEY_MOVE_DOWN, 0 },
     { USERKEY_MOVE_UP, 0 },
@@ -180,8 +193,8 @@ struct keys
     { USERKEY_MAXVERT, 0 },
     { USERKEY_RAISE, 0 },
     { USERKEY_TERMINAL, 0 },
-    { USERKEY_MAX, 0 },    
-    { USERKEY_CHANGE, 0, },
+    { USERKEY_MAX, 0 },
+    { USERKEY_CHANGE, 0 },
     { USERKEY_WS1, 0 },
     { USERKEY_WS2, 0 },
     { USERKEY_WS3, 0 },
@@ -196,7 +209,8 @@ struct keys
     { USERKEY_TOPRIGHT, 0 },
     { USERKEY_BOTLEFT, 0 },
     { USERKEY_BOTRIGHT, 0 },
-    { USERKEY_DELETE, 0 }
+    { USERKEY_DELETE, 0 },
+    { USERKEY_MOD, 0 },    
 };    
 
 /* Global configuration. */
@@ -985,7 +999,7 @@ int setupkeys(void)
     
     /* Get all the keysymbols. */
     keysyms = xcb_key_symbols_alloc(conn);
-
+    
     for (i = KEY_F; i < KEY_MAX; i ++)
     {
         keys[i].keycode = keysymtokeycode(keys[i].keysym, keysyms);        
@@ -999,17 +1013,38 @@ int setupkeys(void)
             return -1;
         }
 
-        /* Grab this key. */
-        xcb_grab_key(conn, 1, screen->root, MODKEY, keys[i].keycode,
-                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+        if (i == KEY_ALT)
+        {
+            /*
+             * Grab Alt with all modifiers.
+             *
+             * FIXME: We can ask the X server for the keycode that
+             * gives us the MODKEY mask with the GetModifierMapping
+             * request.
+             */
+            xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY,
+                 keys[KEY_ALT].keycode,
+                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+        }
+        else
+        {
+            /* Grab other keys with a modifier mask. */
+            xcb_grab_key(conn, 1, screen->root, MODKEY, keys[i].keycode,
+                         XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
-        /*
-         * XXX Also grab it's shifted counterpart. A bit ugly here
-         * because we grab all of them not just the ones we want.
-         */
-        xcb_grab_key(conn, 1, screen->root, MODKEY | SHIFTMOD, keys[i].keycode,
-                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+            /*
+             * XXX Also grab it's shifted counterpart. A bit ugly here
+             * because we grab all of them not just the ones we want.
+             */
+            xcb_grab_key(conn, 1, screen->root, MODKEY | SHIFTMOD,
+                         keys[i].keycode,
+                         XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+        }
     } /* for */
+
+
+    /* Need this to take effect NOW! */
+    xcb_flush(conn);
     
     /* Get rid of the key symbols table. */
     free(keysyms);
@@ -1196,7 +1231,7 @@ void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
 /* Change focus to next in window ring. */
 void focusnext(void)
 {
-    struct client *client;
+    struct client *client = NULL;
     
 #if DEBUG
     if (NULL != focuswin)
@@ -1205,7 +1240,26 @@ void focusnext(void)
     }
 #endif
 
-    /* If we currently have no focus, focus first in list. */
+    if (NULL == wslist[curws])
+    {
+        PDEBUG("No windows to focus on in this workspace.\n");
+        return;
+    }
+    
+    if (MCWM_TABBING != mode)
+    {
+        /*
+         * Remember what we last focused on. We need this when the
+         * MODKEY is released and we move the last focused window in
+         * the tabbing order list.
+         */        
+        lastfocuswin = focuswin;
+        mode = MCWM_TABBING;
+
+        PDEBUG("Began tabbing.\n");        
+    }
+        
+    /* If we currently have no focus focus first in list. */
     if (NULL == focuswin)
     {
         if (NULL == wslist[curws])
@@ -1213,7 +1267,7 @@ void focusnext(void)
             PDEBUG("No windows to focus on.\n");
             return;
         }
-        
+        PDEBUG("Focusing first in list: %p\n", wslist[curws]);
         client = wslist[curws]->data;
     }
     else
@@ -1222,17 +1276,24 @@ void focusnext(void)
         {
             /*
              * We were at the end of list. Focusing on first window in
-             * list.
+             * list unless we were already there.
              */
-            client = wslist[curws]->data;
+            if (focuswin->wsitem[curws] != wslist[curws]->data)
+            {
+                PDEBUG("End of list. Focusing first in list: %p\n",
+                       wslist[curws]);
+                client = wslist[curws]->data;
+            }
         }
         else
         {
             /* Otherwise, focus the next in list. */
+            PDEBUG("Tabbing. Focusing next: %p.\n",
+                   focuswin->wsitem[curws]->next);            
             client = focuswin->wsitem[curws]->next->data;
         }
     } /* if NULL focuswin */
-    
+
     /*
      * Raise window if it's occluded, then warp pointer into it and
      * set keyboard focus to it.
@@ -2251,6 +2312,12 @@ void handle_keypress(xcb_key_press_event_t *ev)
         return;
     }
 
+    if (MCWM_TABBING == mode && key != KEY_TAB)
+    {
+        /* We don't allow any other key while in this mode. */
+        return;
+    }
+    
     /* Is it shifted? */
     if (ev->state & SHIFTMOD)
     {
@@ -2391,7 +2458,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
 void events(void)
 {
     xcb_generic_event_t *ev;
-    int mode = 0;                   /* Internal mode, such as move or resize */
+
     int16_t mode_x = 0;             /* X coord when in special mode */
     int16_t mode_y = 0;             /* Y coord when in special mode */
     int fd;                         /* Our X file descriptor */
@@ -2472,7 +2539,9 @@ void events(void)
             e = (xcb_destroy_notify_event_t *) ev;
 
             /*
-             * If we had focus in this window, forget about the focus.
+             * If we had focus or our last focus in this window,
+             * forget about the focus.
+             *
              * We will get an EnterNotify if there's another window
              * under the pointer so we can set the focus proper later.
              */
@@ -2481,6 +2550,13 @@ void events(void)
                 if (focuswin->id == e->window)
                 {
                     focuswin = NULL;
+                }
+            }
+            if (NULL != lastfocuswin)
+            {
+                if (lastfocuswin->id == e->window)
+                {
+                    lastfocuswin = NULL;
                 }
             }
             
@@ -2741,6 +2817,38 @@ void events(void)
         }
         break;
 
+        case XCB_KEY_RELEASE:
+        {
+            xcb_key_release_event_t *e = (xcb_key_release_event_t *)ev;
+            
+            PDEBUG("Key %d released.\n", e->detail);
+
+            if (e->detail == keys[KEY_ALT].keycode && MCWM_TABBING == mode)
+            {
+                /* MODKEY was released after tabbing around the
+                 * workspace window ring. This means this mode is
+                 * finished and we have found a new focus window.
+                 *
+                 * We need to move first the window we used to focus
+                 * on to the head of the window list and then move the
+                 * new focus to the head of the list as well. The list
+                 * should always start with the window we're focusing
+                 * on.
+                 */
+                
+                mode = 0;
+
+                if (NULL != lastfocuswin)
+                {
+                    movetohead(&wslist[curws], lastfocuswin->wsitem[curws]);
+                    lastfocuswin = NULL;                    
+                }
+                
+                movetohead(&wslist[curws], focuswin->wsitem[curws]);
+            } /* if KEY_ALT */
+        }
+        break;
+            
         case XCB_ENTER_NOTIFY:
         {
             xcb_enter_notify_event_t *e = (xcb_enter_notify_event_t *)ev;
@@ -2783,6 +2891,27 @@ void events(void)
                     client = findclient(e->event);
                     if (NULL != client)
                     {
+                        if (MCWM_TABBING != mode)
+                        {
+                            /*
+                             * We are focusing on a new window. Since
+                             * we're not currently tabbing around the
+                             * window ring, we need to update the
+                             * current workspace window list: Move
+                             * first the old focus to the head of the
+                             * list and then the new focus to the head
+                             * of the list.
+                             */
+                            if (NULL != focuswin)
+                            {
+                                movetohead(&wslist[curws],
+                                           focuswin->wsitem[curws]);
+                                lastfocuswin = NULL;                 
+                            }
+
+                            movetohead(&wslist[curws], client->wsitem[curws]);
+                        } /* if not tabbing */
+
                         setfocus(client);
                     }
                 }

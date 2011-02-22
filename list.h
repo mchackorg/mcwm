@@ -6,6 +6,7 @@ struct item
 };
 
 void movetohead(struct item **mainlist, struct item *item);
+void movetonext(struct item **mainlist, struct item *item, struct item *next);
 struct item *additem(struct item **mainlist);
 void delitem(struct item **mainlist, struct item *item);
 void listitems(struct item *mainlist);

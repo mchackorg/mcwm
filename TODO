@@ -28,32 +28,50 @@
   Save the subwindows of the root window and focus each when pressing
   modkey + user_key_change. First option always last focused window.
 
-  Partly done. I have added a linked list of all windows and can walk
-  around them in a simple window ring.
-
   I would like it to work like this: modkey-Tab-Tab-Tab... Release
   modkey to focus on a window *and* to remember the window where we
   started. The window we remember would be moved to the next position
   in the window list.
 
+  This will also need to work if the change focus with the mouse.
+
   A single modkey-Tab would then get the focus to end up in the window where
-  we started.
+  we started tabbing or where we last had our focus if changing with
+  the mouse.
 
-  It's possible to get a Release Event from the Alt key. Consider what
-  xev(1) says about the key.
+  This is done, but in a bit ugly way. I have bound Alt_L explicitly
+  and looking for key release events.
 
-  I don't know if it's possible to ask the X server what keycode currently
-  gives you XCB_MOD_MASK_4 or whatever, which would be the nicest way.
+  It is possible to ask for what keys give XCB_MOD_MASK_4 or whatever
+  MODKEY is.
 
-  I guess, but I haven't yet tried, that I will have to do a specific grab
-  key for the XK_Alt_L or whatever instead.
+    GetModifierMapping
 
-  This also means we have to add a new state, just like MCWM_MOVE et
-  cetera, to know that we're currently jumping around the window list
-  trying to find our next focused window.
+    This request returns the keycodes of the keys being used as
+    modifiers. The number of keycodes in the list is
+    8*keycodes-per-modifier. The keycodes are divided into eight sets,
+    with each set containing keycodes-per-modifier elements. The sets
+    are assigned to the modifiers Shift, Lock, Control, Mod1, Mod2,
+    Mod3, Mod4, and Mod5, in order. The keycodes-per-modifier value is
+    chosen arbitrarily by the server; zeroes are used to fill in
+    unused elements within each set. If only zero values are given in
+    a set, the use of the corresponding modifier has been disabled.
+    The order of keycodes within each set is chosen arbitrarily by the
+    server.
+
+    xcb_get_modifier_mapping()
+
+    xcb_get_modifier_mapping_unchecked()
+
+    xcb_keycode_t * xcb_get_modifier_mapping_keycodes()
+
+    xcb_keycode_t *
+    xcb_get_modifier_mapping_keycodes (const xcb_get_modifier_mapping_reply_t *R  /**< */);
+
+    xcb_get_modifier_mapping_keycodes_length (const xcb_get_modifier_mapping_reply_t *R  /**< */);
 
   How do we re-establish stack order after moving around windows to
-  focus on?
+  focus on? Do we want to?
 
 * Virtual screens/workspaces
 

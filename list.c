@@ -43,6 +43,53 @@ void movetohead(struct item **mainlist, struct item *item)
     *mainlist = item;
 }
 
+void movetonext(struct item **mainlist, struct item *item, struct item *next)
+{
+    if (NULL == item || NULL == next || NULL == mainlist || NULL == *mainlist)
+    {
+        return;
+    }
+
+    if (item->next == next || item == next)
+    {
+        /* Already in position. Do nothing. */
+        return;
+    }
+
+    /* Braid together the list where next used to be. */
+
+    if (NULL != next->next)
+    {
+        next->next->prev = next->prev;
+    }
+    
+    if (NULL != next->prev)
+    {
+        next->prev->next = next->next;
+    }
+    else
+    {
+        /* next is currently head. move head one step further along. */
+        if (NULL != next->next)
+        {
+            *mainlist = next->next;
+            next->next->prev = NULL;
+        }
+    }
+
+    /* Position next after item and braid together list again. */
+    next->prev = item;
+    next->next = item->next;
+
+    if (NULL != next->next)
+    {
+        next->next->prev = next;
+    }
+
+    /* Remember where next is now. */
+    item->next = next;
+}
+
 /*
  */
 struct item *additem(struct item **mainlist)
@@ -120,10 +167,14 @@ void listall(struct item *mainlist)
 {
     struct item *item;
     int i;
+
+    printf("Listing all:\n");
     
     for (item = mainlist, i = 1; item != NULL; item = item->next, i ++)
     {
         printf("%d at %p: %s.\n", i, (void *)item, (char *)item->data);
+        printf("  prev: %p\n", item->prev);
+        printf("  next: %p\n", item->next);
     }
 }
 
@@ -133,7 +184,10 @@ int main(void)
     struct item *item1;
     struct item *item2;
     struct item *item3;
-    struct item *item4;    
+    struct item *item4;
+    struct item *item;
+    struct item *nextitem;
+    int i;
     char *foo1 = "1";
     char *foo2 = "2";
     char *foo3 = "3";
@@ -179,12 +233,58 @@ int main(void)
     printf("Current elements:\n");    
     listall(mainlist);
 
+    printf("----------------------------------------------------------------------\n");
+
+    printf("Moving item3 to be after item2\n");
+    movetonext(&mainlist, item2, item3);
+    printf("Current elements:\n");    
+    listall(mainlist);
+
+    printf("----------------------------------------------------------------------\n");
+
+    printf("Moving head! item4 to be after item2\n");
+    movetonext(&mainlist, item2, item4);
+    printf("Current elements:\n");    
+    listall(mainlist);
+
+    printf("----------------------------------------------------------------------\n");
+    
+    printf("Moving tail! item1 to be after item2\n");
+    movetonext(&mainlist, item2, item1);
+    printf("Current elements:\n");
+    listall(mainlist);
+
+    printf("----------------------------------------------------------------------\n");
+
+    printf("Moving head to be after tail.\n");
+    movetonext(&mainlist, item3, item2);
+    printf("Current elements:\n");
+    listall(mainlist);
+    
+    printf("Moving all the items after each other.\n");
+    /* item3 is tail. work backwards. */
+    for (item = mainlist, i = 1;
+         item != NULL;
+         item = item->next, i ++)
+    {
+        for (nextitem = item2; nextitem != NULL; nextitem = nextitem->prev)
+        {
+            movetonext(&mainlist, nextitem, item);
+            printf("Current elements:\n");
+            listall(mainlist);
+        }
+    }
+    
+    printf("----------------------------------------------------------------------\n");
+
+#if 0    
     movetohead(&mainlist, item2);
     printf("Current elements:\n");    
     listall(mainlist);
     
     printf("----------------------------------------------------------------------\n");
-
+#endif
+    
     printf("Deleting item stored at %p\n", item3);
     delitem(&mainlist, item3);
     printf("Current elements:\n");    
@@ -203,7 +303,9 @@ int main(void)
     listall(mainlist);
 
     puts("");
-    
+
+    printf("----------------------------------------------------------------------\n");
+               
     exit(0);
 }
 #endif
