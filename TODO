@@ -1,13 +1,5 @@
 -*- text -*-
 
-* Reset windows
-
-  When physical screens change, reset sense of maximum, virtmax et
-  cetera.
-
-  This probably means we will have to go through the client list
-  instead of asking the X server for all windows.
-
 * Grab specific keys 
 
   Current code grabs modifier keys and any other keypress. We need to
@@ -39,12 +31,26 @@
   Partly done. I have added a linked list of all windows and can walk
   around them in a simple window ring.
 
-  We need to re-arrange the list so the last focused window gets to be
-  the next in ring. Perhaps just change direction in the list? Needs
-  double linked list... Perhaps simply move the focused window to head
-  of list after finishing focusing? How do we know when we're finished
-  and have the focus we want? Both Tab and Mod2 are released. Use a
-  mode?
+  I would like it to work like this: modkey-Tab-Tab-Tab... Release
+  modkey to focus on a window *and* to remember the window where we
+  started. The window we remember would be moved to the next position
+  in the window list.
+
+  A single modkey-Tab would then get the focus to end up in the window where
+  we started.
+
+  It's possible to get a Release Event from the Alt key. Consider what
+  xev(1) says about the key.
+
+  I don't know if it's possible to ask the X server what keycode currently
+  gives you XCB_MOD_MASK_4 or whatever, which would be the nicest way.
+
+  I guess, but I haven't yet tried, that I will have to do a specific grab
+  key for the XK_Alt_L or whatever instead.
+
+  This also means we have to add a new state, just like MCWM_MOVE et
+  cetera, to know that we're currently jumping around the window list
+  trying to find our next focused window.
 
   How do we re-establish stack order after moving around windows to
   focus on?
