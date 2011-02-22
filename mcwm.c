@@ -1197,8 +1197,6 @@ void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
 void focusnext(void)
 {
     struct client *client;
-    bool found = false;
-    struct item *item;
     
 #if DEBUG
     if (NULL != focuswin)
@@ -1217,45 +1215,24 @@ void focusnext(void)
         }
         
         client = wslist[curws]->data;
-        found = true;
     }
     else
     {
-        /*
-         * Find our current focused window in list of windows on the
-         * current workspace and focus the next.
-         */
-        for (item = wslist[curws]; item != NULL; item = item->next)
+        if (NULL == focuswin->wsitem[curws]->next)
         {
-            if (focuswin == item->data)
-            {
-                if (NULL != item->next)
-                { 
-                    client = item->next->data;
-                    found = true;
-                    break;
-                }
-                else
-                {
-                    /*
-                     * We were at the end of list. Focusing on first window in
-                     * list instead.
-                     */
-                    client = wslist[curws]->data;
-                    found = true;
-                    break;
-                }
-            }
+            /*
+             * We were at the end of list. Focusing on first window in
+             * list.
+             */
+            client = wslist[curws]->data;
         }
-    }
+        else
+        {
+            /* Otherwise, focus the next in list. */
+            client = focuswin->wsitem[curws]->next->data;
+        }
+    } /* if NULL focuswin */
     
-    if (!found)
-    {
-        PDEBUG("Couldn't find any new window to focus on. Focusing first in "
-               "list...\n");
-        client = wslist[curws]->data;
-    }
-
     /*
      * Raise window if it's occluded, then warp pointer into it and
      * set keyboard focus to it.
@@ -2763,7 +2740,7 @@ void events(void)
             handle_keypress(e);
         }
         break;
-            
+
         case XCB_ENTER_NOTIFY:
         {
             xcb_enter_notify_event_t *e = (xcb_enter_notify_event_t *)ev;
