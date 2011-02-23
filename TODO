@@ -144,6 +144,13 @@
 
   And a few others.
 
-* Use bitfields instead of extra lists for virtual screens?
+* Code cleaning
 
-* Dispatch table for key bindings instead of keysym->enum->case?
+  - Obivous cleanup: The event switch is way too big.
+
+  - The states are known everywhere. A tight state machine would be
+    nicer.
+
+  - Dispatch table for key bindings instead of keysym->enum->case?
+
+  - Use bitfields instead of extra lists for virtual screens?
