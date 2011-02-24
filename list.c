@@ -23,7 +23,7 @@ void movetohead(struct item **mainlist, struct item *item)
     
     if (*mainlist == item)
     {
-        /* Already at head. Do nothing. */
+        /* item is NULL or we're already at head. Do nothing. */
         return;
     }
 
@@ -38,10 +38,15 @@ void movetohead(struct item **mainlist, struct item *item)
         item->next->prev = item->prev;
     }
 
-    /* Now at head. */
+    /* Now we'at head, so no one before us. */
     item->prev = NULL;
+
+    /* Old head is our next. */
     item->next = *mainlist;
 
+    /* Old head needs to know about us. */
+    item->next->prev = item;
+    
     /* Remember the new head. */
     *mainlist = item;
 }
