@@ -1258,20 +1258,17 @@ void focusnext(void)
 
         PDEBUG("Began tabbing.\n");        
     }
-        
+    
     /* If we currently have no focus focus first in list. */
     if (NULL == focuswin)
     {
-        if (NULL == wslist[curws])
-        {
-            PDEBUG("No windows to focus on.\n");
-            return;
-        }
         PDEBUG("Focusing first in list: %p\n", wslist[curws]);
         client = wslist[curws]->data;
     }
     else
     {
+        assert(NULL != focuswin->wsitem[curws]);
+        
         if (NULL == focuswin->wsitem[curws]->next)
         {
             /*
@@ -1294,16 +1291,19 @@ void focusnext(void)
         }
     } /* if NULL focuswin */
 
-    /*
-     * Raise window if it's occluded, then warp pointer into it and
-     * set keyboard focus to it.
-     */
-    uint32_t values[] = { XCB_STACK_MODE_TOP_IF };    
+    if (NULL != client)
+    {
+        /*
+         * Raise window if it's occluded, then warp pointer into it and
+         * set keyboard focus to it.
+         */
+        uint32_t values[] = { XCB_STACK_MODE_TOP_IF };    
 
-    xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_STACK_MODE,
-                         values);
-    xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0, 0, 0);
-    setfocus(client);
+        xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_STACK_MODE,
+                             values);
+        xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0, 0, 0);
+        setfocus(client);
+    }
 }
 
 /* Mark window win as unfocused. */
