@@ -11,6 +11,9 @@
 #define D(x)
 #endif
 
+/*
+ * Move element in item to the head of list mainlist.
+ */ 
 void movetohead(struct item **mainlist, struct item *item)
 {
     if (NULL == item || NULL == mainlist || NULL == *mainlist)
@@ -43,54 +46,10 @@ void movetohead(struct item **mainlist, struct item *item)
     *mainlist = item;
 }
 
-void movetonext(struct item **mainlist, struct item *item, struct item *next)
-{
-    if (NULL == item || NULL == next || NULL == mainlist || NULL == *mainlist)
-    {
-        return;
-    }
-
-    if (item->next == next || item == next)
-    {
-        /* Already in position. Do nothing. */
-        return;
-    }
-
-    /* Braid together the list where next used to be. */
-
-    if (NULL != next->next)
-    {
-        next->next->prev = next->prev;
-    }
-    
-    if (NULL != next->prev)
-    {
-        next->prev->next = next->next;
-    }
-    else
-    {
-        /* next is currently head. move head one step further along. */
-        if (NULL != next->next)
-        {
-            *mainlist = next->next;
-            next->next->prev = NULL;
-        }
-    }
-
-    /* Position next after item and braid together list again. */
-    next->prev = item;
-    next->next = item->next;
-
-    if (NULL != next->next)
-    {
-        next->next->prev = next;
-    }
-
-    /* Remember where next is now. */
-    item->next = next;
-}
-
 /*
+ * Create space for a new item and add it to the head of mainlist.
+ *
+ * Returns item or NULL if out of memory.
  */
 struct item *additem(struct item **mainlist)
 {
