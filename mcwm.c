@@ -520,13 +520,13 @@ void changeworkspace(uint32_t ws)
     PDEBUG("Changing from workspace #%d to #%d\n", curws, ws);
 
     /*
-     * We lose our focus temporarily if the window we focus isn't
-     * fixed. An EnterNotify event will get our focus back later.
+     * We lose our focus if the window we focus isn't fixed. An
+     * EnterNotify event will set focus later.
      */
     if (NULL != focuswin && !focuswin->fixed)
     {
         setunfocus(focuswin->id);
-        focuswin = NULL;        
+        focuswin = NULL;
     }
     
     /* Go through list of current ws. Unmap everything that isn't fixed. */
@@ -1260,15 +1260,19 @@ void focusnext(void)
     }
     
     /* If we currently have no focus focus first in list. */
-    if (NULL == focuswin)
+    if (NULL == focuswin || NULL == focuswin->wsitem[curws])
     {
         PDEBUG("Focusing first in list: %p\n", wslist[curws]);
         client = wslist[curws]->data;
+
+        if (NULL != focuswin && NULL == focuswin->wsitem[curws])
+        {
+            PDEBUG("XXX Our focused window %d isn't on this workspace!\n",
+                   focuswin->id);
+        }
     }
     else
     {
-        assert(NULL != focuswin->wsitem[curws]);
-        
         if (NULL == focuswin->wsitem[curws]->next)
         {
             /*
