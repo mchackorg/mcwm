@@ -47,6 +47,10 @@
     When we focus on the next window from the current one, the first
     Tab always goes to the window we had focus in before.
 
+  Currently, we stop tabbing when the MODKEY is released. We might
+  want to stop tabbing and focus on the new window if we get another
+  command as well...
+
   I have bound Alt_L explicitly and looking for key release events.
   This is a bit ugly. It is possible to ask for what keys give
   XCB_MOD_MASK_4 or whatever MODKEY is.
