@@ -21,7 +21,7 @@
   The feedback window can also show what workspace we just changed to.
 
   Can we cooperate with a stand-alone program? Write our status to a
-  root hint than can be picked up by another program?
+  root hint or named pipe than can be picked up by another program?
 
 * Changing focus from keyboard
 
@@ -104,7 +104,8 @@
 
   Instead of iconifying, hide them à la 9wm. Even if we use a key to
   hide them, this probably means we have to have a menu to get them
-  back.
+  back. Perhaps use an external program somehow? Needs to talk to mcwm
+  anyway. Unix socket?
 
 * Menu
 
@@ -186,3 +187,8 @@
   - Dispatch table for key bindings instead of keysym->enum->case?
 
   - Use bitfields instead of extra lists for virtual screens?
+
+* Resize behaviour
+
+  Better resize behaviour. We want not to accidentally change the
+  vertical size when changing horizontal size and vice versa.
