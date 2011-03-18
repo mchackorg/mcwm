@@ -8,8 +8,13 @@
 
 /*
  * Use this modifier combined with other keys to control wm from
- * keyboard. Default is Mod4, which on my keyboard is the Alt/Windows
- * key.
+ * keyboard. Default is Mod4, which on my keyboard is the Alt key but
+ * is usually the Windows key on more normal keyboard layout.
+ *
+ * NOTA BENE! Also remember to define the key that generates this
+ * modifier as USERKEY_MOD below, otherwise the MODKEY + Tab function
+ * won't work properly. This is a bit of a kluge, I know, and will be
+ * fixed.
  */
 #define MODKEY XCB_MOD_MASK_4
 
