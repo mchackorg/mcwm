@@ -1,4 +1,4 @@
-.TH mcwm 1 "Jul 20, 2010" "" ""
+.TH mcwm 1 "Mar 18, 2011" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
@@ -98,7 +98,9 @@ resize right
 start terminal
 .IP \(bu 2
 .B Tab
-go to next visible window.
+go to next window in the current workspace window ring. If you release
+MODKEY mcwm will change focus. A new press of MODKEY + Tab will bring
+you back to the window where you last had focus.
 .IP \(bu 2
 .B f
 fix window so it is visible on all workspaces. Toggles. Press again to
@@ -142,7 +144,7 @@ complete example:
 \&#! /bin/sh
 
 # Set nice background.
-xsetroot \-mod 16 16 \-fg rgb:54/6/6 \-bg grey20
+xsetroot -solid grey20
 
 # Set nice pointer cursor.
 xsetroot \-cursor_name plus \-fg white \-bg black
