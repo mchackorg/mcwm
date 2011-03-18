@@ -1008,7 +1008,7 @@ int setupkeys(void)
             /* Couldn't set up keys! */
     
             /* Get rid of key symbols. */
-            free(keysyms);
+            xcb_key_symbols_free(keysyms);
 
             return -1;
         }
@@ -1042,13 +1042,12 @@ int setupkeys(void)
         }
     } /* for */
 
-
     /* Need this to take effect NOW! */
     xcb_flush(conn);
     
     /* Get rid of the key symbols table. */
-    free(keysyms);
-
+    xcb_key_symbols_free(keysyms);
+    
     return 0;
 }
 
@@ -3048,6 +3047,20 @@ void events(void)
         }
         break;
 
+        case XCB_MAPPING_NOTIFY:
+            /*
+             * XXX Gah! We get a new notify message for *every* key!
+             * We want to know when the entire keyboard is finished.
+             */
+
+            /* Forget old key bindings. */
+            xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
+
+            /* Use the new ones. */
+            setupkeys();
+
+            break;
+        
         case XCB_UNMAP_NOTIFY:
         {
             xcb_unmap_notify_event_t *e =

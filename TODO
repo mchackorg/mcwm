@@ -9,10 +9,6 @@
   Partially done. Now grabs all our keys unshifted as well as shifted.
   Needs a way to tell in config.h what extra modifier is used.
 
-* MappingNotify
-
-  Need to handle any changes of the keyboard mapping.
-
 * Feedback window
   
   We need to tell the user the new geometry somehow. Is this what I

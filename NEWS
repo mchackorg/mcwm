@@ -2,6 +2,10 @@
 
 User visible changes
 
+2011-03-18
+
+   * Now handles keyboard remapping.
+
 2011-02-23
 
    * If you change focus window mcwm remembers where we last had
