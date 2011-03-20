@@ -3048,18 +3048,33 @@ void events(void)
         break;
 
         case XCB_MAPPING_NOTIFY:
+        {
+            xcb_mapping_notify_event_t *e
+                = (xcb_mapping_notify_event_t *)ev;
+
             /*
              * XXX Gah! We get a new notify message for *every* key!
              * We want to know when the entire keyboard is finished.
+             * Impossible? Better handling somehow?
              */
 
+            /*
+             * We're only interested in keys and modifiers, not
+             * pointer mappings, for instance.
+             */
+            if (e->request != XCB_MAPPING_MODIFIER
+                && e->request != XCB_MAPPING_KEYBOARD)
+            {
+                break;
+            }
+            
             /* Forget old key bindings. */
             xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
 
             /* Use the new ones. */
             setupkeys();
-
-            break;
+        }
+        break;
         
         case XCB_UNMAP_NOTIFY:
         {
