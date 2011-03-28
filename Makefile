@@ -1,11 +1,11 @@
-VERSION=20110319
+VERSION=20110327
 DIST=mcwm-$(VERSION)
 SRC=mcwm.c list.c config.h events.h list.h
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
 
 CC=gcc
-CFLAGS=-g -std=c99 -Wall -Wextra -O2 -I/usr/local/include #-DDEBUG #-DDMALLOC
-LDFLAGS=-L/usr/local/lib -lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom # -ldmalloc
+CFLAGS=-g -std=c99 -Wall -Wextra -O2 -I/usr/local/include -DDEBUG #-DDMALLOC
+LDFLAGS=-L/usr/local/lib -lxcb -lxcb-keysyms -lxcb-icccm -lxcb-atom #-ldmalloc
 
 RM=/bin/rm
 PREFIX=/usr/local
