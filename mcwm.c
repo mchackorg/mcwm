@@ -731,6 +731,13 @@ void fixwindow(struct client *client, bool setcolour)
     }
     else
     {
+        /*
+         * First raise the window. If we're going to another desktop
+         * we don't want this fixed window to be occluded behind
+         * something else.
+         */
+        raisewindow(client->id);
+        
         client->fixed = true;
         setwmdesktop(client->id, NET_WM_FIXED);
 

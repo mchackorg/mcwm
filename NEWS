@@ -2,6 +2,12 @@
 
 User visible changes
 
+2011-03-28
+
+   * Always raise window when fixing it on all workspaces. When moving
+     windows between workspaces, this makes us sure we can find it on
+     the workspace we're going to. Thanks to Simon Friis for noticing.
+
 2011-03-26
 
    * You don't have to tell mcwm what keycode generates the MODKEY
