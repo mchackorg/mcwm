@@ -1,4 +1,4 @@
-.TH mcwm 1 "Mar 18, 2011" "" ""
+.TH mcwm 1 "Mar 26, 2011" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
@@ -39,9 +39,11 @@ are visible on all workspaces.
 
 .SH USE
 Nota bene: For mcwm to be at all useful you need to know how what keys
-generate the Mod1 and Mod4 modifier masks. If you don't know, use
+generate the Mod1 and Mod4 modifier masks (default). If you don't
+know, use
 .B xmodmap(1)
-with the \-pm option to list them.
+with the \-pm option to list them. You can change the modifiers in
+config.h and recompiling.
 
 With the the default configuration, use mcwm like this.
 .PP
@@ -99,8 +101,9 @@ start terminal
 .IP \(bu 2
 .B Tab
 go to next window in the current workspace window ring. If you release
-MODKEY mcwm will change focus. A new press of MODKEY + Tab will bring
-you back to the window where you last had focus.
+MODKEY or press another command key mcwm will change focus to the new
+window. A new press of MODKEY + Tab will bring you back to the window
+where you last had focus.
 .IP \(bu 2
 .B f
 fix window so it is visible on all workspaces. Toggles. Press again to

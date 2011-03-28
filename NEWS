@@ -2,6 +2,16 @@
 
 User visible changes
 
+2011-03-26
+
+   * You don't have to tell mcwm what keycode generates the MODKEY
+     mask anymore (USERKEY_MOD in config.h is gone). mcwm now asks the
+     X server what keys generate the mask and also supports several
+     keys generating the mask.
+
+   * Stops tabbing around not only if a key generating MODKEY mask is
+     lifted but also if another command key is pressed.
+
 2011-03-18
 
    * Now handles keyboard remapping.

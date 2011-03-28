@@ -7,7 +7,8 @@
  * MC, mc at the domain hack.org
  * http://hack.org/mc/
  *
- * Copyright (c) 2010 Michael Cardell Widerkrantz, mc at the domain hack.org.
+ * Copyright (c) 2010,2011 Michael Cardell Widerkrantz, mc at the
+ * domain hack.org.
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -119,7 +120,6 @@ typedef enum {
     KEY_B,
     KEY_N,
     KEY_END,
-    KEY_ALT,    
     KEY_MAX
 } key_enum_t;
 
@@ -210,8 +210,18 @@ struct keys
     { USERKEY_BOTLEFT, 0 },
     { USERKEY_BOTRIGHT, 0 },
     { USERKEY_DELETE, 0 },
-    { USERKEY_MOD, 0 },    
 };    
+
+/* All keycodes generating our MODKEY mask. */
+struct modkeycodes
+{
+    xcb_keycode_t *keycodes;
+    unsigned len;
+} modkeys =
+{
+    NULL,
+    0
+};
 
 /* Global configuration. */
 struct conf
@@ -235,6 +245,8 @@ xcb_atom_t wm_protocols;        /* WM_PROTOCOLS.  */
 
 /* Functions declerations. */
 
+void finishtabbing(void);
+struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
 void cleanup(int code);
 void arrangewindows(uint16_t rootwidth, uint16_t rootheight);
 void setwmdesktop(xcb_drawable_t win, uint32_t ws);
@@ -281,6 +293,108 @@ void sigcatch(int sig);
 
 
 /* Function bodies. */
+
+/*
+ * MODKEY was released after tabbing around the
+ * workspace window ring. This means this mode is
+ * finished and we have found a new focus window.
+ *
+ * We need to move first the window we used to focus
+ * on to the head of the window list and then move the
+ * new focus to the head of the list as well. The list
+ * should always start with the window we're focusing
+ * on.
+ */
+void finishtabbing(void)
+{
+                                        
+    mode = 0;
+    
+    if (NULL != lastfocuswin)
+    {
+        movetohead(&wslist[curws], lastfocuswin->wsitem[curws]);
+        lastfocuswin = NULL;             
+    }
+                
+    movetohead(&wslist[curws], focuswin->wsitem[curws]);
+}
+
+/*
+ * Find out what keycode modmask is bound to. Returns a struct. If the
+ * len in the struct is 0 something went wrong.
+ */
+struct modkeycodes getmodkeys(xcb_mod_mask_t modmask)
+{
+    xcb_get_modifier_mapping_cookie_t cookie;
+    xcb_get_modifier_mapping_reply_t *reply;
+    xcb_keycode_t *modmap;
+    struct modkeycodes keycodes = {
+        NULL,
+        0
+    };
+    int mask;
+    unsigned i;
+    const xcb_mod_mask_t masks[8] = { XCB_MOD_MASK_SHIFT,
+                                      XCB_MOD_MASK_LOCK,
+                                      XCB_MOD_MASK_CONTROL,
+                                      XCB_MOD_MASK_1,
+                                      XCB_MOD_MASK_2,
+                                      XCB_MOD_MASK_3,
+                                      XCB_MOD_MASK_4,
+                                      XCB_MOD_MASK_5 };
+
+    cookie = xcb_get_modifier_mapping_unchecked(conn);
+
+    if ((reply = xcb_get_modifier_mapping_reply(conn, cookie, NULL)) == NULL)
+    {
+        return keycodes;
+    }
+
+    if (NULL == (keycodes.keycodes = calloc(reply->keycodes_per_modifier,
+                                            sizeof (xcb_keycode_t))))
+    {
+        PDEBUG("Out of memory.\n");
+        return keycodes;
+    }
+    
+    modmap = xcb_get_modifier_mapping_keycodes(reply);
+
+    /*
+     * The modmap now contains keycodes.
+     *
+     * The number of keycodes in the list is 8 *
+     * keycodes_per_modifier. The keycodes are divided into eight
+     * sets, with each set containing keycodes_per_modifier elements.
+     *
+     * Each set corresponds to a modifier in masks[] in the order
+     * specified above.
+     *
+     * The keycodes_per_modifier value is chosen arbitrarily by the
+     * server. Zeroes are used to fill in unused elements within each
+     * set.
+     */
+    for (mask = 0; mask < 8; mask ++)
+    {
+        if (masks[mask] == modmask)
+        {
+            for (i = 0; i < reply->keycodes_per_modifier; i ++)
+            {
+                if (0 != modmap[mask * reply->keycodes_per_modifier + i])
+                {
+                    keycodes.keycodes[i]
+                        = modmap[mask * reply->keycodes_per_modifier + i];
+                    keycodes.len ++;
+                }
+            }
+            
+            PDEBUG("Got %d keycodes.\n", keycodes.len);
+        }
+    } /* for mask */
+    
+    free(reply);
+    
+    return keycodes;
+}
 
 /*
  * Map all windows we know about. Set keyboard focus to be wherever
@@ -995,11 +1109,40 @@ xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms)
 int setupkeys(void)
 {
     xcb_key_symbols_t *keysyms;
-    int i;
+    unsigned i;
     
     /* Get all the keysymbols. */
     keysyms = xcb_key_symbols_alloc(conn);
+
+    /*
+     * Find out what keys generates our MODKEY mask. Unfortunately it
+     * might be several keys.
+     */
+    if (NULL != modkeys.keycodes)
+    {
+        free(modkeys.keycodes);
+    }
+    modkeys = getmodkeys(MODKEY);
+
+    if (0 == modkeys.len)
+    {
+        fprintf(stderr, "We couldn't find any keycodes to our main modifier "
+                "key!\n");
+        return -1;
+    }
+
+    for (i = 0; i < modkeys.len; i ++)
+    {
+        /*
+         * Grab the keys that are bound to MODKEY mask with any other
+         * modifier.
+         */
+        xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY,
+                     modkeys.keycodes[i],
+                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);    
+    }
     
+    /* Now grab the rest of the keys with the MODKEY modifier. */
     for (i = KEY_F; i < KEY_MAX; i ++)
     {
         keys[i].keycode = keysymtokeycode(keys[i].keysym, keysyms);        
@@ -1012,34 +1155,18 @@ int setupkeys(void)
 
             return -1;
         }
+            
+        /* Grab other keys with a modifier mask. */
+        xcb_grab_key(conn, 1, screen->root, MODKEY, keys[i].keycode,
+                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
-        if (i == KEY_ALT)
-        {
-            /*
-             * Grab Alt with all modifiers.
-             *
-             * FIXME: We can ask the X server for the keycode that
-             * gives us the MODKEY mask with the GetModifierMapping
-             * request.
-             */
-            xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY,
-                 keys[KEY_ALT].keycode,
-                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-        }
-        else
-        {
-            /* Grab other keys with a modifier mask. */
-            xcb_grab_key(conn, 1, screen->root, MODKEY, keys[i].keycode,
-                         XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-
-            /*
-             * XXX Also grab it's shifted counterpart. A bit ugly here
-             * because we grab all of them not just the ones we want.
-             */
-            xcb_grab_key(conn, 1, screen->root, MODKEY | SHIFTMOD,
-                         keys[i].keycode,
-                         XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-        }
+        /*
+         * XXX Also grab it's shifted counterpart. A bit ugly here
+         * because we grab all of them not just the ones we want.
+         */
+        xcb_grab_key(conn, 1, screen->root, MODKEY | SHIFTMOD,
+                     keys[i].keycode,
+                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     } /* for */
 
     /* Need this to take effect NOW! */
@@ -2317,8 +2444,8 @@ void handle_keypress(xcb_key_press_event_t *ev)
 
     if (MCWM_TABBING == mode && key != KEY_TAB)
     {
-        /* We don't allow any other key while in this mode. */
-        return;
+        /* First finish tabbing around. Then deal with the next key. */
+        finishtabbing();
     }
     
     /* Is it shifted? */
@@ -2823,32 +2950,29 @@ void events(void)
         case XCB_KEY_RELEASE:
         {
             xcb_key_release_event_t *e = (xcb_key_release_event_t *)ev;
+            unsigned i;
             
             PDEBUG("Key %d released.\n", e->detail);
 
-            if (e->detail == keys[KEY_ALT].keycode && MCWM_TABBING == mode)
+            if (MCWM_TABBING == mode)
             {
-                /* MODKEY was released after tabbing around the
-                 * workspace window ring. This means this mode is
-                 * finished and we have found a new focus window.
-                 *
-                 * We need to move first the window we used to focus
-                 * on to the head of the window list and then move the
-                 * new focus to the head of the list as well. The list
-                 * should always start with the window we're focusing
-                 * on.
+                /*
+                 * Check if it's the that was released was a key
+                 * generating the MODKEY mask.
                  */
-                
-                mode = 0;
-
-                if (NULL != lastfocuswin)
+                for (i = 0; i < modkeys.len; i ++)
                 {
-                    movetohead(&wslist[curws], lastfocuswin->wsitem[curws]);
-                    lastfocuswin = NULL;                    
-                }
-                
-                movetohead(&wslist[curws], focuswin->wsitem[curws]);
-            } /* if KEY_ALT */
+                    PDEBUG("Is it %d?\n", modkeys.keycodes[i]);
+                    
+                    if (e->detail == modkeys.keycodes[i])
+                    {
+                        finishtabbing();
+
+                        /* Get out of for... */
+                        break;
+                    }
+                } /* for keycodes. */
+            } /* if tabbing. */
         }
         break;
             
