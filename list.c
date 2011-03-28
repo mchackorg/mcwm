@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include "list.h"
 
+#ifdef DMALLOC
+#include "dmalloc.h"
+#endif
+
 #ifdef DEBUG
 #define PDEBUG(Args...) \
   do { fprintf(stderr, "mcwm: "); fprintf(stderr, ##Args); } while(0)
