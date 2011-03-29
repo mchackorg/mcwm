@@ -2719,101 +2719,105 @@ void events(void)
                    e->detail, (long)e->event, e->child, e->event_x,
                    e->event_y);
 
-            if (e->child != 0)
+            /*
+             * If we don't have any currently focused window, we can't
+             * do anything. We don't want to do anything if the mouse
+             * cursor is in the wrong window (root window or a panel,
+             * for instance). There is a limit to sloppy focus.
+             */
+            if (NULL == focuswin || focuswin->id != e->child)
             {
+                break;
+            }
+
+            /*
+             * XXX if 0 == e->child, we're on the root window. Do
+             * something on the root when mouse buttons are pressed?
+             */            
+
+            /*
+             * If middle button was pressed, raise window or lower
+             * it if it was already on top.
+             */
+            if (2 == e->detail)
+            {
+                raiseorlower(focuswin);
+            }
+            else
+            {
+                int16_t pointx;
+                int16_t pointy;
+
+                /* We're moving or resizing. */
+
                 /*
-                 * If middle button was pressed, raise window or lower
-                 * it if it was already on top.
+                 * Get and save pointer position inside the window
+                 * so we can go back to it when we're done moving
+                 * or resizing.
                  */
-                if (2 == e->detail)
+                if (!getpointer(focuswin->id, &pointx, &pointy))
                 {
-                    raiseorlower(focuswin);
+                    break;
+                }
+
+                mode_x = pointx;
+                mode_y = pointy;
+
+                /* Raise window. */
+                raisewindow(focuswin->id);
+
+                /* Get window geometry. */
+                if (!getgeom(focuswin->id, &x, &y, &width, &height))
+                {
+                    break;
+                }
+
+                /* Mouse button 1 was pressed. */
+                if (1 == e->detail)
+                {
+                    mode = MCWM_MOVE;
+
+                    /*
+                     * Warp pointer to upper left of window before
+                     * starting move.
+                     */
+                    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
+                                     1, 1);                        
                 }
                 else
                 {
-                    int16_t pointx;
-                    int16_t pointy;
+                    /* Mouse button 3 was pressed. */
 
-                    /* We're moving or resizing. */
+                    mode = MCWM_RESIZE;
 
-                    /*
-                     * Get and save pointer position inside the window
-                     * so we can go back to it when we're done moving
-                     * or resizing.
-                     */
-                    if (!getpointer(e->child, &pointx, &pointy))
-                    {
-                        break;
-                    }
-
-                    mode_x = pointx;
-                    mode_y = pointy;
-
-                    /* Raise window. */
-                    raisewindow(e->child);
-
-                    /* Get window geometry. */
-                    if (!getgeom(e->child, &x, &y, &width, &height))
-                    {
-                        break;
-                    }
-
-                    /* Mouse button 1 was pressed. */
-                    if (1 == e->detail)
-                    {
-                        mode = MCWM_MOVE;
-
-                        /*
-                         * Warp pointer to upper left of window before
-                         * starting move.
-                         */
-                        xcb_warp_pointer(conn, XCB_NONE, e->child, 0, 0, 0, 0,
-                                         1, 1);
-                    }
-                    else
-                    {
-                        /* Mouse button 3 was pressed. */
-
-                        mode = MCWM_RESIZE;
-
-                        /* Warp pointer to lower right. */
-                        xcb_warp_pointer(conn, XCB_NONE, e->child, 0, 0, 0, 0,
-                                         width, height);
-                    }
-
-                    /*
-                     * Take control of the pointer in the root window
-                     * and confine it to root.
-                     *
-                     * Give us events when the key is released or if
-                     * any motion occurs with the key held down, but
-                     * give us only hints about movement. We ask for
-                     * the position ourselves later.
-                     *
-                     * Keep updating everything else.
-                     *
-                     * Don't use any new cursor.
-                     */
-                    xcb_grab_pointer(conn, 0, screen->root,
-                                     XCB_EVENT_MASK_BUTTON_RELEASE
-                                     | XCB_EVENT_MASK_BUTTON_MOTION,
-                                     XCB_GRAB_MODE_ASYNC,
-                                     XCB_GRAB_MODE_ASYNC,
-                                     screen->root,
-                                     XCB_NONE,
-                                     XCB_CURRENT_TIME);
-
-                    xcb_flush(conn);
-
-                    PDEBUG("mode now : %d\n", mode);
+                    /* Warp pointer to lower right. */
+                    xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0,
+                                     0, width, height);                        
                 }
-            } /* subwindow */
-            else
-            {
+
                 /*
-                 * Do something on the root when mouse buttons are
-                 * pressed?
+                 * Take control of the pointer in the root window
+                 * and confine it to root.
+                 *
+                 * Give us events when the key is released or if
+                 * any motion occurs with the key held down.
+                 *
+                 * Keep updating everything else.
+                 *
+                 * Don't use any new cursor.
                  */
+                xcb_grab_pointer(conn, 0, screen->root,
+                                 XCB_EVENT_MASK_BUTTON_RELEASE
+                                 | XCB_EVENT_MASK_BUTTON_MOTION,
+                                 XCB_GRAB_MODE_ASYNC,
+                                 XCB_GRAB_MODE_ASYNC,
+                                 screen->root,
+                                 XCB_NONE,
+                                 XCB_CURRENT_TIME);
+
+                xcb_flush(conn);
+
+                PDEBUG("mode now : %d\n", mode);
             }
         }
         break;
@@ -2822,30 +2826,28 @@ void events(void)
         {
             xcb_motion_notify_event_t *e;
 
+            /*
+             * We can't do anything if we don't have a focused window
+             * or if it's fully maximized.
+             */
+            if (NULL == focuswin || focuswin->maxed)
+            {
+                break;
+            }
+            
             e = (xcb_motion_notify_event_t *) ev;
 
             /*
              * Our pointer is moving and since we even get this event
              * we're either resizing or moving a window.
-             *
-             * We don't bother actually doing anything if we don't
-             * have a focused window or if the focused window is
-             * totally maximized.
              */
             if (mode == MCWM_MOVE)
             {
-                if (NULL != focuswin && !focuswin->maxed)
-                {
-                    mousemove(focuswin->id, e->root_x, e->root_y);
-                }
+                mousemove(focuswin->id, e->root_x, e->root_y);
             }
             else if (mode == MCWM_RESIZE)
             {
-                /* Resize. */
-                if (NULL != focuswin && !focuswin->maxed)
-                {
-                    mouseresize(focuswin, e->root_x, e->root_y);
-                }
+                mouseresize(focuswin, e->root_x, e->root_y);
             }
             else
             {

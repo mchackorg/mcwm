@@ -2,6 +2,14 @@
 
 User visible changes
 
+2011-03-29
+
+   * Sloppy focus didn't really work for move and resize before. When
+     the mouse pointer was outside the window nothing happened. Now
+     fixed. This also means that any panels that we don't know
+     anything about, like dzen2, won't suddenly interfer with resizing
+     if the mouse pointer just happens to be in their window.
+
 2011-03-28
 
    * Always raise window when fixing it on all workspaces. When moving
