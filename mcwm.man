@@ -1,4 +1,4 @@
-.TH mcwm 1 "Mar 26, 2011" "" ""
+.TH mcwm 1 "Mar 30, 2011" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
@@ -50,15 +50,19 @@ With the the default configuration, use mcwm like this.
 Mod1 + mouse buttons:
 .RS
 .IP \(bu 2
-.B 1 
+.B 1
 move
 .IP \(bu 2
-.B 2 
-raise
+.B 2
+raise or lower
 .IP \(bu 2
-.B 3 
-resize
+.B 3
+resize window
 .RE
+.PP
+Note that the mouse cursor needs to be inside the window you want to
+move, raise/lower or resize even if it currently has the focus. This
+is a feature, not a bug.
 .PP
 Mod4 + key:
 .RS
@@ -129,6 +133,12 @@ go to workspace n, 0-9.
 .B End
 close focused window.
 .RE
+.PP
+.PP
+Note that all functions activated from the keyboard work on the
+currently focused window regardless of the position of the mouse
+cursor. Of course, changing workspaces has nothing to do with the
+focused window.
 .PP
 If you don't like the default key bindings, border width, et cetera,
 look in the config.h file, change and recompile.
