@@ -1,4 +1,4 @@
-VERSION=20110327
+VERSION=20110412
 DIST=mcwm-$(VERSION)
 SRC=mcwm.c list.c config.h events.h list.h
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
@@ -28,9 +28,11 @@ list.o: list.c list.h Makefile
 
 install: $(TARGETS)
 	install -m 755 mcwm $(PREFIX)/bin
+	install -m 644 mcwm.man $(PREFIX)/man/man1/mcwm.1
 
 deinstall:
 	$(RM) $(PREFIX)/bin/mcwm
+	$(RM) $(PREFIX)/man/man1/mcwm.1
 
 $(DIST).tar.bz2:
 	mkdir $(DIST)
