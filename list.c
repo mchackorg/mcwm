@@ -118,6 +118,49 @@ void delitem(struct item **mainlist, struct item *item)
     free(item);
 }
 
+void freeitem(struct item **list, int *stored,
+              struct item *item)
+{
+    if (NULL == list || NULL == *list || NULL == item)
+    {
+        return;
+    }
+    
+    if (NULL != item->data)
+    {
+        free(item->data);
+        item->data = NULL;
+    }
+
+    delitem(list, item);
+
+    if (NULL != stored)
+    {
+        (*stored) --;
+    }
+}
+
+/*
+ * Delete all elements in list and free memory resources.
+ */ 
+void delallitems(struct item **list, int *stored)
+{
+    struct item *item;
+    struct item *next;
+    
+    for (item = *list; item != NULL; item = next)
+    {
+        next = item->next;
+        free(item->data);
+        delitem(list, item);
+    }
+
+    if (NULL != stored)
+    {
+        (*stored) = 0;
+    }    
+}
+
 void listitems(struct item *mainlist)
 {
     struct item *item;
