@@ -76,3 +76,5 @@
 #define USERKEY_BOTLEFT         XK_B
 #define USERKEY_BOTRIGHT        XK_N
 #define USERKEY_DELETE          XK_End
+#define USERKEY_PREVSCREEN      XK_comma
+#define USERKEY_NEXTSCREEN      XK_period
