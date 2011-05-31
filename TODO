@@ -1,5 +1,7 @@
 -*- text -*-
 
+* Separate workspace list for every physical output.
+
 * Grab specific keys 
 
   Current code grabs modifier keys and any other keypress. We need to
@@ -127,26 +129,6 @@
 
 * Flag to disable dontmoveoff?
 
-* RandR/Xinerama
-
-  Get physical screen characteristics for every screen. Maximize, move
-  to corners should respect the screen it's on. We want a set of
-  workspaces for every physical screen as well.
-
-  xcb_randr_screen_size_t
-
-  xcb_randr_screen_size_iterator_t
-
-  xcb_randr_get_screen_info_reply_t
-
-  xcb_randr_set_screen_size_request_t
-
-  How do we handle window moves from one screen to another. Should we
-  snap to the physical screen's edge and then allow move to continue?
-
-  An idea from Christian: Use a huge virtual screen and make physical
-  screens map to it. Perhaps we can actually manage to have a window
-  on two physical screens at once?
 
 * Key to move pointer to another physical screen.
 
