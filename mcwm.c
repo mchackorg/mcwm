@@ -131,7 +131,6 @@ struct monitor
 {
     xcb_randr_output_t id;
     char *name;
-    bool active;
     int16_t x;                 /* X and Y. */
     int16_t y;                 
     uint16_t width;     /* Width in pixels. */
@@ -1557,7 +1556,6 @@ void getoutputs(xcb_randr_output_t *outputs, int len, xcb_timestamp_t timestamp)
     xcb_randr_get_output_info_reply_t *output;
     struct monitor *mon;
     struct monitor *clonemon;
-    bool active = false;
     xcb_randr_get_output_info_cookie_t ocookie[len];
     int i;
     
@@ -1640,8 +1638,6 @@ typedef struct xcb_randr_get_crtc_info_reply_t {
             PDEBUG("CRTC: at %d, %d, size: %d x %d.\n", crtc->x, crtc->y,
                    crtc->width, crtc->height);
 
-            active = true;
-
             /* Check if it's a clone. */
             clonemon = findclones(outputs[i], crtc->x, crtc->y);
             if (NULL != clonemon)
@@ -1655,18 +1651,9 @@ typedef struct xcb_randr_get_crtc_info_reply_t {
             /* Do we know this monitor already? */
             if (NULL == (mon = findmonitor(outputs[i])))
             {
-                /* Not known. */
-
                 PDEBUG("Monitor not known, adding to list.\n");
-                /* Add it to the list. */
-
-                /* FIXME: If it is a clone, do we mark as unactive or skip it? */
-
-                /* How do we know if it's a clone? */
                 addmonitor(outputs[i], name, crtc->x, crtc->y, crtc->width,
                            crtc->height);
-
-                PDEBUG("Monitor added.\n");
             }
 
             free(crtc);
