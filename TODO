@@ -1,5 +1,7 @@
 -*- text -*-
 
+* Handle new modes on physical outputs.
+
 * Separate workspace list for every physical output.
 
 * Key to move pointer to another physical screen.
