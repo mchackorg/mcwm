@@ -32,7 +32,7 @@ v Changing focus from keyboard which rememebers last focused window.
 
 - Configurable key bindings.
 
-- Know about physical screens dynamically (RandR).
+v Know about physical screens dynamically (RandR).
 
 - Key binding to change focus to another physical screen.
 
