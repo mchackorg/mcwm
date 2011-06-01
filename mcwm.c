@@ -2684,8 +2684,10 @@ void topleft(void)
     {
         return;
     }
-    
-    movewindow(focuswin->id, mon_x, mon_y);
+
+    focuswin->x = mon_x;
+    focuswin->y = mon_y;
+    movewindow(focuswin->id, focuswin->x, focuswin->y);
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
                      pointx, pointy);
     xcb_flush(conn);
@@ -2730,8 +2732,10 @@ void topright(void)
         return;
     }
 
-    movewindow(focuswin->id, mon_width
-               - (width + BORDERWIDTH * 2), mon_y);
+    focuswin->x = mon_width - (width + BORDERWIDTH * 2);
+    focuswin->y = mon_y;
+    
+    movewindow(focuswin->id, focuswin->x, focuswin->y);
 
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
                      pointx, pointy);
@@ -2741,10 +2745,6 @@ void topright(void)
 
 void botleft(void)
 {
-    int16_t x;
-    int16_t y;
-    uint16_t width;
-    uint16_t height;
     int16_t pointx;
     int16_t pointy;
     int16_t mon_x;
@@ -2775,14 +2775,11 @@ void botleft(void)
     {
         return;
     }
-    
-    if (!getgeom(focuswin->id, &x, &y, &width, &height))
-    {
-        return;
-    }
-    
-    movewindow(focuswin->id, mon_x, mon_y + mon_height
-               - (height + BORDERWIDTH * 2));
+
+    focuswin->x = mon_x;
+    focuswin->y = mon_y + mon_height - (focuswin->height + BORDERWIDTH * 2);
+
+    movewindow(focuswin->id, focuswin->x, focuswin->y);
 
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
                      pointx, pointy);
@@ -2791,10 +2788,6 @@ void botleft(void)
 
 void botright(void)
 {
-    int16_t x;
-    int16_t y;
-    uint16_t width;
-    uint16_t height;
     int16_t pointx;
     int16_t pointy;
     int16_t mon_x;
@@ -2828,17 +2821,12 @@ void botright(void)
     {
         return;
     }
+
+    focuswin->x = mon_x + mon_width - (focuswin->width + BORDERWIDTH * 2);
+
+    focuswin->y =  mon_y + mon_height - (focuswin->height + BORDERWIDTH * 2);
     
-    if (!getgeom(focuswin->id, &x, &y, &width, &height))
-    {
-        return;
-    }
-    
-    movewindow(focuswin->id,
-               mon_x + mon_width
-               - (width + BORDERWIDTH * 2),
-               mon_y + mon_height
-               - (height + BORDERWIDTH * 2));
+    movewindow(focuswin->id, focuswin->x, focuswin->y);
 
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
                      pointx, pointy);
