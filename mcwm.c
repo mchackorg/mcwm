@@ -320,6 +320,7 @@ void resizestep(struct client *client, char direction);
 void mousemove(struct client *client, int rel_x, int rel_y);
 void mouseresize(struct client *client, int rel_x, int rel_y);
 void movestep(struct client *client, char direction);
+void setborders(struct client *client, int width);
 void unmax(struct client *client);
 void maximize(struct client *client);
 void maxvert(struct client *client);
@@ -544,12 +545,7 @@ void arrangewindows(uint16_t rootwidth, uint16_t rootheight)
             client->maxed = false;
                 
             /* Set borders again. */
-            values[0] = BORDERWIDTH;
-
-            mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
-    
-            xcb_configure_window(conn, client->id, mask, &values[0]);
-            xcb_flush(conn);            
+            setborders(client, BORDERWIDTH);
         }
         
         if (changed)
@@ -921,8 +917,13 @@ void fitonscreen(struct client *client)
     bool willresize = false;
 
     client->vertmaxed = false;
-    client->maxed = false;
-    
+
+    if (client->maxed)
+    {
+        client->maxed = false;
+        setborders(client, BORDERWIDTH);
+    }
+            
     if (NULL == client->monitor)
     {
         mon_x = 0;
@@ -967,7 +968,7 @@ void fitonscreen(struct client *client)
      * If the window is larger than our screen, just place it in the
      * corner and resize.
      */
-    if (client->width > mon_width)
+    if (client->width + BORDERWIDTH * 2 > mon_width)
     {
         client->x = mon_x;
         client->width = mon_width - BORDERWIDTH * 2;;
@@ -980,7 +981,7 @@ void fitonscreen(struct client *client)
         willmove = true;
     }
 
-    if (client->height > mon_height)
+    if (client->height + BORDERWIDTH * 2 > mon_height)
     {
         client->y = mon_y;
         client->height = mon_height - BORDERWIDTH * 2;
@@ -2414,6 +2415,18 @@ void movestep(struct client *client, char direction)
     }
 }
 
+void setborders(struct client *client, int width)
+{
+    uint32_t values[1];
+    uint32_t mask = 0;
+    
+    values[0] = width;
+
+    mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
+    xcb_configure_window(conn, client->id, mask, &values[0]);
+    xcb_flush(conn);
+}
+
 void unmax(struct client *client)
 {
     uint32_t values[5];
@@ -2695,10 +2708,6 @@ void topleft(void)
 
 void topright(void)
 {
-    int16_t x;
-    int16_t y;
-    uint16_t width;
-    uint16_t height;
     int16_t pointx;
     int16_t pointy;
     uint16_t mon_y;    
@@ -2726,13 +2735,8 @@ void topright(void)
     {
         return;
     }
-    
-    if (!getgeom(focuswin->id, &x, &y, &width, &height))
-    {
-        return;
-    }
 
-    focuswin->x = mon_width - (width + BORDERWIDTH * 2);
+    focuswin->x = mon_width - (focuswin->width + BORDERWIDTH * 2);
     focuswin->y = mon_y;
     
     movewindow(focuswin->id, focuswin->x, focuswin->y);
