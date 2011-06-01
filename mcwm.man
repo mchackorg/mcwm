@@ -1,4 +1,4 @@
-.TH mcwm 1 "Mar 30, 2011" "" ""
+.TH mcwm 1 "Jun 01, 2011" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
@@ -27,7 +27,8 @@ mcwm \- MC's Window Manager for X11.
 .PP
 \-b means draw no window borders.
 .PP
-\-t urxvt will start urxvt when MODKEY + Return is pressed.
+\-t urxvt will start urxvt when MODKEY + Return is pressed. Change to
+your prefered terminal program or something else entirely.
 .PP
 \-f colour sets border colour for focused window to a named colour,
 such as "red".
@@ -116,24 +117,29 @@ the window, change to the workspace you want, then unfix the window on
 the new workspace.
 .IP \(bu 2
 .B y
-move to upper left corner.
+move to upper left corner of physical screen.
 .IP \(bu 2
 .B u
-move  to upper right corner.
+move  to upper right corner of physical screen..
 .IP \(bu 2
 .B b
-move to lower left corner.
+move to lower left corner of physical screen..
 .IP \(bu 2
 .B n
-move to lower right corner.
+move to lower right corner of physical screen..
 .IP \(bu 2
 .B 0\-9
 go to workspace n, 0-9.
 .IP \(bu 2
 .B End
 close focused window.
+.IP \(bu 2
+.B ,
+move to previous physical output.
+.IP \(bu 2
+.B .
+move to next physical output.
 .RE
-.PP
 .PP
 Note that all functions activated from the keyboard work on the
 currently focused window regardless of the position of the mouse
