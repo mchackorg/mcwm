@@ -2,6 +2,15 @@
 
 User visible changes
 
+2011-06-01
+
+   * Beginning of RANDR support. mcwm now aware of the number of
+     physical screens and their sizes. Move and resize is now limited
+     by size of physical screen instead of virtual screen.
+
+   * New keys: Mod4 + , moves focused window to previous screen and
+     Mod4 + . moves it to the next screen.
+
 2011-03-29
 
    * Panels and other windows with window manager override interfered
