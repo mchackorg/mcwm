@@ -3618,9 +3618,18 @@ void events(void)
             uint32_t mask = 0;
             uint32_t values[7];
             int i = -1;
+            struct client *client;
             
             PDEBUG("event: Configure request. mask = %d\n", e->value_mask);
 
+            /* Find the client. */
+            client = findclient(e->window);
+            if (NULL == client)
+            {
+                /* Sorry, but we don't know about this window. */
+                break;
+            }
+            
             /*
              * We ignore border width configurations, but handle all
              * others.
@@ -3632,6 +3641,7 @@ void events(void)
                 mask |= XCB_CONFIG_WINDOW_X;
                 i ++;                
                 values[i] = e->x;
+                client->x = e->x;
             }
 
             if (e->value_mask & XCB_CONFIG_WINDOW_Y)
@@ -3640,6 +3650,7 @@ void events(void)
                 mask |= XCB_CONFIG_WINDOW_Y;
                 i ++;                
                 values[i] = e->y;
+                client->y = e->y;
             }
             
             if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
@@ -3648,6 +3659,7 @@ void events(void)
                 mask |= XCB_CONFIG_WINDOW_WIDTH;
                 i ++;                
                 values[i] = e->width;
+                client->width = e->width;
             }
             
             if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
@@ -3656,6 +3668,7 @@ void events(void)
                 mask |= XCB_CONFIG_WINDOW_HEIGHT;
                 i ++;                
                 values[i] = e->height;
+                client->height = e->height;
             }
 
             if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING)
