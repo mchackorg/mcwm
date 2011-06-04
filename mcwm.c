@@ -2191,14 +2191,14 @@ void resizelim(struct client *client)
         client->width = client->min_width;
     }
 
-    if (client->x + client->width > mon_width)
+    if (client->x + client->width + BORDERWIDTH * 2 > mon_x + mon_width)    
     {
-        client->width = mon_width - (client->x + BORDERWIDTH * 2);        
+        client->width = mon_width - ((client->x - mon_x) + BORDERWIDTH * 2);
     }
-
-    if (client->y + client->height > mon_height)
+    
+    if (client->y + client->height + BORDERWIDTH * 2 > mon_y + mon_height)
     {
-        client->height = mon_height - (client->y + BORDERWIDTH * 2);
+        client->height = mon_height - ((client->y - mon_y) + BORDERWIDTH * 2);
     }
     
     resize(client->id, client->width, client->height);
@@ -2214,6 +2214,8 @@ void resize(xcb_drawable_t win, uint16_t width, uint16_t height)
         /* Can't resize root. */
         return;
     }
+
+    PDEBUG("Resizing to %d x %d.\n", width, height);
     
     values[0] = width;
     values[1] = height;
