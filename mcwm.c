@@ -151,11 +151,11 @@ struct client
 {
     xcb_drawable_t id;          /* ID of this window. */
     bool usercoord;             /* X,Y was set by -geom. */
-    int16_t x;                 /* X coordinate. Only updated when maxed. */
-    int16_t y;                 /* Y coordinate. Ditto.  */
-    uint16_t width;             /* Width in pixels. Ditto. */
-    uint16_t height;            /* Height in pixels. Ditto. */
-    struct sizepos origsize;
+    int16_t x;                 /* X coordinate. */
+    int16_t y;                 /* Y coordinate. */
+    uint16_t width;             /* Width in pixels. */
+    uint16_t height;            /* Height in pixels. */
+    struct sizepos origsize;    /* Original size if we're currently maxed. */
     uint16_t min_width, min_height; /* Hints from application. */
     uint16_t max_width, max_height;
     int32_t width_inc, height_inc;
