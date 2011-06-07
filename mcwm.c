@@ -274,70 +274,71 @@ xcb_atom_t wm_protocols;        /* WM_PROTOCOLS.  */
 
 /* Functions declerations. */
 
-void finishtabbing(void);
-struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
-void cleanup(int code);
-void arrangewindows(uint16_t rootwidth, uint16_t rootheight);
-void setwmdesktop(xcb_drawable_t win, uint32_t ws);
-int32_t getwmdesktop(xcb_drawable_t win);
-void addtoworkspace(struct client *client, uint32_t ws);
-void delfromworkspace(struct client *client, uint32_t ws);
-void changeworkspace(uint32_t ws);
-void fixwindow(struct client *client, bool setcolour);
-uint32_t getcolor(const char *colstr);
-void forgetclient(struct client *client);
-void forgetwin(xcb_window_t win);
-void fitonscreen(struct client *client);
-void newwin(xcb_window_t win);
-struct client *setupwin(xcb_window_t win);
-xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms);
-int setupkeys(void);
-int setupscreen(void);
-int setuprandr(void);
-void getrandr(void);
-void getoutputs(xcb_randr_output_t *outputs, int len,
-                xcb_timestamp_t timestamp);
-struct monitor *findmonitor(xcb_randr_output_t id);
-struct monitor *findclones(xcb_randr_output_t id, int16_t x, int16_t y);
-struct monitor *findmonbycoord(int16_t x, int16_t y);
-void delmonitor(struct monitor *mon);
-struct monitor *addmonitor(xcb_randr_output_t id, char *name, 
-                           uint32_t x, uint32_t y, uint16_t width,
-                           uint16_t height);
-void raisewindow(xcb_drawable_t win);
-void raiseorlower(struct client *client);
-void movelim(struct client *client);
-void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y);
-struct client *findclient(xcb_drawable_t win);
-void focusnext(void);
-void setunfocus(xcb_drawable_t win);
-void setfocus(struct client *client);
-int start_terminal(void);
-void resizelim(struct client *client);
-void resize(xcb_drawable_t win, uint16_t width, uint16_t height);
-void resizestep(struct client *client, char direction);
-void mousemove(struct client *client, int rel_x, int rel_y);
-void mouseresize(struct client *client, int rel_x, int rel_y);
-void movestep(struct client *client, char direction);
-void setborders(struct client *client, int width);
-void unmax(struct client *client);
-void maximize(struct client *client);
-void maxvert(struct client *client);
-bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y);
-bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
-             uint16_t *height);
-void topleft(void);
-void topright(void);
-void botleft(void);
-void botright(void);
-void deletewin(void);
-void prevscreen(void);
-void nextscreen(void);
-void handle_keypress(xcb_key_press_event_t *ev);
-void configurerequest(xcb_configure_request_event_t *e);
-void events(void);
-void printhelp(void);
-void sigcatch(int sig);
+static void finishtabbing(void);
+static struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
+static void cleanup(int code);
+static void arrangewindows(uint16_t rootwidth, uint16_t rootheight);
+static void setwmdesktop(xcb_drawable_t win, uint32_t ws);
+static int32_t getwmdesktop(xcb_drawable_t win);
+static void addtoworkspace(struct client *client, uint32_t ws);
+static void delfromworkspace(struct client *client, uint32_t ws);
+static void changeworkspace(uint32_t ws);
+static void fixwindow(struct client *client, bool setcolour);
+static uint32_t getcolor(const char *colstr);
+static void forgetclient(struct client *client);
+static void forgetwin(xcb_window_t win);
+static void fitonscreen(struct client *client);
+static void newwin(xcb_window_t win);
+static struct client *setupwin(xcb_window_t win);
+static xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym,
+                                     xcb_key_symbols_t *keysyms);
+static int setupkeys(void);
+static int setupscreen(void);
+static int setuprandr(void);
+static void getrandr(void);
+static void getoutputs(xcb_randr_output_t *outputs, int len,
+                       xcb_timestamp_t timestamp);
+static struct monitor *findmonitor(xcb_randr_output_t id);
+static struct monitor *findclones(xcb_randr_output_t id, int16_t x, int16_t y);
+static struct monitor *findmonbycoord(int16_t x, int16_t y);
+static void delmonitor(struct monitor *mon);
+static struct monitor *addmonitor(xcb_randr_output_t id, char *name, 
+                                  uint32_t x, uint32_t y, uint16_t width,
+                                  uint16_t height);
+static void raisewindow(xcb_drawable_t win);
+static void raiseorlower(struct client *client);
+static void movelim(struct client *client);
+static void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y);
+static struct client *findclient(xcb_drawable_t win);
+static void focusnext(void);
+static void setunfocus(xcb_drawable_t win);
+static void setfocus(struct client *client);
+static int start_terminal(void);
+static void resizelim(struct client *client);
+static void resize(xcb_drawable_t win, uint16_t width, uint16_t height);
+static void resizestep(struct client *client, char direction);
+static void mousemove(struct client *client, int rel_x, int rel_y);
+static void mouseresize(struct client *client, int rel_x, int rel_y);
+static void movestep(struct client *client, char direction);
+static void setborders(struct client *client, int width);
+static void unmax(struct client *client);
+static void maximize(struct client *client);
+static void maxvert(struct client *client);
+static bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y);
+static bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
+                    uint16_t *height);
+static void topleft(void);
+static void topright(void);
+static void botleft(void);
+static void botright(void);
+static void deletewin(void);
+static void prevscreen(void);
+static void nextscreen(void);
+static void handle_keypress(xcb_key_press_event_t *ev);
+static void configurerequest(xcb_configure_request_event_t *e);
+static void events(void);
+static void printhelp(void);
+static void sigcatch(int sig);
 
 
 /* Function bodies. */
