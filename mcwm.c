@@ -1026,9 +1026,8 @@ void newwin(xcb_window_t win)
          */
         return;
     }
-
+    
     /* Get pointer position so we can move the window to the cursor. */
-
     if (!getpointer(screen->root, &pointx, &pointy))
     {
         PDEBUG("Failed to get pointer coords!\n");
@@ -1040,7 +1039,6 @@ void newwin(xcb_window_t win)
      * Set up stuff, like borders, add the window to the client list,
      * et cetera.
      */
-    
     client = setupwin(win);
     if (NULL == client)
     {
@@ -1050,13 +1048,6 @@ void newwin(xcb_window_t win)
 
     /* Add this window to the current workspace. */
     addtoworkspace(client, curws);
-
-    if (!getgeom(client->id, &client->x, &client->y, &client->width,
-                 &client->height))
-    {
-        PDEBUG("Couldn't get geometry\n");
-        return;
-    }
 
     /*
      * If the client doesn't say the user specified the coordinates
@@ -1083,7 +1074,7 @@ void newwin(xcb_window_t win)
     }
     
     fitonscreen(client);
-
+    
     /* Show window on screen. */
     xcb_map_window(conn, client->id);
 
@@ -1093,8 +1084,8 @@ void newwin(xcb_window_t win)
      */
     xcb_warp_pointer(conn, XCB_NONE, win, 0, 0, 0, 0,
                      client->width / 2, client->height / 2);
-    
-    xcb_flush(conn);
+
+    xcb_flush(conn);    
 }
 
 /* Set border colour, width and event mask for window. */
@@ -3628,10 +3619,9 @@ void events(void)
             client = findclient(e->window);
             if (NULL == client)
             {
-                /* Sorry, but we don't know about this window. */
-                break;
+                PDEBUG("We don't know about this window yet.\n");
             }
-            
+
             /*
              * We ignore border width configurations, but handle all
              * others.
@@ -3643,7 +3633,10 @@ void events(void)
                 mask |= XCB_CONFIG_WINDOW_X;
                 i ++;                
                 values[i] = e->x;
-                client->x = e->x;
+                if (client)
+                {
+                    client->x = e->x;
+                }
             }
 
             if (e->value_mask & XCB_CONFIG_WINDOW_Y)
@@ -3652,7 +3645,10 @@ void events(void)
                 mask |= XCB_CONFIG_WINDOW_Y;
                 i ++;                
                 values[i] = e->y;
-                client->y = e->y;
+                if (client)
+                {
+                    client->y = e->y;
+                }
             }
             
             if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
@@ -3661,7 +3657,10 @@ void events(void)
                 mask |= XCB_CONFIG_WINDOW_WIDTH;
                 i ++;                
                 values[i] = e->width;
-                client->width = e->width;
+                if (client)
+                {
+                    client->width = e->width;
+                }
             }
             
             if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
@@ -3670,7 +3669,10 @@ void events(void)
                 mask |= XCB_CONFIG_WINDOW_HEIGHT;
                 i ++;                
                 values[i] = e->height;
-                client->height = e->height;
+                if (client)
+                {
+                    client->height = e->height;
+                }
             }
 
             if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING)
