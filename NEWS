@@ -2,6 +2,11 @@
 
 User visible changes
 
+2011-06-20
+
+   * Fixed windows were always inserted as the next window in window
+     list after changing workspace. Now fixed.
+
 2011-06-01
 
    * Beginning of RANDR support. mcwm now aware of the number of
