@@ -82,8 +82,8 @@
  */
 #define MCWM_TABBING 4
 
-/* Our highest workspace. */
-#define WORKSPACE_MAX 9
+/* Number of workspaces. */
+#define WORKSPACES 10
 
 /* Value in WM hint which means this window is fixed on all workspaces. */
 #define NET_WM_FIXED 0xffffffff
@@ -165,7 +165,7 @@ struct client
     bool fixed;           /* Visible on all workspaces? */
     struct monitor *monitor;    /* The physical output this window is on. */
     struct item *winitem; /* Pointer to our place in global windows list. */
-    struct item *wsitem[WORKSPACE_MAX + 1]; /* Pointer to our place in every
+    struct item *wsitem[WORKSPACES]; /* Pointer to our place in every
                                              * workspace window list. */
 };
     
@@ -191,7 +191,7 @@ int mode = 0;                   /* Internal mode, such as move or resize */
  * Workspace list: Every workspace has a list of all visible
  * windows.
  */
-struct item *wslist[WORKSPACE_MAX + 1] =
+struct item *wslist[WORKSPACES] =
 {
     NULL,
     NULL,
@@ -696,31 +696,14 @@ void changeworkspace(uint32_t ws)
     }
     
     /* Go through list of current ws. Unmap everything that isn't fixed. */
-    for (item = wslist[curws]; item != NULL; )
+    for (item = wslist[curws]; item != NULL; item = item->next)
     {
         client = item->data;
 
         PDEBUG("changeworkspace. unmap phase. ws #%d, client-fixed: %d\n",
                curws, client->fixed);
-      
-        if (client->fixed)
-        {
-            /* Add the fixed window to the new workspace window list. */
-            addtoworkspace(client, ws);
 
-            /*
-             * Remove the fixed window from the current workspace
-             * list.
-             *  
-             * NB! Before deleting this item, we need to save the
-             * address to next item so we can continue through the
-             * list.
-             */      
-            item = item->next;
-
-            delfromworkspace(client, curws);
-        }
-        else
+        if (!client->fixed)
         {
             /*
              * This is an ordinary window. Just unmap it. Note that
@@ -728,10 +711,7 @@ void changeworkspace(uint32_t ws)
              * which we will try to handle later.
              */
             xcb_unmap_window(conn, client->id);
-
-            item = item->next;
         }
-
     } /* for */
     
     /* Go through list of new ws. Map everything that isn't fixed. */
@@ -761,7 +741,8 @@ void changeworkspace(uint32_t ws)
 void fixwindow(struct client *client, bool setcolour)
 {
     uint32_t values[1];
-
+    uint32_t ws;
+    
     if (NULL == client)
     {
         return;
@@ -779,7 +760,15 @@ void fixwindow(struct client *client, bool setcolour)
             xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
                                          values);
         }
-        
+
+        /* Delete from all workspace lists except current. */
+        for (ws = 0; ws < WORKSPACES; ws ++)
+        {
+            if (ws != curws)
+            {
+                delfromworkspace(client, ws);
+            }
+        }
     }
     else
     {
@@ -792,6 +781,15 @@ void fixwindow(struct client *client, bool setcolour)
         
         client->fixed = true;
         setwmdesktop(client->id, NET_WM_FIXED);
+
+        /* Add window to all workspace lists. */
+        for (ws = 0; ws < WORKSPACES; ws ++)
+        {
+            if (ws != curws)
+            {
+                addtoworkspace(client, ws);
+            }
+        }
 
         if (setcolour)
         {
@@ -881,7 +879,7 @@ void forgetwin(xcb_window_t win)
              * to. Note that it's OK to be on several workspaces at
              * once.
              */
-            for (ws = 0; ws != WORKSPACE_MAX; ws ++)
+            for (ws = 0; ws < WORKSPACES; ws ++)
             {
                 PDEBUG("Looking in ws #%d.\n", ws);
                 if (NULL == client->wsitem[ws])
@@ -1159,7 +1157,7 @@ struct client *setupwin(xcb_window_t win)
 
     client->winitem = item;
 
-    for (ws = 0; ws != WORKSPACE_MAX; ws ++)
+    for (ws = 0; ws < WORKSPACES; ws ++)
     {
         client->wsitem[ws] = NULL;
     }
@@ -1427,10 +1425,12 @@ int setupscreen(void)
 
                 if (ws == NET_WM_FIXED)
                 {
+                    /* Add to current workspace. */
+                    addtoworkspace(client, curws);                    
+                    /* Add to all other workspaces. */
                     fixwindow(client, false);
-                    addtoworkspace(client, curws);
                 }
-                else if (MCWM_NOWS != ws && ws < WORKSPACE_MAX)
+                else if (MCWM_NOWS != ws && ws < WORKSPACES)
                 {
                     addtoworkspace(client, ws);
                     /* If it's not our current workspace, hide it. */
