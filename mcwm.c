@@ -277,7 +277,7 @@ xcb_atom_t wm_protocols;        /* WM_PROTOCOLS.  */
 static void finishtabbing(void);
 static struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
 static void cleanup(int code);
-static void arrangewindows(uint16_t rootwidth, uint16_t rootheight);
+static void arrangewindows(void);
 static void setwmdesktop(xcb_drawable_t win, uint32_t ws);
 static int32_t getwmdesktop(xcb_drawable_t win);
 static void addtoworkspace(struct client *client, uint32_t ws);
@@ -298,6 +298,7 @@ static int setuprandr(void);
 static void getrandr(void);
 static void getoutputs(xcb_randr_output_t *outputs, int len,
                        xcb_timestamp_t timestamp);
+void arrbymon(struct monitor *monitor);
 static struct monitor *findmonitor(xcb_randr_output_t id);
 static struct monitor *findclones(xcb_randr_output_t id, int16_t x, int16_t y);
 static struct monitor *findmonbycoord(int16_t x, int16_t y);
@@ -477,102 +478,21 @@ void cleanup(int code)
 }
 
 /*
- *
- * Rearrange windows to fit new screen size rootwidth x rootheight.
+ * Rearrange windows to fit new screen size.
  */ 
-void arrangewindows(uint16_t rootwidth, uint16_t rootheight)
+void arrangewindows(void)
 {
-    uint32_t mask = 0;
-    uint32_t values[5];
-    bool changed;
-    int16_t x;
-    int16_t y;
-    uint16_t width;
-    uint16_t height;
     struct item *item;
     struct client *client;
-    
-    PDEBUG("Rearranging all windows to fit new screen size %d x %d.\n",
-           rootwidth, rootheight);
 
     /*
-     * Go through all windows we care about and look at their
-     * coordinates and geometry. If they don't fit on the new screen,
+     * Go through all windows. If they don't fit on the new screen,
      * move them around and resize them as necessary.
      */
     for (item = winlist; item != NULL; item = item->next)
     {
         client = item->data;
-
-        changed = false;
-
-        if (!getgeom(client->id, &x, &y, &width, &height))
-        {
-            return;
-        }
-
-        PDEBUG("Win %d at %d,%d %d x %d\n", client->id, x, y, width, height);
-
-        if (width > rootwidth)
-        {
-            width = rootwidth - BORDERWIDTH * 2;
-            changed = true;
-        }
-
-        if (height > rootheight)
-        {
-            height = rootheight - BORDERWIDTH * 2;
-            changed = true;
-        }
-
-        /* If x or y + geometry is outside of screen, move window. */
-
-        if (x + width > rootwidth)
-        {
-            x = rootwidth - (width + BORDERWIDTH * 2);
-            changed = true;
-        }
-
-        if (y + height > rootheight)
-        {
-            y = rootheight - (height + BORDERWIDTH * 2);;
-            changed = true;
-        }
-
-        /* Reset sense of maximized. */
-        client->vertmaxed = false;
-
-        if (client->maxed)
-        {
-            client->maxed = false;
-                
-            /* Set borders again. */
-            setborders(client, BORDERWIDTH);
-        }
-        
-        if (changed)
-        {
-            PDEBUG("--- Win %d going to %d,%d %d x %d\n", client->id,
-                   x, y, width, height);
-
-            client->x = x;
-            client->y = y;
-            client->width = width;
-            client->height = height;
-            
-            /* Find monitor for the client. */
-            client->monitor = findmonbycoord(x, y);
-                    
-            mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y
-                | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
-            values[0] = x;
-            values[1] = y;
-            values[2] = width;
-            values[3] = height;
-            
-            xcb_configure_window(conn, client->id, mask, values);
-            xcb_flush(conn);
-        }
+        fitonscreen(client);
     } /* for */
 }
 
@@ -1479,6 +1399,10 @@ int setupscreen(void)
     return 0;
 }
 
+/*
+ * Set up RANDR extension. Get the extension base and subscribe to
+ * events.
+ */
 int setuprandr(void)
 {
     const xcb_query_extension_reply_t *extension;
@@ -1509,6 +1433,9 @@ int setuprandr(void)
     return base;
 }
 
+/*
+ * Get RANDR resources and figure out how many outputs there are.
+ */ 
 void getrandr(void)
 {
     xcb_randr_get_screen_resources_current_cookie_t rcookie;
@@ -1517,11 +1444,8 @@ void getrandr(void)
     int len;    
     xcb_timestamp_t timestamp;
     
-    /* Get screen resources (crtcs, outputs, modes) */
     rcookie = xcb_randr_get_screen_resources_current(conn, screen->root);
-
     res = xcb_randr_get_screen_resources_current_reply(conn, rcookie, NULL);
-    
     if (NULL == res)
     {
         printf("No RANDR extension available.\n");
@@ -1540,6 +1464,10 @@ void getrandr(void)
     free(res);
 }
 
+/*
+ * Walk through all the RANDR outputs (number of outputs == len) there
+ * was at time timestamp.
+ */
 void getoutputs(xcb_randr_output_t *outputs, int len, xcb_timestamp_t timestamp)
 {
     char *name;
@@ -1566,9 +1494,6 @@ void getoutputs(xcb_randr_output_t *outputs, int len, xcb_timestamp_t timestamp)
             continue;
         }
 
-/*        handle_output(conn, randr_outputs[i], output, cts, res);
-        free(output);
-*/
         asprintf(&name, "%.*s",
                  xcb_randr_get_output_info_name_length(output),
                  xcb_randr_get_output_info_name(output));
@@ -1647,20 +1572,90 @@ typedef struct xcb_randr_get_crtc_info_reply_t {
                 addmonitor(outputs[i], name, crtc->x, crtc->y, crtc->width,
                            crtc->height);
             }
+            else
+            {
+                bool changed = false;
+                
+                /*
+                 * We know this monitor. Update information. If it's
+                 * smaller than before, rearrange windows.
+                 */
+                PDEBUG("Known monitor. Updating info.\n");
+
+                if (crtc->x != mon->x)
+                {
+                    mon->x = crtc->x;
+                    changed = true;
+                }
+                if (crtc->y != mon->y)
+                {
+                    mon->y = crtc->y;
+                    changed = true;
+                }
+
+                if (crtc->width != mon->width)
+                {
+                    mon->width = crtc->width;                    
+                    changed = true;
+                }
+                if (crtc->height != mon->height)
+                {
+                    mon->height = crtc->height;                    
+                    changed = true;
+                }
+                
+                if (changed)
+                {
+                    arrbymon(mon);
+                }
+            }
 
             free(crtc);
         }
         else
         {
-            PDEBUG("Not used at the moment.\n");
-            /* FIXME: Check if it was used before. If it was, do something.
-             *
-             * Done with arrangewindows()
-             *
+            PDEBUG("Monitor not used at the moment.\n");
+            /*
+             * Check if it was used before. If it was, do something.
              */
-
             if ((mon = findmonitor(outputs[i])))
             {
+                struct item *item;
+                struct client *client;
+
+                /* Check all windows on this monitor and move them to
+                 * the next or to the first monitor if there is no
+                 * next.
+                 *
+                 * FIXME: Use per monitor workspace list instead of
+                 * global window list.
+                 */
+                for (item = winlist; item != NULL; item = item->next)
+                {
+                    client = item->data;
+                    if (client->monitor == mon)
+                    {
+                        if (NULL == client->monitor->item->next)
+                        {
+                            if (NULL == monlist->data)
+                            {
+                                client->monitor = NULL;
+                            }
+                            else
+                            {
+                                client->monitor = monlist->data;
+                            }
+                        }
+                        else
+                        {
+                            client->monitor =
+                                client->monitor->item->next->data;
+                        }
+
+                        fitonscreen(client);
+                    }
+                } /* for */
+                
                 /* It's not active anymore. Forget about it. */
                 delmonitor(mon);
             }
@@ -1668,6 +1663,30 @@ typedef struct xcb_randr_get_crtc_info_reply_t {
 
         free(output);
     } /* for */
+}
+
+void arrbymon(struct monitor *monitor)
+{
+    struct item *item;
+    struct client *client;
+
+    PDEBUG("arrbymon\n");
+    /*
+     * Go through all windows on this monitor. If they don't fit on
+     * the new screen, move them around and resize them as necessary.
+     *
+     * FIXME: Use a per monitor workspace list instead of global
+     * windows list.
+     */
+    for (item = winlist; item != NULL; item = item->next)
+    {
+        client = item->data;
+        if (client->monitor == monitor)
+        {
+            fitonscreen(client);
+        }
+    } /* for */
+
 }
 
 struct monitor *findmonitor(xcb_randr_output_t id)
@@ -3734,15 +3753,14 @@ void events(void)
             if (e->window == screen->root)
             {
                 /*
-                 * When using RANDR, the root can change geometry when
-                 * the user adds a new screen, tilts their screen 90
-                 * degrees or whatnot. We might need to rearrange
-                 * windows to be visible.
+                 * When using RANDR or Xinerama, the root can change
+                 * geometry when the user adds a new screen, tilts
+                 * their screen 90 degrees or whatnot. We might need
+                 * to rearrange windows to be visible.
                  *
                  * We might get notified for several reasons, not just
                  * if the geometry changed. If the geometry is
-                 * unchanged, do nothing.
-                 * 
+                 * unchanged we do nothing.
                  */
                 PDEBUG("Notify event for root!\n");
                 PDEBUG("Possibly a new root geometry: %dx%d\n",
@@ -3756,9 +3774,21 @@ void events(void)
                 }
                 else
                 {
-                    arrangewindows(e->width, e->height);
                     screen->width_in_pixels = e->width;
                     screen->height_in_pixels = e->height;
+
+                    /* Check for RANDR. */
+                    if (-1 == randrbase)
+                    {
+                        /* We have no RANDR so we rearrange windows to
+                         * the new root geometry here.
+                         *
+                         * With RANDR enabled, we handle this per
+                         * screen getrandr() when we receive an
+                         * XCB_RANDR_SCREEN_CHANGE_NOTIFY event.
+                         */
+                        arrangewindows();
+                    }
                 }
             }
         }
