@@ -1027,7 +1027,6 @@ struct client *setupwin(xcb_window_t win)
     struct client *client;
     xcb_size_hints_t hints;
     uint32_t ws;
-    xcb_get_geometry_reply_t *geom;
     
     if (conf.borders)
     {
@@ -1096,22 +1095,10 @@ struct client *setupwin(xcb_window_t win)
     PDEBUG("Adding window %d\n", client->id);
 
     /* Get window geometry. */
-    geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, client->id),
-                                  NULL);
-
-    if (NULL != geom)
+    if (!getgeom(client->id, &client->x, &client->y, &client->width,
+                 &client->height))
     {
-        client->x = geom->x;
-        client->y = geom->y;
-        client->width = geom->width;
-        client->height = geom->height;
-
-        free(geom);
-    }
-    else
-    {
-        PDEBUG("Couldn't get geometry in initial setup of window.\n");
+        fprintf(stderr, "Couldn't get geometry in initial setup of window.\n");
     }
     
     /*
@@ -3561,8 +3548,6 @@ void events(void)
             {
                 int16_t x;
                 int16_t y;
-                uint16_t width;
-                uint16_t height;
                 
                 /* We're finished moving or resizing. */
 
@@ -3587,20 +3572,14 @@ void events(void)
                  * if the pointer just happens to be on top of another
                  * window when we ungrab the pointer, so we have to
                  * warp the pointer before to prevent this.
-                 */
-                if (!getgeom(focuswin->id, &x, &y, &width, &height))
-                {
-                    break;
-                }
-
-                /*
+                 *
                  * Move to saved position within window or if that
                  * position is now outside current window, move inside
                  * window.
                  */
-                if (mode_x > width)
+                if (mode_x > focuswin->width)
                 {
-                    x = width / 2;
+                    x = focuswin->width / 2;
                     if (0 == x)
                     {
                         x = 1;
@@ -3612,9 +3591,9 @@ void events(void)
                     x = mode_x;
                 }
 
-                if (mode_y > height)
+                if (mode_y > focuswin->height)
                 {
-                    y = height / 2;
+                    y = focuswin->height / 2;
                     if (0 == y)
                     {
                         y = 1;
@@ -3627,7 +3606,6 @@ void events(void)
 
                 xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
                                  x, y);
-                
                 xcb_ungrab_pointer(conn, XCB_CURRENT_TIME);
                 xcb_flush(conn); /* Important! */
                 
