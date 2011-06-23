@@ -3408,10 +3408,6 @@ void events(void)
         case XCB_BUTTON_PRESS:
         {
             xcb_button_press_event_t *e;
-            int16_t x;
-            int16_t y;
-            uint16_t width;
-            uint16_t height;
 
             e = (xcb_button_press_event_t *) ev;
             PDEBUG("Button %d pressed in window %ld, subwindow %d "
@@ -3465,13 +3461,7 @@ void events(void)
 
                 /* Raise window. */
                 raisewindow(focuswin->id);
-
-                /* Get window geometry. */
-                if (!getgeom(focuswin->id, &x, &y, &width, &height))
-                {
-                    break;
-                }
-
+                
                 /* Mouse button 1 was pressed. */
                 if (1 == e->detail)
                 {
@@ -3492,7 +3482,7 @@ void events(void)
 
                     /* Warp pointer to lower right. */
                     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0,
-                                     0, width, height);                        
+                                     0, focuswin->width, focuswin->height);
                 }
 
                 /*
