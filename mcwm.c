@@ -764,9 +764,8 @@ void forgetclient(struct client *client)
     /* Delete window from workspace list. */
     delfromworkspace(client, curws);
 
-    free(client->winitem->data);    
-
-    delitem(&winlist, client->winitem);
+    /* Remove from global window list. */
+    freeitem(&winlist, NULL, client->winitem);
 }
 
 /* Forget everything about a client with client->id win. */
@@ -3874,7 +3873,13 @@ void events(void)
                 if (client->id == e->window)
                 {
                     PDEBUG("Forgetting about %d\n", e->window);
+                    if (focuswin == client)
+                    {
+                        focuswin = NULL;
+                    }
+
                     forgetclient(client);
+
                     break;
                 }
             } /* for */
