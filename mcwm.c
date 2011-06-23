@@ -755,14 +755,26 @@ uint32_t getcolor(const char *colstr)
 /* Forget everything about client client. */
 void forgetclient(struct client *client)
 {
+    uint32_t ws;
+    
     if (NULL == client)
     {
         PDEBUG("forgetclient: client was NULL\n");
         return;
     }
-    
-    /* Delete window from workspace list. */
-    delfromworkspace(client, curws);
+
+    /*
+     * Delete this client from whatever workspace lists it belongs to.
+     * Note that it's OK to be on several workspaces at once even if
+     * you're not fixed.
+     */
+    for (ws = 0; ws < WORKSPACES; ws ++)
+    {
+        if (NULL != client->wsitem[ws])
+        {
+            delfromworkspace(client, ws);                    
+        }
+    }
 
     /* Remove from global window list. */
     freeitem(&winlist, NULL, client->winitem);
@@ -3879,8 +3891,8 @@ void events(void)
                     }
 
                     forgetclient(client);
-
-                    break;
+                    /* We're finished. Break out of for loop. */
+                    break; 
                 }
             } /* for */
         } 
