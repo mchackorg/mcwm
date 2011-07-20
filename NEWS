@@ -2,6 +2,17 @@
 
 User visible changes
 
+2011-07-20
+
+   * Speedup when using a trackball or high CPI mouse. Use only mouse
+     pointer hints instead of actual mouse events and let mcwm ask for
+     pointer position.
+
+     Incidentally, this was originally added in June, 2010, but
+     removed a month later after reading Gajewska and Manasse's "Why X
+     Is Not Our Ideal Window System". Real experience shows that I was
+     mistaken.
+
 2011-06-20
 
    * Fixed windows were always inserted as the next window in window
