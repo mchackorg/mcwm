@@ -3485,7 +3485,8 @@ void events(void)
                  */
                 xcb_grab_pointer(conn, 0, screen->root,
                                  XCB_EVENT_MASK_BUTTON_RELEASE
-                                 | XCB_EVENT_MASK_BUTTON_MOTION,
+                                 | XCB_EVENT_MASK_BUTTON_MOTION
+                                 | XCB_EVENT_MASK_POINTER_MOTION_HINT,
                                  XCB_GRAB_MODE_ASYNC,
                                  XCB_GRAB_MODE_ASYNC,
                                  screen->root,
@@ -3501,7 +3502,7 @@ void events(void)
 
         case XCB_MOTION_NOTIFY:
         {
-            xcb_motion_notify_event_t *e;
+            xcb_query_pointer_reply_t *pointer;
 
             /*
              * We can't do anything if we don't have a focused window
@@ -3511,26 +3512,41 @@ void events(void)
             {
                 break;
             }
-            
-            e = (xcb_motion_notify_event_t *) ev;
 
+            /*
+             * This is not really a real notify, but just a hint that
+             * the mouse pointer moved. This means we need to get the
+             * current pointer position ourselves.
+             */
+            pointer = xcb_query_pointer_reply(
+                conn, xcb_query_pointer(conn, screen->root), 0);
+
+            if (NULL == pointer)
+            {
+                PDEBUG("Couldn't get pointer position.\n");
+                break;
+            }
+            
             /*
              * Our pointer is moving and since we even get this event
              * we're either resizing or moving a window.
              */
             if (mode == MCWM_MOVE)
             {
-                mousemove(focuswin, e->root_x, e->root_y);
+                mousemove(focuswin, pointer->root_x, pointer->root_y);
             }
             else if (mode == MCWM_RESIZE)
             {
-                mouseresize(focuswin, e->root_x, e->root_y);
+                mouseresize(focuswin, pointer->root_x, pointer->root_y);
             }
             else
             {
                 PDEBUG("Motion event when we're not moving our resizing!\n");
             }
+
+            free(pointer);            
         }
+        
         break;
 
         case XCB_BUTTON_RELEASE:
