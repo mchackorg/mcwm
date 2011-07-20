@@ -1,10 +1,21 @@
 -*- text -*-
 
-* Handle new modes on physical outputs.
+* Feature: We need to continue dragging for move and resize until
+  *both* MODKEY and mouse button has been released. Will be much nicer
+  with trackball.
 
-* Separate workspace list for every physical output.
+* Bug: Window border sometimes visible on other screen in vertical
+  direction.
 
-* Key to move pointer to another physical screen.
+* Move to first window (or middle of screen) on another screen
+  with MODKEY + . and , instead of moving windows to new screen.
+  Shifted these keys will move window to new screen?
+
+* Handle new modes on physical outputs. What do we have to do?
+
+* A separate workspace list for every physical output.
+
+* Allow hexadecimal colour values on command line.
 
 * Grab specific keys 
 
