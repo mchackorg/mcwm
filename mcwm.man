@@ -1,4 +1,4 @@
-.TH mcwm 1 "Jun 01, 2011" "" ""
+.TH mcwm 1 "Jul 21, 2011" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
@@ -43,8 +43,8 @@ Nota bene: For mcwm to be at all useful you need to know how what keys
 generate the Mod1 and Mod4 modifier masks (default). If you don't
 know, use
 .B xmodmap(1)
-with the \-pm option to list them. You can change the modifiers in
-config.h and recompiling.
+with the \-pm option to list them. If you don't want to use Mod1 and
+Mod4, you can change the modifiers in the file config.h and recompile.
 
 With the the default configuration, use mcwm like this.
 .PP
@@ -135,10 +135,10 @@ go to workspace n, 0-9.
 close focused window.
 .IP \(bu 2
 .B ,
-move to previous physical output.
+move window to previous physical screen.
 .IP \(bu 2
 .B .
-move to next physical output.
+move window to next physical screen.
 .RE
 .PP
 Note that all functions activated from the keyboard work on the
@@ -175,7 +175,7 @@ xrdb \-load ~/.Xresources
 mcwm &
 
 # Start a terminal in the foreground. If this dies, X dies.
-urxvt
+exec urxvt
 .fi
 .in -4
 .sp
