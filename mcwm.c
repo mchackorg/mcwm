@@ -447,33 +447,19 @@ struct modkeycodes getmodkeys(xcb_mod_mask_t modmask)
 }
 
 /*
- * Map all windows we know about. Set keyboard focus to be wherever
- * the mouse pointer is. Then exit.
+ * Set keyboard focus to follow mouse pointer. Then exit.
+ *
+ * We don't need to bother mapping all windows we know about. They
+ * should all be in the X server's Save Set and should be mapped
+ * automagically.
  */
 void cleanup(int code)
 {
-    struct item *item;
-    struct client *client;
-
     xcb_set_input_focus(conn, XCB_NONE,
                         XCB_INPUT_FOCUS_POINTER_ROOT,
                         XCB_CURRENT_TIME);
-    
-    for (item = winlist; item != NULL; item = item->next)
-    {
-        client = item->data;
-        xcb_map_window(conn, client->id);
-    }
-
     xcb_flush(conn);
-
-    if (SIGSEGV == code)
-    {
-        abort();
-    }
-
-    xcb_disconnect(conn);
-    
+    xcb_disconnect(conn);    
     exit(code);
 }
 
@@ -1043,6 +1029,9 @@ struct client *setupwin(xcb_window_t win)
     mask = XCB_CW_EVENT_MASK;
     values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes_checked(conn, win, mask, values);
+
+    /* Add this window to the X Save Set. */
+    xcb_change_save_set(conn, XCB_SET_MODE_INSERT, win);
 
     xcb_flush(conn);
     
@@ -3921,12 +3910,6 @@ int main(int argc, char **argv)
     /* Install signal handlers. */
 
     if (SIG_ERR == signal(SIGINT, sigcatch))
-    {
-        perror("mcwm: signal");
-        exit(1);
-    }
-
-    if (SIG_ERR == signal(SIGSEGV, sigcatch))
     {
         perror("mcwm: signal");
         exit(1);
