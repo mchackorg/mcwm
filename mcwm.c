@@ -2546,9 +2546,7 @@ void maximize(struct client *client)
 void maxvert(struct client *client)
 {
     uint32_t values[2];
-    int16_t mon_x;
     int16_t mon_y;
-    uint16_t mon_width;
     uint16_t mon_height;
     
     if (NULL == client)
@@ -2559,16 +2557,12 @@ void maxvert(struct client *client)
 
     if (NULL == client->monitor)
     {
-        mon_x = 0;
         mon_y = 0;
-        mon_width = screen->width_in_pixels;
         mon_height = screen->height_in_pixels;
     }
     else
     {
-        mon_x = client->monitor->x;
         mon_y = client->monitor->y;
-        mon_width = client->monitor->width;
         mon_height = client->monitor->height;                    
     }
 
