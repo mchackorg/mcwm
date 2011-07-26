@@ -2,6 +2,12 @@
 
 User visible changes
 
+2011-07-26
+
+  * Tabbing warps to middle of window instead of corner. Makes it
+    easier if you want to paste something with middle button without
+    having to move the pointer.
+
 2011-07-20
 
    * Speedup when using a trackball or high CPI mouse. Use only mouse

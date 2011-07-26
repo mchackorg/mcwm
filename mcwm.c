@@ -1927,7 +1927,8 @@ void focusnext(void)
 
         xcb_configure_window(conn, client->id, XCB_CONFIG_WINDOW_STACK_MODE,
                              values);
-        xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0, 0, 0);
+        xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
+                         client->width / 2, client->height / 2);
         setfocus(client);
     }
 }
