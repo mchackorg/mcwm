@@ -1485,27 +1485,6 @@ void getoutputs(xcb_randr_output_t *outputs, int len, xcb_timestamp_t timestamp)
                  xcb_randr_get_output_info_name_length(output),
                  xcb_randr_get_output_info_name(output));
 
-#if 0
-
-    output:
-        
-        uint8_t          response_type; /**<  */
-        uint8_t          status; /**<  */
-        uint16_t         sequence; /**<  */
-        uint32_t         length; /**<  */
-        xcb_timestamp_t  timestamp; /**<  */
-        xcb_randr_crtc_t crtc; /**<  */
-        uint32_t         mm_width; /**<  */
-        uint32_t         mm_height; /**<  */
-        uint8_t          connection; /**<  */
-        uint8_t          subpixel_order; /**<  */
-        uint16_t         num_crtcs; /**<  */
-        uint16_t         num_modes; /**<  */
-        uint16_t         num_preferred; /**<  */
-        uint16_t         num_clones; /**<  */
-        uint16_t         name_len; /**<  */
-#endif
-
         PDEBUG("Name: %s\n", name);
         PDEBUG("id: %d\n" , outputs[i]);
         PDEBUG("Size: %d x %d mm.\n", output->mm_width, output->mm_height);
@@ -1518,26 +1497,6 @@ void getoutputs(xcb_randr_output_t *outputs, int len, xcb_timestamp_t timestamp)
             {
                 return;
             }
-
-#if 0
-typedef struct xcb_randr_get_crtc_info_reply_t {
-    uint8_t          response_type; /**<  */
-    uint8_t          status; /**<  */
-    uint16_t         sequence; /**<  */
-    uint32_t         length; /**<  */
-    xcb_timestamp_t  timestamp; /**<  */
-    int16_t          x; /**<  */
-    int16_t          y; /**<  */
-    uint16_t         width; /**<  */
-    uint16_t         height; /**<  */
-    xcb_randr_mode_t mode; /**<  */
-    uint16_t         rotation; /**<  */
-    uint16_t         rotations; /**<  */
-    uint16_t         num_outputs; /**<  */
-    uint16_t         num_possible_outputs; /**<  */
-} xcb_randr_get_crtc_info_reply_t;
-            
-#endif
             
             PDEBUG("CRTC: at %d, %d, size: %d x %d.\n", crtc->x, crtc->y,
                    crtc->width, crtc->height);
