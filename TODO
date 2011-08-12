@@ -1,5 +1,9 @@
 -*- text -*-
 
+* When a window tries to map itself outside the physical screens,
+  always map it to the screen closest to the coordinates it asked for
+  instead of always mapping on the first screen in the list.
+
 * Feature: We need to continue dragging for move and resize until
   *both* MODKEY and mouse button has been released. Will be much nicer
   with trackball.
