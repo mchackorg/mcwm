@@ -2,6 +2,13 @@
 
 User visible changes
 
+2011-08-12
+
+  * It was still possible to map a window on coordinates outside
+    physical screens. Now hopefully fixed, if not perfectly: If a
+    window isn't bound to any physical screen it will be mapped on the
+    first screen mcwm knows about.
+
 2011-07-26
 
   * Tabbing warps to middle of window instead of corner. Makes it

@@ -838,9 +838,14 @@ void fitonscreen(struct client *client)
         client->maxed = false;
         setborders(client, BORDERWIDTH);
     }
-            
+        
     if (NULL == client->monitor)
     {
+        /*
+         * This window isn't attached to any physical monitor. This
+         * probably means there is no RANDR, so we use the root window
+         * size.
+         */
         mon_x = 0;
         mon_y = 0;
         mon_width = screen->width_in_pixels;
@@ -854,7 +859,22 @@ void fitonscreen(struct client *client)
         mon_height = client->monitor->height;        
     }
 
+    PDEBUG("Is window outside monitor?\n");
+    PDEBUG("x: %d between %d and %d?\n", client->x, mon_x, mon_x + mon_width);
+    PDEBUG("y: %d between %d and %d?\n", client->y, mon_y, mon_y + mon_height);
+    
     /* Is it outside the physical monitor? */
+    if (client->x > mon_x + mon_width)
+    {
+        client->x = mon_x + mon_width - client->width;
+        willmove = true;
+    }
+    if (client->y > mon_y + mon_height)
+    {
+        client->y = mon_y + mon_height - client->height;
+        willmove = true;        
+    }
+    
     if (client->x < mon_x)
     {
         client->x = mon_x;
@@ -865,7 +885,7 @@ void fitonscreen(struct client *client)
         client->y = mon_y;
         willmove = true;
     }
-
+    
     /* Is it smaller than it wants to  be? */
     if (0 != client->min_height && client->height < client->min_height)
     {
@@ -987,6 +1007,17 @@ void newwin(xcb_window_t win)
     if (-1 != randrbase)
     {
         client->monitor = findmonbycoord(pointx, pointy);
+        if (NULL == client->monitor)
+        {
+            /*
+             * Window coordinates are outside all physical monitors.
+             * Choose the first screen.
+             */
+            if (NULL != monlist->data)
+            {
+                client->monitor = monlist->data;
+            }
+        }
     }
     
     fitonscreen(client);
