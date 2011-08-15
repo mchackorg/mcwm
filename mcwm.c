@@ -1013,7 +1013,7 @@ void newwin(xcb_window_t win)
              * Window coordinates are outside all physical monitors.
              * Choose the first screen.
              */
-            if (NULL != monlist->data)
+            if (NULL != monlist)
             {
                 client->monitor = monlist->data;
             }
@@ -1614,7 +1614,7 @@ void getoutputs(xcb_randr_output_t *outputs, int len, xcb_timestamp_t timestamp)
                     {
                         if (NULL == client->monitor->item->next)
                         {
-                            if (NULL == monlist->data)
+                            if (NULL == monlist)
                             {
                                 client->monitor = NULL;
                             }
