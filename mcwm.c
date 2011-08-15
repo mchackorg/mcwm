@@ -3884,7 +3884,7 @@ int main(int argc, char **argv)
 {
     uint32_t mask = 0;
     uint32_t values[2];
-    char ch;                    /* Option character */
+    int ch;                    /* Option character */
     xcb_void_cookie_t cookie;
     xcb_generic_error_t *error;
     xcb_drawable_t root;
