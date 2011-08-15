@@ -2,6 +2,13 @@
 
 User visible changes
 
+2011-08-15
+
+  * Fixed crash in one screen scenario.
+
+  * Fixed non-starting bug when on an architecture with unsigned
+    chars.
+
 2011-08-12
 
   * It was still possible to map a window on coordinates outside
