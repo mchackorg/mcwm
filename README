@@ -4,7 +4,7 @@ This is a window manager for the X Window System written entirely with
 XCB, the straight X protocol binding to the C language. It doesn't use
 libX11 at all.
 
-It's a minimalistic, floating window manager. The only window
+mcwm is a rather minimalist, floating window manager. The only window
 decoration is a thin border. All functions can be done with the
 keyboard, but moving, resizing, raising and lowering can also be done
 with the mouse.
@@ -13,6 +13,15 @@ If you don't like the default key bindings, border width, et cetera,
 look in the config.h file, change and recompile.
 
 See the manual page for how to use it.
+
+== Compiling ==
+
+As distributed mcwm compiles fine under FreeBSD. If you want to
+compile mcwm under Debian-derived GNU/Linux systems you will need
+these packages and their dependencies: libxcb1-dev, libxcb-atom1-dev,
+libxcb-keysyms1-dev, libxcb-icccm1-dev, libxcb-randr0-dev.
+
+Other system are likely to have similar requirements.
 
 == More information & Contact ==
 
