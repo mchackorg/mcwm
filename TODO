@@ -1,5 +1,8 @@
 -*- text -*-
 
+* In configurerequest() we should honour physical screen limits,
+  perhaps by a call to fitonscreen().
+
 * When a window tries to map itself outside the physical screens,
   always map it to the screen closest to the coordinates it asked for
   instead of always mapping on the first screen in the list.
@@ -7,9 +10,6 @@
 * Feature: We need to continue dragging for move and resize until
   *both* MODKEY and mouse button has been released. Will be much nicer
   with trackball.
-
-* Bug: Window border sometimes visible on other screen in vertical
-  direction.
 
 * Move to first window (or middle of screen) on another screen
   with MODKEY + . and , instead of moving windows to new screen.
@@ -31,8 +31,8 @@
 
 * Feedback window
   
-  We need to tell the user the new geometry somehow. Is this what I
-  want?
+  We may need to tell the user the new geometry somehow. Is this what
+  I want?
 
   The feedback window can also show what workspace we just changed to.
 
