@@ -168,7 +168,19 @@ struct client
     struct item *wsitem[WORKSPACES]; /* Pointer to our place in every
                                              * workspace window list. */
 };
-    
+
+/* Window configuration data. */
+struct winconf
+{
+    int16_t      x;
+    int16_t      y;
+    uint16_t     width;
+    uint16_t     height;
+    uint8_t      stackmode;
+    xcb_window_t sibling;    
+    uint16_t     borderwidth;
+};
+
 
 /* Globals */
 
@@ -316,6 +328,8 @@ static void setunfocus(xcb_drawable_t win);
 static void setfocus(struct client *client);
 static int start_terminal(void);
 static void resizelim(struct client *client);
+static void moveresize(xcb_drawable_t win, uint16_t x, uint16_t y,
+                       uint16_t width, uint16_t height);
 static void resize(xcb_drawable_t win, uint16_t width, uint16_t height);
 static void resizestep(struct client *client, char direction);
 static void mousemove(struct client *client, int rel_x, int rel_y);
@@ -336,6 +350,7 @@ static void deletewin(void);
 static void prevscreen(void);
 static void nextscreen(void);
 static void handle_keypress(xcb_key_press_event_t *ev);
+static void configwin(xcb_window_t win, uint16_t mask, struct winconf wc);
 static void configurerequest(xcb_configure_request_event_t *e);
 static void events(void);
 static void printhelp(void);
@@ -2187,6 +2202,32 @@ void resizelim(struct client *client)
     resize(client->id, client->width, client->height);
 }
 
+void moveresize(xcb_drawable_t win, uint16_t x, uint16_t y,
+                uint16_t width, uint16_t height)
+{
+    uint32_t values[4];
+    
+    if (screen->root == win || 0 == win)
+    {
+        /* Can't move or resize root. */
+        return;
+    }
+
+    PDEBUG("Moving to %d, %d, resizing to %d x %d.\n", x, y, width, height);
+
+    values[0] = x;
+    values[1] = y;
+    values[2] = width;
+    values[3] = height;
+                                        
+    xcb_configure_window(conn, win,
+                         XCB_CONFIG_WINDOW_X
+                         | XCB_CONFIG_WINDOW_Y
+                         | XCB_CONFIG_WINDOW_WIDTH
+                         | XCB_CONFIG_WINDOW_HEIGHT, values);
+    xcb_flush(conn);
+}
+
 /* Resize window win to width,height. */
 void resize(xcb_drawable_t win, uint16_t width, uint16_t height)
 {
@@ -3083,163 +3124,233 @@ void handle_keypress(xcb_key_press_event_t *ev)
     }
 } /* handle_keypress() */
 
-void configurerequest(xcb_configure_request_event_t *e)
+/* Helper function to configure a window. */
+void configwin(xcb_window_t win, uint16_t mask, struct winconf wc)
 {
-    uint32_t mask = 0;
     uint32_t values[7];
     int i = -1;
-    struct client *client;
-    int16_t mon_x;
-    int16_t mon_y;
-    uint16_t mon_width;
-    uint16_t mon_height;
-            
-    PDEBUG("event: Configure request. mask = %d\n", e->value_mask);
-
-    /* Find the client. */
-    client = findclient(e->window);
-    if (NULL == client)
+    
+    if (mask & XCB_CONFIG_WINDOW_X)
     {
-        PDEBUG("We don't know about this window yet.\n");
-    }
-            
-    if (NULL == client || NULL == client->monitor)
-    {
-        mon_x = 0;
-        mon_y = 0;
-        mon_width = screen->width_in_pixels;
-        mon_height = screen->height_in_pixels;
-    }
-    else
-    {
-        mon_x = client->monitor->x;
-        mon_y = client->monitor->y;
-        mon_width = client->monitor->width;
-        mon_height = client->monitor->height;        
-    }
-
-    /*
-     * We ignore border width configurations, but handle all
-     * others.
-     */
-
-    if (e->value_mask & XCB_CONFIG_WINDOW_X)
-    {
-        PDEBUG("Changing X coordinate to %d\n", e->x);
         mask |= XCB_CONFIG_WINDOW_X;
-        i ++;                
-
-        if (client)
-        {
-            client->x = e->x;
-            if (client->x < mon_x)
-            {
-                client->x = mon_x;
-            }
-            else if (client->x + client->width > mon_x + mon_width)
-            {
-                client->x = (mon_x + mon_width) - client->width;
-            }
-            
-            values[i] = client->x;
-        }
-        else
-        {
-            values[i] = e->x;
-        }
+        i ++;
+        values[i] = wc.x;
     }
 
-    if (e->value_mask & XCB_CONFIG_WINDOW_Y)
+    if (mask & XCB_CONFIG_WINDOW_Y)
     {
-        PDEBUG("Changing Y coordinate to %d.\n", e->y);
         mask |= XCB_CONFIG_WINDOW_Y;
         i ++;
-
-        if (client)
-        {
-            client->y = e->y;
-            if (client->y < mon_y)
-            {
-                client->y = mon_y;
-            }
-            else if (client->y + client->height > mon_y + mon_height)
-            {
-                client->y = (mon_y + mon_height) - client->height;
-            }
-            
-            values[i] = client->y;
-        }
-        else
-        {
-            values[i] = e->y;
-        }        
+        values[i] = wc.y;
     }
-            
-    if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
+
+    if (mask & XCB_CONFIG_WINDOW_WIDTH)
     {
-        PDEBUG("Changing width to %d.\n", e->width);
         mask |= XCB_CONFIG_WINDOW_WIDTH;
         i ++;
-
-        if (client)
-        {
-            client->width = e->width;
-
-            if (client->width + conf.borderwidth * 2 > mon_width)
-            {
-                client->width = mon_width - conf.borderwidth * 2;
-            }
-
-            values[i] = client->width;
-        }
-        else
-        {
-            values[i] = e->width;
-        }
+        values[i] = wc.width;
     }
-            
-    if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
+
+    if (mask & XCB_CONFIG_WINDOW_HEIGHT)
     {
-        PDEBUG("Changing height to %d.\n", e->height);
         mask |= XCB_CONFIG_WINDOW_HEIGHT;
         i ++;
-
-        if (client)
-        {
-            client->height = e->height;
-            if (client->height + conf.borderwidth * 2 > mon_height)
-            {
-                client->height = mon_height - conf.borderwidth * 2;
-            }
-            
-            values[i] = client->height;
-        }
-        else
-        {
-            values[i] = e->height;
-        }
+        values[i] = wc.height;
     }
 
-    if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING)
+    if (mask & XCB_CONFIG_WINDOW_SIBLING)
     {
         mask |= XCB_CONFIG_WINDOW_SIBLING;
-        i ++;                
-        values[i] = e->sibling;
+        i ++;
+        values[i] = wc.sibling;     
     }
 
-    if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE)
+    if (mask & XCB_CONFIG_WINDOW_STACK_MODE)
     {
-        PDEBUG("Changing stack order.\n");
         mask |= XCB_CONFIG_WINDOW_STACK_MODE;
-        i ++;                
-        values[i] = e->stack_mode;
+        i ++;
+        values[i] = wc.stackmode;
     }
 
     if (-1 != i)
     {
-        xcb_configure_window(conn, e->window, mask, values);
+        xcb_configure_window(conn, win, mask, values);
         xcb_flush(conn);
-    }    
+    }        
+}
+
+void configurerequest(xcb_configure_request_event_t *e)
+{
+    struct client *client;
+    struct winconf wc;
+    int16_t mon_x;
+    int16_t mon_y;
+    uint16_t mon_width;
+    uint16_t mon_height;
+
+    PDEBUG("event: Configure request. mask = %d\n", e->value_mask);
+
+    /* Find the client. */
+    if ((client = findclient(e->window)))
+    {
+        /* Find monitor position and size. */
+        if (NULL == client || NULL == client->monitor)
+        {
+            mon_x = 0;
+            mon_y = 0;
+            mon_width = screen->width_in_pixels;
+            mon_height = screen->height_in_pixels;
+        }
+        else
+        {
+            mon_x = client->monitor->x;
+            mon_y = client->monitor->y;
+            mon_width = client->monitor->width;
+            mon_height = client->monitor->height;
+        }
+
+#if 0
+        /*
+         * We ignore moves the user haven't initiated, that is do
+         * nothing on XCB_CONFIG_WINDOW_X and XCB_CONFIG_WINDOW_Y
+         * ConfigureRequests.
+         *
+         * Code here if we ever change our minds or if you, dear user,
+         * wants this functionality.
+         */
+        
+        if (e->value_mask & XCB_CONFIG_WINDOW_X)
+        {
+            /* Don't move window if maximized. Don't move off the screen. */
+            if (!client->maxed && e->x > 0)
+            {
+                client->x = e->x;
+            }
+        }
+
+        if (e->value_mask & XCB_CONFIG_WINDOW_Y)
+        {
+            /*
+             * Don't move window if maximized. Don't move off the
+             * screen.
+             */
+            if (!client->maxed && !client->vertmaxed && e->y > 0)
+            {
+                client->y = e->y;
+            }
+        }
+#endif
+        
+        if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)
+        {
+            /* Don't resize if maximized. */
+            if (!client->maxed)
+            {
+                client->width = e->width;
+            }
+        }
+
+        if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT)
+        {
+            /* Don't resize if maximized. */            
+            if (!client->maxed && !client->vertmaxed)
+            {
+                client->height = e->height;
+            }
+        }
+
+        /*
+         * XXX Do we really need to pass on sibling and stack mode
+         * configuration? Do we want to?
+         */
+        if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING)
+        {
+            uint32_t values[1];
+
+            values[0] = e->sibling;
+            xcb_configure_window(conn, e->window,
+                                 XCB_CONFIG_WINDOW_SIBLING,
+                                 values);
+            xcb_flush(conn);
+            
+        }
+
+        if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE)
+        {
+            uint32_t values[1];
+            
+            values[0] = e->stack_mode;
+            xcb_configure_window(conn, e->window,
+                                 XCB_CONFIG_WINDOW_STACK_MODE,
+                                 values);
+            xcb_flush(conn);
+        }
+
+        /* Check if window fits on screen after resizing. */
+
+        if (client->x + client->width + 2 * conf.borderwidth
+            > mon_x + mon_width)
+        {
+            /*
+             * See if it fits if we move away the window from the
+             * right edge of the screen.
+             */
+            client->x = mon_x + mon_width
+                - (client->width + 2 * conf.borderwidth);
+
+            /*
+             * If we moved over the left screen edge, move back and
+             * fit exactly on screen.
+             */
+            if (client->x < mon_x)
+            {
+                client->x = mon_x;
+                client->width = mon_width - 2 * conf.borderwidth;
+            }            
+        }
+        
+        if (client->y + client->height + 2 * conf.borderwidth
+            > mon_y + mon_height)
+        {
+            /*
+             * See if it fits if we move away the window from the
+             * bottom edge.
+             */
+            client->y = mon_y + mon_height
+                - (client->height + 2 * conf.borderwidth);
+
+            /*
+             * If we moved over the top screen edge, move back and fit
+             * on screen.
+             */
+            if (client->y < mon_y)
+            {
+                PDEBUG("over the edge: y < %d\n", mon_y);
+                client->y = mon_y;
+                client->height = mon_height - 2 * conf.borderwidth;
+            }
+        }
+        
+        moveresize(client->id, client->x, client->y, client->width,
+                   client->height);
+    }
+    else
+    {
+        PDEBUG("We don't know about this window yet.\n");
+
+        /*
+         * Unmapped window. Just pass all options except border
+         * width.
+         */
+        wc.x = e->x;
+        wc.y = e->y;
+        wc.width = e->width;
+        wc.height = e->height;
+        wc.sibling = e->sibling;
+        wc.stackmode = e->stack_mode;
+
+        configwin(e->window, e->value_mask, wc);
+    }
 }
 
 void events(void)

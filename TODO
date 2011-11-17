@@ -1,8 +1,5 @@
 -*- text -*-
 
-* In configurerequest() we should honour physical screen limits,
-  perhaps by a call to fitonscreen().
-
 * When a window tries to map itself outside the physical screens,
   always map it to the screen closest to the coordinates it asked for
   instead of always mapping on the first screen in the list.
