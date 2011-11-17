@@ -2676,6 +2676,7 @@ void topright(void)
 {
     int16_t pointx;
     int16_t pointy;
+    int16_t mon_x;    
     uint16_t mon_y;    
     uint16_t mon_width;
     
@@ -2687,11 +2688,13 @@ void topright(void)
     if (NULL == focuswin->monitor)
     {
         mon_width = screen->width_in_pixels;
+        mon_x = 0;
         mon_y = 0;
     }
     else
     {
         mon_width = focuswin->monitor->width;
+        mon_x = focuswin->monitor->x;        
         mon_y = focuswin->monitor->y;
     }
 
@@ -2702,7 +2705,9 @@ void topright(void)
         return;
     }
 
-    focuswin->x = mon_width - (focuswin->width + conf.borderwidth * 2);
+    focuswin->x = mon_x + mon_width -
+        (focuswin->width + conf.borderwidth * 2);    
+
     focuswin->y = mon_y;
     
     movewindow(focuswin->id, focuswin->x, focuswin->y);
