@@ -255,7 +255,7 @@ struct modkeycodes
 /* Global configuration. */
 struct conf
 {
-    bool borders;               /* Do we draw borders? */
+    int borderwidth;            /* Do we draw borders? If so, how large? */    
     char *terminal;             /* Path to terminal to start. */
     uint32_t focuscol;          /* Focused border colour. */
     uint32_t unfocuscol;        /* Unfocused border colour.  */
@@ -836,7 +836,7 @@ void fitonscreen(struct client *client)
     if (client->maxed)
     {
         client->maxed = false;
-        setborders(client, BORDERWIDTH);
+        setborders(client, conf.borderwidth);
     }
         
     if (NULL == client->monitor)
@@ -903,29 +903,29 @@ void fitonscreen(struct client *client)
      * If the window is larger than our screen, just place it in the
      * corner and resize.
      */
-    if (client->width + BORDERWIDTH * 2 > mon_width)
+    if (client->width + conf.borderwidth * 2 > mon_width)
     {
         client->x = mon_x;
-        client->width = mon_width - BORDERWIDTH * 2;;
+        client->width = mon_width - conf.borderwidth * 2;;
         willmove = true;
         willresize = true;
     }
-    else if (client->x + client->width + BORDERWIDTH * 2 > mon_x + mon_width)
+    else if (client->x + client->width + conf.borderwidth * 2 > mon_x + mon_width)
     {
-        client->x = mon_x + mon_width - (client->width + BORDERWIDTH * 2);
+        client->x = mon_x + mon_width - (client->width + conf.borderwidth * 2);
         willmove = true;
     }
 
-    if (client->height + BORDERWIDTH * 2 > mon_height)
+    if (client->height + conf.borderwidth * 2 > mon_height)
     {
         client->y = mon_y;
-        client->height = mon_height - BORDERWIDTH * 2;
+        client->height = mon_height - conf.borderwidth * 2;
         willmove = true;
         willresize = true;
     }
-    else if (client->y + client->height + BORDERWIDTH * 2 > mon_y + mon_height)
+    else if (client->y + client->height + conf.borderwidth * 2 > mon_y + mon_height)
     {
-        client->y = mon_y + mon_height - (client->height + BORDERWIDTH * 2);
+        client->y = mon_y + mon_height - (client->height + conf.borderwidth * 2);
         willmove = true;        
     }
 
@@ -1045,17 +1045,14 @@ struct client *setupwin(xcb_window_t win)
     xcb_size_hints_t hints;
     uint32_t ws;
     
-    if (conf.borders)
-    {
-        /* Set border color. */
-        values[0] = conf.unfocuscol;
-        xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
+    /* Set border color. */
+    values[0] = conf.unfocuscol;
+    xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
 
-        /* Set border width. */
-        values[0] = BORDERWIDTH;
-        mask = XCB_CONFIG_WINDOW_BORDER_WIDTH;
-        xcb_configure_window(conn, win, mask, values);
-    }
+    /* Set border width. */
+    values[0] = conf.borderwidth;
+    mask = XCB_CONFIG_WINDOW_BORDER_WIDTH;
+    xcb_configure_window(conn, win, mask, values);
     
     mask = XCB_CW_EVENT_MASK;
     values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
@@ -1847,14 +1844,14 @@ void movelim(struct client *client)
         client->y = mon_y;
     }
 
-    if (client->x + client->width > mon_x + mon_width - BORDERWIDTH * 2)
+    if (client->x + client->width > mon_x + mon_width - conf.borderwidth * 2)
     {
-        client->x = (mon_x + mon_width - BORDERWIDTH * 2) - client->width;
+        client->x = (mon_x + mon_width - conf.borderwidth * 2) - client->width;
     }
 
-    if (client->y + client->height > mon_y + mon_height - BORDERWIDTH * 2)
+    if (client->y + client->height > mon_y + mon_height - conf.borderwidth * 2)
     {
-        client->y = (mon_y + mon_height - BORDERWIDTH * 2) - client->height;
+        client->y = (mon_y + mon_height - conf.borderwidth * 2) - client->height;
     }    
 
     movewindow(client->id, client->x, client->y);
@@ -1974,7 +1971,7 @@ void setunfocus(xcb_drawable_t win)
         return;
     }
     
-    if (focuswin->id == screen->root || !conf.borders)
+    if (focuswin->id == screen->root)
     {
         return;
     }
@@ -2043,26 +2040,23 @@ void setfocus(struct client *client)
         return;
     }
 
-    if (conf.borders)
+    /* Set new border colour. */
+    if (client->fixed)
     {
-        /* Set new border colour. */
-        if (client->fixed)
-        {
-            values[0] = conf.fixedcol;            
-        }
-        else
-        {
-            values[0] = conf.focuscol;
-        }
+        values[0] = conf.fixedcol;            
+    }
+    else
+    {
+        values[0] = conf.focuscol;
+    }
 
-        xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
-                                     values);
+    xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
+                                 values);
 
-        /* Unset last focus. */
-        if (NULL != focuswin)
-        {
-            setunfocus(focuswin->id);
-        }
+    /* Unset last focus. */
+    if (NULL != focuswin)
+    {
+        setunfocus(focuswin->id);
     }
 
     /* Set new input focus. */
@@ -2180,14 +2174,14 @@ void resizelim(struct client *client)
         client->width = client->min_width;
     }
 
-    if (client->x + client->width + BORDERWIDTH * 2 > mon_x + mon_width)    
+    if (client->x + client->width + conf.borderwidth * 2 > mon_x + mon_width)    
     {
-        client->width = mon_width - ((client->x - mon_x) + BORDERWIDTH * 2);
+        client->width = mon_width - ((client->x - mon_x) + conf.borderwidth * 2);
     }
     
-    if (client->y + client->height + BORDERWIDTH * 2 > mon_y + mon_height)
+    if (client->y + client->height + conf.borderwidth * 2 > mon_y + mon_height)
     {
-        client->height = mon_height - ((client->y - mon_y) + BORDERWIDTH * 2);
+        client->height = mon_height - ((client->y - mon_y) + conf.borderwidth * 2);
     }
     
     resize(client->id, client->width, client->height);
@@ -2384,8 +2378,8 @@ void movestep(struct client *client, char direction)
      * If the pointer was inside the window to begin with, move
      * pointer back to where it was, relative to the window.
      */
-    if (start_x > 0 - BORDERWIDTH && start_x < client->width + BORDERWIDTH
-        && start_y > 0 - BORDERWIDTH && start_y < client->height + BORDERWIDTH )
+    if (start_x > 0 - conf.borderwidth && start_x < client->width + conf.borderwidth
+        && start_y > 0 - conf.borderwidth && start_y < client->height + conf.borderwidth )
     {
         xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
                          start_x, start_y);
@@ -2430,7 +2424,7 @@ void unmax(struct client *client)
         values[3] = client->height;
 
         /* Set borders again. */
-        values[4] = BORDERWIDTH;
+        values[4] = conf.borderwidth;
         
         mask =
             XCB_CONFIG_WINDOW_X
@@ -2581,7 +2575,7 @@ void maxvert(struct client *client)
 
     client->y = mon_y;
     /* Compute new height considering height increments and screen height. */
-    client->height = mon_height - BORDERWIDTH * 2;
+    client->height = mon_height - conf.borderwidth * 2;
     client->height -= (client->height - client->base_height)
         % client->height_inc;
 
@@ -2708,7 +2702,7 @@ void topright(void)
         return;
     }
 
-    focuswin->x = mon_width - (focuswin->width + BORDERWIDTH * 2);
+    focuswin->x = mon_width - (focuswin->width + conf.borderwidth * 2);
     focuswin->y = mon_y;
     
     movewindow(focuswin->id, focuswin->x, focuswin->y);
@@ -2753,7 +2747,7 @@ void botleft(void)
     }
 
     focuswin->x = mon_x;
-    focuswin->y = mon_y + mon_height - (focuswin->height + BORDERWIDTH * 2);
+    focuswin->y = mon_y + mon_height - (focuswin->height + conf.borderwidth * 2);
 
     movewindow(focuswin->id, focuswin->x, focuswin->y);
 
@@ -2798,9 +2792,9 @@ void botright(void)
         return;
     }
 
-    focuswin->x = mon_x + mon_width - (focuswin->width + BORDERWIDTH * 2);
+    focuswin->x = mon_x + mon_width - (focuswin->width + conf.borderwidth * 2);
 
-    focuswin->y =  mon_y + mon_height - (focuswin->height + BORDERWIDTH * 2);
+    focuswin->y =  mon_y + mon_height - (focuswin->height + conf.borderwidth * 2);
     
     movewindow(focuswin->id, focuswin->x, focuswin->y);
 
@@ -3186,9 +3180,9 @@ void configurerequest(xcb_configure_request_event_t *e)
         {
             client->width = e->width;
 
-            if (client->width + BORDERWIDTH * 2 > mon_width)
+            if (client->width + conf.borderwidth * 2 > mon_width)
             {
-                client->width = mon_width - BORDERWIDTH * 2;
+                client->width = mon_width - conf.borderwidth * 2;
             }
 
             values[i] = client->width;
@@ -3208,9 +3202,9 @@ void configurerequest(xcb_configure_request_event_t *e)
         if (client)
         {
             client->height = e->height;
-            if (client->height + BORDERWIDTH * 2 > mon_height)
+            if (client->height + conf.borderwidth * 2 > mon_height)
             {
-                client->height = mon_height - BORDERWIDTH * 2;
+                client->height = mon_height - conf.borderwidth * 2;
             }
             
             values[i] = client->height;
@@ -3908,7 +3902,7 @@ int main(int argc, char **argv)
     
     /* Set up defaults. */
     
-    conf.borders = true;
+    conf.borderwidth = BORDERWIDTH;
     conf.terminal = TERMINAL;
     focuscol = FOCUSCOL;
     unfocuscol = UNFOCUSCOL;
@@ -3916,7 +3910,7 @@ int main(int argc, char **argv)
     
     while (1)
     {
-        ch = getopt(argc, argv, "bt:f:u:x:");
+        ch = getopt(argc, argv, "b:t:f:u:x:");
         if (-1 == ch)
         {
                 
@@ -3927,8 +3921,8 @@ int main(int argc, char **argv)
         switch (ch)
         {
         case 'b':
-            /* No borders. */
-            conf.borders = false;
+            /* Border width */
+            conf.borderwidth = atoi(optarg);            
             break;
 
         case 't':

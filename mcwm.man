@@ -1,11 +1,11 @@
-.TH mcwm 1 "Jul 21, 2011" "" ""
+.TH mcwm 1 "Nov 07, 2011" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
 .B mcwm
 [ 
 .B \-b 
-]
+] width
 [ 
 .B \-t 
 .I terminal-program
@@ -25,7 +25,7 @@ mcwm \- MC's Window Manager for X11.
 
 .SH OPTIONS
 .PP
-\-b means draw no window borders.
+\-b width sets border width to this many pixels.
 .PP
 \-t urxvt will start urxvt when MODKEY + Return is pressed. Change to
 your prefered terminal program or something else entirely.

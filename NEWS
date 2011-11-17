@@ -2,6 +2,10 @@
 
 User visible changes
 
+2011-11-17
+
+  * -b no longer boolean. Now takes parameter number of pixels.
+
 2011-08-15
 
   * Fixed crash in one screen scenario.

@@ -44,7 +44,7 @@
 /* Ditto for fixed windows. Use "-x colour". */
 #define FIXEDCOL "grey90"
 
-/* Width of border window, in pixels. */
+/* Default width of border window, in pixels. Used unless -b width. */
 #define BORDERWIDTH 1
 
 /*
