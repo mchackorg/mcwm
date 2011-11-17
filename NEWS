@@ -7,6 +7,9 @@ User visible changes
   * In a ConfigureRequest we no longer obey window movements not
     initiated by the user.
 
+  * Fixed bug where client-initiated resize could resize outside of
+    physical screen.
+
   * Fixed bug with topright command on other physical screens.
 
   * -b no longer boolean. Now takes parameter number of pixels.
