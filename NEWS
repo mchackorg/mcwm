@@ -2,6 +2,14 @@
 
 User visible changes
 
+2011-11-22
+
+  * Now optionally starts programs when MODKEY + mouse buttons are
+    pressed on root window. See config.h for configuration and the
+    manual page for an example.
+
+    Also simplified starting programs.
+
 2011-11-17
 
   * In a ConfigureRequest we no longer obey window movements not

@@ -326,7 +326,7 @@ static struct client *findclient(xcb_drawable_t win);
 static void focusnext(void);
 static void setunfocus(xcb_drawable_t win);
 static void setfocus(struct client *client);
-static int start_terminal(void);
+static int start(char *program);
 static void resizelim(struct client *client);
 static void moveresize(xcb_drawable_t win, uint16_t x, uint16_t y,
                        uint16_t width, uint16_t height);
@@ -2085,15 +2085,10 @@ void setfocus(struct client *client)
     focuswin = client;
 }
 
-/*
- * Start a program specified in conf.terminal.
- *
- * Returns 0 on success. 
- */
-int start_terminal(void)
+int start(char *program)
 {
     pid_t pid;
-
+    
     pid = fork();
     if (-1 == pid)
     {
@@ -2102,10 +2097,10 @@ int start_terminal(void)
     }
     else if (0 == pid)
     {
-        pid_t termpid;
+        char *argv[2];
 
-        /* In our first child. */
-
+        /* In the child. */
+        
         /*
          * Make this process a new process leader, otherwise the
          * terminal will die when the wm dies. Also, this makes any
@@ -2117,39 +2112,15 @@ int start_terminal(void)
             exit(1);
         }
         
-        /*
-         * Fork again for the terminal process. This way, the wm won't
-         * know anything about it.
-         */
-        termpid = fork();
-        if (-1 == termpid)
+        argv[0] = program;
+        argv[1] = NULL;
+
+        if (-1 == execvp(program, argv))
         {
-            perror("fork");
+            perror("execve");            
             exit(1);
         }
-        else if (0 == termpid)
-        {
-            char *argv[2];
-        
-            /* In the second child, now starting terminal. */
-        
-            argv[0] = conf.terminal;
-            argv[1] = NULL;
-
-            if (-1 == execvp(conf.terminal, argv))
-            {
-                perror("execve");            
-                exit(1);
-            }
-        } /* second child */
-
-        /* Exit our first child so the wm can pick up and continue. */
         exit(0);
-    } /* first child */
-    else
-    {
-        /* Wait for the first forked process to exit. */
-        waitpid(pid, NULL, 0);
     }
 
     return 0;
@@ -3010,7 +2981,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
         switch (key)
         {
         case KEY_RET: /* return */
-            start_terminal();
+            start(conf.terminal);
             break;
 
         case KEY_F: /* f */
@@ -3486,6 +3457,32 @@ void events(void)
                    e->detail, (long)e->event, e->child, e->event_x,
                    e->event_y);
 
+            if (0 == e->child)
+            {
+                /* Mouse click on root window. Start programs? */
+
+                switch (e->detail)
+                {
+                case 1: /* Mouse button one. */
+                    start(MOUSE1);
+                    break;
+
+                case 2: /* Middle mouse button. */
+                    start(MOUSE2);                    
+                    break;
+
+                case 3: /* Mouse button three. */
+                    start(MOUSE3);
+                    break;
+
+                default:
+                    break;
+                } /* switch */
+
+                /* Break out of event switch. */
+                break;
+            }
+            
             /*
              * If we don't have any currently focused window, we can't
              * do anything. We don't want to do anything if the mouse
@@ -3496,11 +3493,6 @@ void events(void)
             {
                 break;
             }
-
-            /*
-             * XXX if 0 == e->child, we're on the root window. Do
-             * something on the root when mouse buttons are pressed?
-             */            
 
             /*
              * If middle button was pressed, raise window or lower
@@ -4004,6 +3996,13 @@ int main(int argc, char **argv)
 
     /* Install signal handlers. */
 
+    /* We ignore child exists. Don't create zombies. */
+    if (SIG_ERR == signal(SIGCHLD, SIG_IGN))
+    {
+        perror("mcwm: signal");
+        exit(1);
+    }
+
     if (SIG_ERR == signal(SIGINT, sigcatch))
     {
         perror("mcwm: signal");
@@ -4111,7 +4110,7 @@ int main(int argc, char **argv)
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
                     1 /* left mouse button */,
                     MOUSEMODKEY);
-
+    
     xcb_grab_button(conn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
                     | XCB_EVENT_MASK_BUTTON_RELEASE,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,

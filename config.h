@@ -33,6 +33,13 @@
 #define TERMINAL "urxvt"
 
 /*
+ * Start these programs when pressing MODKEY and mouse buttons on root window.
+ */
+#define MOUSE1 ""
+#define MOUSE2 ""
+#define MOUSE3 "mcmenu"
+
+/*
  * Default colour on border for focused windows. Can be set from
  * command line with "-f colour".
  */

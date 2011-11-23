@@ -147,7 +147,10 @@ cursor. Of course, changing workspaces has nothing to do with the
 focused window.
 .PP
 If you don't like the default key bindings, border width, et cetera,
-look in the config.h file, change and recompile.
+look in the config.h file, change and recompile. In the config.h file
+you can also define mouse button actions on the root window. By
+default button 3 starts the command mcmenu. You can write your own
+mcmenu by using, for instance, 9menu or ratmenu.
 .PP
 .SH STARTING
 Typically the window manager is started from a script, either run by
@@ -176,6 +179,28 @@ mcwm &
 
 # Start a terminal in the foreground. If this dies, X dies.
 exec urxvt
+.fi
+.in -4
+.sp
+.PP
+You may also want to define an mcmenu program for use with mcwm.
+Here's a complete example using the 9menu program:
+.sp
+.in +4
+.nf
+\&#! /bin/sh
+9menu -bg black -fg white \\
+ -popup \\
+ 'cpu:urxvt -e ssh cpu.example.org' \\
+ ':' \\
+ 'VGA On: xrandr --output VGA --on' \\
+ 'VGA Off: xrandr --output VGA --off' \\
+ 'VGA Above: xrandr --output VGA --auto --above LVDS' \\
+ ':' \\
+ 'HHKB: xkbcomp -I$HOME/conf/xkb $HOME/conf/xkb/hhkb.xkb $DISPLAY' \\
+ 'Thinkpad: xmodmap /home/mc/lib/xmodmap/thinkpad-x60.xmodmap' \\
+ ':' \\
+ 'close:'
 .fi
 .in -4
 .sp
