@@ -43,7 +43,7 @@ v Know about physical screens dynamically (RandR).
 
 - Snap to border and screen edge, which favours the edge.
 
-- Mouse buttons on root window should start some configurable
+v Mouse buttons on root window should start some configurable
   programs.
 
 - Feedback window for size when resizing.

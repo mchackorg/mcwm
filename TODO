@@ -88,8 +88,6 @@
 
 * Configuration file.
 
-* Start configurable programs when clicking on root window.
-
 * Handle Urgency hint
 
   Some windows might need attention and marks this with an urgency
