@@ -1,5 +1,7 @@
 -*- text -*-
 
+* Use the new xcb-ewmh for the EWMH hints.
+
 * Bug: We grab MODKEY all the time! We can grab it only when we start
   tabbing instead and release it when tabbing is complete.
 
