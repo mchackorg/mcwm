@@ -1,5 +1,25 @@
 -*- text -*-
 
+* Bug: We grab MODKEY all the time! We can grab it only when we start
+  tabbing instead and release it when tabbing is complete.
+
+* Flag (-i, perhaps?) to allow windows to be unmapped. Add unmap patch
+  from Christian.
+
+* Key to move to previous and next workspace. David Jacobs has a patch
+  for mod4+shift + I/O.
+
+  https://gist.github.com/1478365
+
+* Key to move windows to other workspaces, perhaps mod4+Shift + 0..9
+  and mod4+shift + I/O.
+
+* Full-screen windows that are resized from client should be kept
+  full-screen.
+
+* When moving windows between physical screens, try to place the
+  window on roughly the same place on a new screen, if possible.
+
 * When a window tries to map itself outside the physical screens,
   always map it to the screen closest to the coordinates it asked for
   instead of always mapping on the first screen in the list.
@@ -42,12 +62,12 @@
 
   - A window might be on one, *several* or all virtual screens. 
 
-    We already have a way of fixing a window on all screens (Mod2-f),
-    but we need a way of saying "stick on this workspace". Perhaps
-    something like Mod2-a <n>, where <n> is 1--9 for virtual screens.
-    Better ways? Note that this seems to be mildly incompatible with
-    the EWMH _NET_WM_DESKTOP hint we're currently using: We will only
-    be able to save one of the desktops used.
+    We already have a way of fixing a window on all screens
+    (MODKEY-f), but we need a way of saying "stick on this workspace".
+    Perhaps something like MODKEY-a <n>, where <n> is 1--9 for virtual
+    screens. Better ways? Note that this seems to be mildly
+    incompatible with the EWMH _NET_WM_DESKTOP hint we're currently
+    using: We will only be able to save one of the desktops used.
 
 * Hide windows
 
