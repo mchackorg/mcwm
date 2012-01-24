@@ -1,12 +1,11 @@
-VERSION=20111124
+VERSION=20120124
 DIST=mcwm-$(VERSION)
 SRC=mcwm.c list.c config.h events.h list.h
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
 
-CC=gcc
-CFLAGS=-g -std=c99 -Wall -Wextra -O2 -I/usr/local/include #-DDEBUG #-DDMALLOC
-LDFLAGS=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm \
-	-lxcb-atom #-ldmalloc
+CFLAGS+=-g -std=c99 -Wall -Wextra -I/usr/local/include #-DDEBUG #-DDMALLOC
+LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm \
+	-lxcb-util #-ldmalloc
 
 RM=/bin/rm
 PREFIX=/usr/local
@@ -21,7 +20,7 @@ mcwm: $(OBJS)
 
 mcwm-static: $(OBJS)
 	$(CC) -o $@ $(OBJS) -static $(CFLAGS) $(LDFLAGS) \
-	-lxcb-property -lxcb-event -lXau -lXdmcp
+	-lXau -lXdmcp
 
 mcwm.o: mcwm.c events.h list.h config.h Makefile
 
