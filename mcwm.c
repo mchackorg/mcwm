@@ -3364,8 +3364,8 @@ void events(void)
          * readable again.
          *
          * We do it this way instead of xcb_wait_for_event() since
-         * select() will return if we we're interrupted by a signal.
-         * We like that.
+         * select() will return if we were interrupted by a signal. We
+         * like that.
          */
         ev = xcb_poll_for_event(conn);
         if (NULL == ev)
