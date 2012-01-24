@@ -525,8 +525,9 @@ int32_t getwmdesktop(xcb_drawable_t win)
     uint32_t *wsp;
     uint32_t ws;
     
-    cookie = xcb_get_property(conn, false, win, atom_desktop,XCB_GET_PROPERTY_TYPE_ANY, 0,
-                                  sizeof (int32_t));
+    cookie = xcb_get_property(conn, false, win, atom_desktop,
+                              XCB_GET_PROPERTY_TYPE_ANY, 0,
+                              sizeof (int32_t));
 
     reply = xcb_get_property_reply(conn, cookie, NULL);
     if (NULL == reply)
@@ -929,7 +930,8 @@ void fitonscreen(struct client *client)
         willmove = true;
         willresize = true;
     }
-    else if (client->x + client->width + conf.borderwidth * 2 > mon_x + mon_width)
+    else if (client->x + client->width + conf.borderwidth * 2
+             > mon_x + mon_width)
     {
         client->x = mon_x + mon_width - (client->width + conf.borderwidth * 2);
         willmove = true;
@@ -942,10 +944,12 @@ void fitonscreen(struct client *client)
         willmove = true;
         willresize = true;
     }
-    else if (client->y + client->height + conf.borderwidth * 2 > mon_y + mon_height)
+    else if (client->y + client->height + conf.borderwidth * 2
+             > mon_y + mon_height)
     {
-        client->y = mon_y + mon_height - (client->height + conf.borderwidth * 2);
-        willmove = true;        
+        client->y = mon_y + mon_height - (client->height + conf.borderwidth
+                                          * 2);
+        willmove = true;
     }
 
     if (willmove)
@@ -1870,7 +1874,8 @@ void movelim(struct client *client)
 
     if (client->y + client->height > mon_y + mon_height - conf.borderwidth * 2)
     {
-        client->y = (mon_y + mon_height - conf.borderwidth * 2) - client->height;
+        client->y = (mon_y + mon_height - conf.borderwidth * 2)
+            - client->height;
     }    
 
     movewindow(client->id, client->x, client->y);
@@ -2164,14 +2169,16 @@ void resizelim(struct client *client)
         client->width = client->min_width;
     }
 
-    if (client->x + client->width + conf.borderwidth * 2 > mon_x + mon_width)    
+    if (client->x + client->width + conf.borderwidth * 2 > mon_x + mon_width)
     {
-        client->width = mon_width - ((client->x - mon_x) + conf.borderwidth * 2);
+        client->width = mon_width - ((client->x - mon_x) + conf.borderwidth
+                                     * 2);
     }
     
     if (client->y + client->height + conf.borderwidth * 2 > mon_y + mon_height)
     {
-        client->height = mon_height - ((client->y - mon_y) + conf.borderwidth * 2);
+        client->height = mon_height - ((client->y - mon_y) + conf.borderwidth
+                                       * 2);
     }
     
     resize(client->id, client->width, client->height);
@@ -2394,8 +2401,9 @@ void movestep(struct client *client, char direction)
      * If the pointer was inside the window to begin with, move
      * pointer back to where it was, relative to the window.
      */
-    if (start_x > 0 - conf.borderwidth && start_x < client->width + conf.borderwidth
-        && start_y > 0 - conf.borderwidth && start_y < client->height + conf.borderwidth )
+    if (start_x > 0 - conf.borderwidth && start_x < client->width
+        + conf.borderwidth && start_y > 0 - conf.borderwidth && start_y
+        < client->height + conf.borderwidth)
     {
         xcb_warp_pointer(conn, XCB_NONE, client->id, 0, 0, 0, 0,
                          start_x, start_y);
@@ -2768,10 +2776,9 @@ void botleft(void)
     }
 
     focuswin->x = mon_x;
-    focuswin->y = mon_y + mon_height - (focuswin->height + conf.borderwidth * 2);
-
+    focuswin->y = mon_y + mon_height - (focuswin->height + conf.borderwidth
+                                        * 2);
     movewindow(focuswin->id, focuswin->x, focuswin->y);
-
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
                      pointx, pointy);
     xcb_flush(conn);
@@ -2814,11 +2821,9 @@ void botright(void)
     }
 
     focuswin->x = mon_x + mon_width - (focuswin->width + conf.borderwidth * 2);
-
-    focuswin->y =  mon_y + mon_height - (focuswin->height + conf.borderwidth * 2);
-    
+    focuswin->y =  mon_y + mon_height - (focuswin->height + conf.borderwidth
+                                         * 2);
     movewindow(focuswin->id, focuswin->x, focuswin->y);
-
     xcb_warp_pointer(conn, XCB_NONE, focuswin->id, 0, 0, 0, 0,
                      pointx, pointy);
     xcb_flush(conn);
@@ -2837,11 +2842,17 @@ void deletewin(void)
     }
 
     /* Check if WM_DELETE is supported.  */
-    cookie = xcb_icccm_get_wm_protocols_unchecked(conn, focuswin->id, wm_protocols);
-    if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1) {
+    cookie = xcb_icccm_get_wm_protocols_unchecked(conn, focuswin->id,
+                                                  wm_protocols);
+    if (xcb_icccm_get_wm_protocols_reply(conn, cookie, &protocols, NULL) == 1)
+    {
         for (i = 0; i < protocols.atoms_len; i++)
+        {
             if (protocols.atoms[i] == wm_delete_window)
+            {
                  use_delete = true;
+            }
+        }
     }
 
     xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
