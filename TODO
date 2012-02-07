@@ -1,5 +1,10 @@
 -*- text -*-
 
+* Feature: Xinerama support. Needed when XRANDR above 1.1 not
+  supported, for instance with Nvidia cards in Twinview configuration.
+
+* Bug: Ignore other modifiers, such as NumLock and CapsLock.
+
 * Use the new xcb-ewmh for the EWMH hints.
 
 * Bug: We grab MODKEY all the time! We can grab it only when we start
