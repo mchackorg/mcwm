@@ -3359,9 +3359,9 @@ void events(void)
         FD_SET(fd, &in);
 
         /*
-         * Check for events, again and again. When poll returns NULL,
-         * we block on select() until the event file descriptor gets
-         * readable again.
+         * Check for events, again and again. When poll returns NULL
+         * (and it does that a lot), we block on select() until the
+         * event file descriptor gets readable again.
          *
          * We do it this way instead of xcb_wait_for_event() since
          * select() will return if we were interrupted by a signal. We
@@ -3370,6 +3370,18 @@ void events(void)
         ev = xcb_poll_for_event(conn);
         if (NULL == ev)
         {
+            PDEBUG("xcb_poll_for_event() returned NULL.\n");
+
+            /*
+             * Check if we have an unrecoverable connection error,
+             * like a disconnected X server.
+             */
+            if (xcb_connection_has_error(conn))
+            {
+                cleanup(0);
+                exit(1);
+            }
+
             found = select(fd + 1, &in, NULL, NULL, NULL);
             if (-1 == found)
             {
