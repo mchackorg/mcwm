@@ -33,7 +33,7 @@ mcwm \- MC's Window Manager for X11.
 \-i turns on icons/hidden windows. 
 .B Please note
 that there is no way from mcwm to get a hidden window back! You have
-to use an external program such as a dock or the 9icon script (see
+to use an external program such as a panel or the 9icon script (see
 below) to get the window mapped again.
 .PP
 \-t urxvt will start urxvt when MODKEY + Return is pressed. Change to
@@ -192,52 +192,14 @@ exec urxvt
 .in -4
 .sp
 .PP
-You may also want to define an mcmenu program for use with mcwm.
-Here's a complete example using the 9menu program:
-.sp
-.in +4
-.nf
-\&#! /bin/sh
-exec 9menu -bg black -fg white \\
- -popup \\
- 'cpu:urxvt -e ssh cpu.example.org' \\
- ':' \\
- 'VGA On: xrandr --output VGA --on' \\
- 'VGA Off: xrandr --output VGA --off' \\
- 'VGA Above: xrandr --output VGA --auto --above LVDS' \\
- ':' \\
- 'HHKB: xkbcomp -I$HOME/conf/xkb $HOME/conf/xkb/hhkb.xkb $DISPLAY' \\
- 'Thinkpad: xmodmap /home/mc/lib/xmodmap/thinkpad-x60.xmodmap' \\
- ':' \\
- 'close:'
-.fi
-.in -4
-.sp
+.SH SCRIPTS
+You may want to define a menu program for use with mcwm (see
+config.h). In the source distribution you can find an example as
+mcmenu in the scripts directory.
 .PP
 Christian Neukirchen wrote a little script you can use to get
-iconified windows mapped again. It relies on xwininfo and xdotool and
-GNU xargs.
-.sp
-.in +4
-.nf
-\&#! /bin/sh
-# 9icon - show 9menu of iconified windows for unmapping
-
-IFS="
-"
-
-for win in $(xwininfo -root -children | awk '$1~/0x/ && $2~/"/ {print $1}'); do
-  xprop -id $win WM_NAME WM_STATE |
-  awk -F'"' -v win=$win '
-    /^WM_NAME/ { name=$2 }
-    /window state: Iconic/ {
-      print name ":xdotool windowmap " win " windowraise " win
-    }
-  '
-done | xargs -r -d'\\n' \\
-  9menu -popup -label 9icon -bg grey20 -fg grey80 -font fixed
-.fi
-.in -4
-.sp
+iconified windows mapped again if you are running mcwm in allow icons
+mode (-i). You need awk, xdotool, xprop and xwininfo installed. You
+can the script as scripts/9icon.
 .SH AUTHOR
 Michael Cardell Widerkrantz <mc@hack.org>.

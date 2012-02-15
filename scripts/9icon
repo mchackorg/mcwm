@@ -1,0 +1,18 @@
+#! /bin/sh
+
+# 9icon - show 9menu of hidden windows for mapping
+# Originally by Christian Neukirchen <chneukirchen@gmail.com> and
+# slightly changed by MC.
+
+IFS="
+"
+
+for win in $(xwininfo -root -children | awk '$1~/0x/ && $2~/"/ {print $1}'); do
+  xprop -id $win WM_NAME WM_STATE |
+  awk -F'"' -v win=$win '
+    /^WM_NAME/ { name=$2 }
+    /window state: Iconic/ {
+      print name "'\''" ":xdotool windowmap " win " windowraise " win "'\''"
+    }
+  '
+done | xargs 9menu -popup -label 9icon -bg grey20 -fg grey80 -font fixed
