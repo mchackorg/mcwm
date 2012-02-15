@@ -2,6 +2,17 @@
 
 User visible changes
 
+2012-02-15
+
+  * Added option -i to allow icons.
+
+  * Added scripts: mcmenu (configurable start meny) and 9icon (to map
+    iconified windows).
+
+2012-02-07
+
+  * Check for socket errors. Should prevent busy loops.
+
 2011-11-22
 
   * Now optionally starts programs when MODKEY + mouse buttons are
