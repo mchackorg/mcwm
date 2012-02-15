@@ -1,5 +1,16 @@
 -*- text -*-
 
+* Feature: Handle several screens (DISPLAY=0.x) in classical X.
+
+  This means we will have several root windows.
+
+  setup = xcb_get_setup(conn);
+  screens = xcb_setup_roots_length(setup);
+
+  returns the number of screens available.
+
+  We can walk over them with xcb_setup_roots_iterator(setup).
+
 * Feature: Xinerama support. Needed when XRANDR above 1.1 not
   supported, for instance with Nvidia cards in Twinview configuration.
 
@@ -10,9 +21,6 @@
 * Bug: We grab MODKEY all the time! We can grab it only when we start
   tabbing instead and release it when tabbing is complete.
 
-* Flag (-i, perhaps?) to allow windows to be unmapped. Add unmap patch
-  from Christian.
-
 * Key to move to previous and next workspace. David Jacobs has a patch
   for mod4+shift + I/O.
 
@@ -21,8 +29,8 @@
 * Key to move windows to other workspaces, perhaps mod4+Shift + 0..9
   and mod4+shift + I/O.
 
-* Full-screen windows that are resized from client should be kept
-  full-screen.
+* Full-screen windows that are resized from client requests should be
+  kept full-screen.
 
 * When moving windows between physical screens, try to place the
   window on roughly the same place on a new screen, if possible.
