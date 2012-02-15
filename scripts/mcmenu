@@ -1,11 +1,11 @@
 #! /bin/sh
-exec 9menu -bg grey20 -fg grey80 \\
- -popup \\
- 'cpu:urxvt -e ssh cpu.example.org' \\
- ':' \\
- 'VGA On: xrandr --output VGA --on' \\
- 'VGA Off: xrandr --output VGA --off' \\
- ':' \\
- 'HHKB: xkbcomp -I$HOME/conf/xkb $HOME/conf/xkb/hhkb.xkb $DISPLAY' \\
- ':' \\
+exec 9menu -bg grey20 -fg grey80 -popup \
+ 'hide:xdotool selectwindow windowminimize' \
+ 'cpu:urxvt -e ssh cpu.example.org' \
+ ':' \
+ 'VGA On: xrandr --output VGA --on' \
+ 'VGA Off: xrandr --output VGA --off' \
+ ':' \
+ 'HHKB: xkbcomp -I$HOME/conf/xkb $HOME/conf/xkb/hhkb.xkb $DISPLAY' \
+ ':' \
  'close:'
