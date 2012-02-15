@@ -7,6 +7,9 @@ mcwm \- MC's Window Manager for X11.
 .B \-b 
 ] width
 [ 
+.B \-i
+]
+[ 
 .B \-t 
 .I terminal-program
 ] [ 
@@ -26,6 +29,12 @@ mcwm \- MC's Window Manager for X11.
 .SH OPTIONS
 .PP
 \-b width sets border width to this many pixels.
+.PP
+\-i turns on icons/hidden windows. 
+.B Please note
+that there is no way from mcwm to get a hidden window back! You have
+to use an external program such as a dock or the 9icon script (see
+below) to get the window mapped again.
 .PP
 \-t urxvt will start urxvt when MODKEY + Return is pressed. Change to
 your prefered terminal program or something else entirely.
@@ -150,7 +159,7 @@ If you don't like the default key bindings, border width, et cetera,
 look in the config.h file, change and recompile. In the config.h file
 you can also define mouse button actions on the root window. By
 default button 3 starts the command mcmenu. You can write your own
-mcmenu by using, for instance, 9menu or ratmenu.
+mcmenu by using, for instance, 9menu, dmenu or ratmenu.
 .PP
 .SH STARTING
 Typically the window manager is started from a script, either run by
@@ -189,7 +198,7 @@ Here's a complete example using the 9menu program:
 .in +4
 .nf
 \&#! /bin/sh
-9menu -bg black -fg white \\
+exec 9menu -bg black -fg white \\
  -popup \\
  'cpu:urxvt -e ssh cpu.example.org' \\
  ':' \\
@@ -201,6 +210,32 @@ Here's a complete example using the 9menu program:
  'Thinkpad: xmodmap /home/mc/lib/xmodmap/thinkpad-x60.xmodmap' \\
  ':' \\
  'close:'
+.fi
+.in -4
+.sp
+.PP
+Christian Neukirchen wrote a little script you can use to get
+iconified windows mapped again. It relies on xwininfo and xdotool and
+GNU xargs.
+.sp
+.in +4
+.nf
+\&#! /bin/sh
+# 9icon - show 9menu of iconified windows for unmapping
+
+IFS="
+"
+
+for win in $(xwininfo -root -children | awk '$1~/0x/ && $2~/"/ {print $1}'); do
+  xprop -id $win WM_NAME WM_STATE |
+  awk -F'"' -v win=$win '
+    /^WM_NAME/ { name=$2 }
+    /window state: Iconic/ {
+      print name ":xdotool windowmap " win " windowraise " win
+    }
+  '
+done | xargs -r -d'\\n' \\
+  9menu -popup -label 9icon -bg grey20 -fg grey80 -font fixed
 .fi
 .in -4
 .sp

@@ -276,6 +276,7 @@ struct conf
     uint32_t focuscol;          /* Focused border colour. */
     uint32_t unfocuscol;        /* Unfocused border colour.  */
     uint32_t fixedcol;          /* Fixed windows border colour. */
+    bool allowicons;            /* Allow windows to be unmapped. */    
 } conf;
 
 xcb_atom_t atom_desktop;        /*
@@ -3904,21 +3905,27 @@ void events(void)
         break;
 
         case XCB_CLIENT_MESSAGE:
+        {
+            xcb_client_message_event_t *e
+                = (xcb_client_message_event_t *)ev;
+
+            if (conf.allowicons)
             {
-                xcb_client_message_event_t *e
-                  = (xcb_client_message_event_t *)ev;
                 if (e->type == wm_change_state
                     && e->format == 32
                     && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC)
                 {
-                    /* Unmap window and declare iconic.  */
-                    xcb_unmap_window(conn, e->window);
                     long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
+
+                    /* Unmap window and declare iconic. */
+                    
+                    xcb_unmap_window(conn, e->window);
                     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, e->window,
                                         wm_state, wm_state, 32, 2, data);
                     xcb_flush(conn);
                 }
-            }
+            } /* if */
+        }
         break;
 
         case XCB_CIRCULATE_REQUEST:
@@ -4071,13 +4078,14 @@ int main(int argc, char **argv)
     
     conf.borderwidth = BORDERWIDTH;
     conf.terminal = TERMINAL;
+    conf.allowicons = ALLOWICONS;
     focuscol = FOCUSCOL;
     unfocuscol = UNFOCUSCOL;
     fixedcol = FIXEDCOL;
     
     while (1)
     {
-        ch = getopt(argc, argv, "b:t:f:u:x:");
+        ch = getopt(argc, argv, "b:it:f:u:x:");
         if (-1 == ch)
         {
                 
@@ -4092,6 +4100,10 @@ int main(int argc, char **argv)
             conf.borderwidth = atoi(optarg);            
             break;
 
+        case 'i':
+            conf.allowicons = true;
+            break;
+            
         case 't':
             conf.terminal = optarg;
             break;
