@@ -362,6 +362,7 @@ static void configurerequest(xcb_configure_request_event_t *e);
 static void events(void);
 static void printhelp(void);
 static void sigcatch(int sig);
+static xcb_atom_t getatom(char *atom_name);
 
 
 /* Function bodies. */
@@ -4041,6 +4042,31 @@ void sigcatch(int sig)
     sigcode = sig;
 }
 
+/*
+ * Get a defined atom from the X server.
+ */ 
+xcb_atom_t getatom(char *atom_name)
+{
+    xcb_intern_atom_cookie_t atom_cookie;
+    xcb_atom_t atom;
+    xcb_intern_atom_reply_t *rep;
+    
+    atom_cookie = xcb_intern_atom(conn, 0, strlen(atom_name), atom_name);
+    rep = xcb_intern_atom_reply(conn, atom_cookie, NULL);
+    if (NULL != rep)
+    {
+        atom = rep->atom;
+        free(rep);
+        return atom;
+    }
+
+    /*
+     * XXX Note that we return 0 as an atom if anything goes wrong.
+     * Might become interesting.
+     */
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     uint32_t mask = 0;
@@ -4146,67 +4172,12 @@ int main(int argc, char **argv)
     conf.fixedcol = getcolor(fixedcol);
     
     /* Get some atoms. */
-    char *atom_name;
-    xcb_intern_atom_cookie_t atom_cookie;    
-    xcb_intern_atom_cookie_t cookie_desktop;
-    xcb_intern_atom_cookie_t cookie_delete_window;
-    xcb_intern_atom_cookie_t cookie_protocols;
-    xcb_intern_atom_reply_t *rep;
-
-    atom_name = "_NET_WM_DESKTOP";
-    cookie_desktop = xcb_intern_atom(conn,
-                                     0,
-                                     strlen(atom_name),
-                                     atom_name);
-    rep = xcb_intern_atom_reply(conn,
-                                cookie_desktop,
-                                NULL);
-    atom_desktop = rep->atom;
-    free(rep);
-
-
-    atom_name = "WM_DELETE_WINDOW";
-    cookie_delete_window = xcb_intern_atom(conn,
-                                           0,
-                                           strlen (atom_name),
-                                           atom_name);
-    rep = xcb_intern_atom_reply(conn,
-                                cookie_delete_window,
-                                NULL);
-    wm_delete_window = rep->atom;
-    free(rep);
-
-
-    atom_name = "WM_CHANGE_STATE";
-    atom_cookie = xcb_intern_atom(conn,
-                                  0,
-                                  strlen(atom_name),
-                                  atom_name);
-    rep = xcb_intern_atom_reply(conn, atom_cookie, NULL);
-    wm_change_state = rep->atom;
-    free(rep);
-
-    atom_name = "WM_STATE";
-    atom_cookie = xcb_intern_atom(conn,
-                                  0,
-                                  strlen(atom_name),
-                                  atom_name);
-    rep = xcb_intern_atom_reply(conn, atom_cookie, NULL);
-    wm_state = rep->atom;
-    free(rep);
+    atom_desktop = getatom("_NET_WM_DESKTOP");
+    wm_delete_window = getatom("WM_DELETE_WINDOW");
+    wm_change_state = getatom("WM_CHANGE_STATE");
+    wm_state = getatom("WM_STATE");
+    wm_protocols = getatom("WM_PROTOCOLS");
     
-    atom_name = "WM_PROTOCOLS";
-    cookie_protocols = xcb_intern_atom(conn,
-                                       0,
-                                       strlen (atom_name),
-                                       atom_name);
-    rep = xcb_intern_atom_reply(conn,
-                                cookie_protocols,
-                                NULL);
-    wm_protocols = rep->atom;
-    free(rep);
-
-
     /* Check for RANDR extension and configure. */
     randrbase = setuprandr();
 
