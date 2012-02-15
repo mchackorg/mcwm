@@ -285,6 +285,8 @@ xcb_atom_t atom_desktop;        /*
                                  */
 
 xcb_atom_t wm_delete_window;    /* WM_DELETE_WINDOW event to close windows.  */
+xcb_atom_t wm_change_state;
+xcb_atom_t wm_state;
 xcb_atom_t wm_protocols;        /* WM_PROTOCOLS.  */
 
 
@@ -1047,6 +1049,11 @@ void newwin(xcb_window_t win)
     
     /* Show window on screen. */
     xcb_map_window(conn, client->id);
+
+    /* Declare window normal. */
+    long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
+                              wm_state, wm_state, 32, 2, data);
 
     /*
      * Move cursor into the middle of the window so we don't lose the
@@ -3896,6 +3903,24 @@ void events(void)
             configurerequest((xcb_configure_request_event_t *) ev);
         break;
 
+        case XCB_CLIENT_MESSAGE:
+            {
+                xcb_client_message_event_t *e
+                  = (xcb_client_message_event_t *)ev;
+                if (e->type == wm_change_state
+                    && e->format == 32
+                    && e->data.data32[0] == XCB_ICCCM_WM_STATE_ICONIC)
+                {
+                    /* Unmap window and declare iconic.  */
+                    xcb_unmap_window(conn, e->window);
+                    long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
+                    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, e->window,
+                                        wm_state, wm_state, 32, 2, data);
+                    xcb_flush(conn);
+                }
+            }
+        break;
+
         case XCB_CIRCULATE_REQUEST:
         {
             xcb_circulate_request_event_t *e
@@ -4110,6 +4135,7 @@ int main(int argc, char **argv)
     
     /* Get some atoms. */
     char *atom_name;
+    xcb_intern_atom_cookie_t atom_cookie;    
     xcb_intern_atom_cookie_t cookie_desktop;
     xcb_intern_atom_cookie_t cookie_delete_window;
     xcb_intern_atom_cookie_t cookie_protocols;
@@ -4138,6 +4164,25 @@ int main(int argc, char **argv)
     wm_delete_window = rep->atom;
     free(rep);
 
+
+    atom_name = "WM_CHANGE_STATE";
+    atom_cookie = xcb_intern_atom(conn,
+                                  0,
+                                  strlen(atom_name),
+                                  atom_name);
+    rep = xcb_intern_atom_reply(conn, atom_cookie, NULL);
+    wm_change_state = rep->atom;
+    free(rep);
+
+    atom_name = "WM_STATE";
+    atom_cookie = xcb_intern_atom(conn,
+                                  0,
+                                  strlen(atom_name),
+                                  atom_name);
+    rep = xcb_intern_atom_reply(conn, atom_cookie, NULL);
+    wm_state = rep->atom;
+    free(rep);
+    
     atom_name = "WM_PROTOCOLS";
     cookie_protocols = xcb_intern_atom(conn,
                                        0,
