@@ -74,44 +74,57 @@ Note that the mouse cursor needs to be inside the window you want to
 move, raise/lower or resize even if it currently has the focus. This
 is a feature, not a bug.
 .PP
-Mod4 + key:
+Mod4 + key on focused window:
 .RS
 .IP \(bu 2
 .B r 
-raise or lower (toggles)
+raise or lower (toggles).
 .IP \(bu 2
 .B x 
-maximize (toggles)
+maximize (toggles).
 .IP \(bu 2
 .B m 
-maximize vertically (toggles)
-.IP \(bu 2
-.B h 
-move left
-.IP \(bu 2
-.B j 
-move down
-.IP \(bu 2
-.B k 
-move up
-.IP \(bu 2
-.B l 
-move right
+maximize vertically (toggles).
 .IP \(bu 2
 .B H 
-resize left
+resize left.
 .IP \(bu 2
 .B J 
-resize down
+resize down.
 .IP \(bu 2
 .B K 
-resize up
+resize up.
 .IP \(bu 2
 .B L
-resize right
+resize right.
+.IP \(bu 2
+.B h 
+move left.
+.IP \(bu 2
+.B j 
+move down.
+.IP \(bu 2
+.B k 
+move up.
+.IP \(bu 2
+.B l 
+move right.
+.IP \(bu 2
+.B y
+move to upper left corner of physical screen.
+.IP \(bu 2
+.B u
+move  to upper right corner of physical screen.
+.IP \(bu 2
+.B b
+move to lower left corner of physical screen.
+.IP \(bu 2
+.B n
+move to lower right corner of physical screen.
 .IP \(bu 2
 .B Return
-start terminal
+start terminal or whatever program you have configured with -t or in
+the config.h.
 .IP \(bu 2
 .B Tab
 go to next window in the current workspace window ring. If you release
@@ -120,28 +133,22 @@ window. A new press of MODKEY + Tab will bring you back to the window
 where you last had focus.
 .IP \(bu 2
 .B f
-fix window so it is visible on all workspaces. Toggles. Press again to
-unfix window. Also used to move windows between workspaces: First fix
-the window, change to the workspace you want, then unfix the window on
-the new workspace.
+fix window so it is visible on all workspaces (toggles). Press again
+to unfix window. Also used to move windows between workspaces: First
+fix the window, change to the workspace you want, then unfix the
+window on the new workspace.
 .IP \(bu 2
-.B y
-move to upper left corner of physical screen.
-.IP \(bu 2
-.B u
-move  to upper right corner of physical screen..
-.IP \(bu 2
-.B b
-move to lower left corner of physical screen..
-.IP \(bu 2
-.B n
-move to lower right corner of physical screen..
+.B i
+iconify (or hide) window from the display. Only usable when mcwm has
+been started with -i. Currently there is no way to get a hidden window
+back. You have to use an external program such as a panel or the 9icon
+script in the mcwm distribution.
 .IP \(bu 2
 .B 0\-9
 go to workspace n, 0-9.
 .IP \(bu 2
 .B End
-close focused window.
+close window.
 .IP \(bu 2
 .B ,
 move window to previous physical screen.

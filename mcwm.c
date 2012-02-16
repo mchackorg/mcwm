@@ -127,6 +127,7 @@ typedef enum {
     KEY_END,
     KEY_PREVSCR,
     KEY_NEXTSCR,
+    KEY_ICONIFY,    
     KEY_MAX
 } key_enum_t;
 
@@ -254,7 +255,8 @@ struct keys
     { USERKEY_BOTRIGHT, 0 },
     { USERKEY_DELETE, 0 },
     { USERKEY_PREVSCREEN, 0 },
-    { USERKEY_NEXTSCREEN, 0 },    
+    { USERKEY_NEXTSCREEN, 0 },
+    { USERKEY_ICONIFY, 0 },    
 };    
 
 /* All keycodes generating our MODKEY mask. */
@@ -346,6 +348,7 @@ static void setborders(struct client *client, int width);
 static void unmax(struct client *client);
 static void maximize(struct client *client);
 static void maxvert(struct client *client);
+static void hide(struct client *client);
 static bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y);
 static bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
                     uint16_t *height);
@@ -2624,6 +2627,22 @@ void maxvert(struct client *client)
     client->vertmaxed = true;    
 }
 
+void hide(struct client *client)
+{
+    long data[] = { XCB_ICCCM_WM_STATE_ICONIC, XCB_NONE };
+
+    /*
+     * Unmap window and declare iconic.
+     * 
+     * Unmapping will generate an even UnmapNotify event so we can
+     * forget about the window later.
+     */
+    xcb_unmap_window(conn, client->id);
+    xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
+                        wm_state, wm_state, 32, 2, data);    
+    xcb_flush(conn);
+}
+
 bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y)
 {
     xcb_query_pointer_reply_t *pointer;
@@ -3112,6 +3131,13 @@ void handle_keypress(xcb_key_press_event_t *ev)
             nextscreen();            
             break;
 
+        case KEY_ICONIFY:
+            if (conf.allowicons)
+            {
+                hide(focuswin);
+            }
+            break;
+            
         default:
             /* Ignore other keys. */
             break;            
