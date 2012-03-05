@@ -1,4 +1,4 @@
-.TH mcwm 1 "Nov 07, 2011" "" ""
+.TH mcwm 1 "Mar 05, 2012" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
@@ -208,5 +208,31 @@ Christian Neukirchen wrote a little script you can use to get
 iconified windows mapped again if you are running mcwm in allow icons
 mode (-i). You need awk, xdotool, xprop and xwininfo installed. You
 can the script as scripts/9icon.
+.PP
+You might also be interested in the following shell function that
+might come in handy to give your terminal emulators good titles before
+hiding them.
+.sp
+.in +4
+.nf
+# Set the title and icon name of an xterm or clone.
+function title
+{
+    # icon name
+    echo -e '\\033]1;'$1'\\007'
+    # title
+    echo -e '\\033]2;'$1'\\007'
+}
+.fi
+.in -4
+.sp
+Use it like this:
+.sp
+.in +4
+.nf
+% title 'really descriptive title'
+.fi
+.in -4
+.sp
 .SH AUTHOR
 Michael Cardell Widerkrantz <mc@hack.org>.
