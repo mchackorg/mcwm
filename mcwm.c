@@ -978,8 +978,6 @@ void fitonscreen(struct client *client)
  */
 void newwin(xcb_window_t win)
 {
-    int16_t pointx;
-    int16_t pointy;
     struct client *client;
 
     if (NULL != findclient(win))
@@ -991,14 +989,6 @@ void newwin(xcb_window_t win)
          * Silently ignore.
          */
         return;
-    }
-    
-    /* Get pointer position so we can move the window to the cursor. */
-    if (!getpointer(screen->root, &pointx, &pointy))
-    {
-        PDEBUG("Failed to get pointer coords!\n");
-        pointx = 0;
-        pointy = 0;
     }
     
     /*
@@ -1017,12 +1007,23 @@ void newwin(xcb_window_t win)
 
     /*
      * If the client doesn't say the user specified the coordinates
-     * for the window we store it where our pointer is instead.
+     * for the window we map it where our pointer is instead.
      */
     if (!client->usercoord)
     {
+        int16_t pointx;
+        int16_t pointy;    
         PDEBUG("Coordinates not set by user. Using pointer: %d,%d.\n",
                pointx, pointy);
+
+        /* Get pointer position so we can move the window to the cursor. */
+        if (!getpointer(screen->root, &pointx, &pointy))
+        {
+            PDEBUG("Failed to get pointer coords!\n");
+            pointx = 0;
+            pointy = 0;
+        }
+        
         client->x = pointx;
         client->y = pointy;
 
@@ -1036,7 +1037,7 @@ void newwin(xcb_window_t win)
     /* Find the physical output this window will be on if RANDR is active. */
     if (-1 != randrbase)
     {
-        client->monitor = findmonbycoord(pointx, pointy);
+        client->monitor = findmonbycoord(client->x, client->y);
         if (NULL == client->monitor)
         {
             /*
