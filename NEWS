@@ -2,6 +2,12 @@
 
 User visible changes
 
+2012-03-05
+
+  * New key: MODKEY + i hides windows.
+
+  * New program: hidden. Lists hidden windows.
+
 2012-02-15
 
   * Added option -i to allow icons.
