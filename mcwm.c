@@ -4104,7 +4104,8 @@ int main(int argc, char **argv)
     char *focuscol;
     char *unfocuscol;
     char *fixedcol;    
-
+    int scrno;
+    
     /* Install signal handlers. */
 
     /* We ignore child exists. Don't create zombies. */
@@ -4178,15 +4179,29 @@ int main(int argc, char **argv)
         } /* switch */
     }
     
-    conn = xcb_connect(NULL, NULL);
+    conn = xcb_connect(NULL, &scrno);
     if (xcb_connection_has_error(conn))
     {
         perror("xcb_connect");
         exit(1);
     }
-    
-    /* Get the first screen */
-    screen = xcb_setup_roots_iterator(xcb_get_setup(conn)).data;
+
+    xcb_screen_iterator_t iter
+        = xcb_setup_roots_iterator(xcb_get_setup(conn));
+
+    for (int i = 0; i < scrno; ++ i)
+    {
+        xcb_screen_next(&iter);
+    }
+
+    screen = iter.data;
+    if (!screen)
+    {
+        fprintf (stderr, "mcwm: Can't get the current screen. Exiting.\n");
+        xcb_disconnect(conn);
+        exit(1);
+    }
+
     root = screen->root;
     
     PDEBUG("Screen size: %dx%d\nRoot window: %d\n", screen->width_in_pixels,
@@ -4210,7 +4225,8 @@ int main(int argc, char **argv)
     /* Loop over all clients and set up stuff. */
     if (0 != setupscreen())
     {
-        fprintf(stderr, "Failed to initialize windows. Exiting.\n");
+        fprintf(stderr, "mcwm: Failed to initialize windows. Exiting.\n");
+        xcb_disconnect(conn);
         exit(1);
     }
 
@@ -4218,6 +4234,7 @@ int main(int argc, char **argv)
     if (0 != setupkeys())
     {
         fprintf(stderr, "mcwm: Couldn't set up keycodes. Exiting.");
+        xcb_disconnect(conn);
         exit(1);
     }
 
