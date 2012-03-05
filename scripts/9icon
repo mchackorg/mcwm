@@ -12,7 +12,7 @@ for win in $(xwininfo -root -children | awk '$1~/0x/ && $2~/"/ {print $1}'); do
   awk -F'"' -v win=$win '
     /^WM_NAME/ { name=$2 }
     /window state: Iconic/ {
-      print name "'\''" ":xdotool windowmap " win " windowraise " win "'\''"
+      print "'\''" name "'\''" "'\''" ":xdotool windowmap " win " windowraise " win "'\''"
     }
   '
 done | xargs 9menu -popup -label 9icon -bg grey20 -fg grey80 -font fixed
