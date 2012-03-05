@@ -1,5 +1,8 @@
 -*- text -*-
 
+* When hiding a window always set XCB_ICCCM_SIZE_HINT_US_POSITION so
+  the window will be mapped where it was when it was unmapped.
+
 * Feature: Handle several screens (DISPLAY=0.x) in classical X.
 
   This means we will have several root windows.
