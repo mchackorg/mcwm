@@ -131,7 +131,6 @@ typedef enum {
     KEY_MAX
 } key_enum_t;
 
-
 struct monitor
 {
     xcb_randr_output_t id;
@@ -383,7 +382,6 @@ static xcb_atom_t getatom(char *atom_name);
  */
 void finishtabbing(void)
 {
-                                        
     mode = 0;
     
     if (NULL != lastfocuswin)
@@ -749,9 +747,7 @@ uint32_t getcolor(const char *colstr)
     xcb_alloc_named_color_cookie_t colcookie;
 
     colormap = screen->default_colormap;
-
     colcookie = xcb_alloc_named_color(conn, colormap, strlen(colstr), colstr);
-    
     col_reply = xcb_alloc_named_color_reply(conn, colcookie, &error);
     if (NULL != error)
     {
@@ -838,7 +834,6 @@ void forgetwin(xcb_window_t win)
             }
             
             free(item->data);
-
             delitem(&winlist, item);
 
             return;
@@ -1912,7 +1907,6 @@ void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
                          | XCB_CONFIG_WINDOW_Y, values);
     
     xcb_flush(conn);
-
 }
 
 /* Change focus to next in window ring. */
@@ -2635,8 +2629,8 @@ void hide(struct client *client)
     /*
      * Unmap window and declare iconic.
      * 
-     * Unmapping will generate an even UnmapNotify event so we can
-     * forget about the window later.
+     * Unmapping will generate an UnmapNotify event so we can forget
+     * about the window later.
      */
     xcb_unmap_window(conn, client->id);
     xcb_change_property(conn, XCB_PROP_MODE_REPLACE, client->id,
@@ -2648,9 +2642,8 @@ bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y)
 {
     xcb_query_pointer_reply_t *pointer;
     
-    pointer = xcb_query_pointer_reply(
-        conn, xcb_query_pointer(conn, win), 0);
-
+    pointer
+        = xcb_query_pointer_reply(conn, xcb_query_pointer(conn, win), 0);
     if (NULL == pointer)
     {
         return false;
@@ -2669,9 +2662,8 @@ bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
 {
     xcb_get_geometry_reply_t *geom;
     
-    geom = xcb_get_geometry_reply(conn,
-                                  xcb_get_geometry(conn, win), NULL);
-    
+    geom
+        = xcb_get_geometry_reply(conn, xcb_get_geometry(conn, win), NULL);
     if (NULL == geom)
     {
         return false;
@@ -2769,7 +2761,6 @@ void topright(void)
                      pointx, pointy);
     xcb_flush(conn);
 }
-
 
 void botleft(void)
 {
