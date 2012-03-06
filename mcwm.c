@@ -4106,6 +4106,7 @@ int main(int argc, char **argv)
     char *unfocuscol;
     char *fixedcol;    
     int scrno;
+    xcb_screen_iterator_t iter;
     
     /* Install signal handlers. */
 
@@ -4179,7 +4180,11 @@ int main(int argc, char **argv)
             exit(0);
         } /* switch */
     }
-    
+
+    /*
+     * Use $DISPLAY. After connecting scrno will contain the value of
+     * the display's screen.
+     */
     conn = xcb_connect(NULL, &scrno);
     if (xcb_connection_has_error(conn))
     {
@@ -4187,9 +4192,8 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    xcb_screen_iterator_t iter
-        = xcb_setup_roots_iterator(xcb_get_setup(conn));
-
+    /* Find our screen. */
+    iter = xcb_setup_roots_iterator(xcb_get_setup(conn));
     for (int i = 0; i < scrno; ++ i)
     {
         xcb_screen_next(&iter);
