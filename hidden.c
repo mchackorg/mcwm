@@ -1,5 +1,4 @@
 /*
- *
  * hidden - A small program to listen all windows with WM_STATE set to
  * Iconic.
  * 
@@ -22,6 +21,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <getopt.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_icccm.h>
 
@@ -31,11 +31,14 @@ xcb_screen_t *screen;
 xcb_atom_t wm_state;
 xcb_atom_t wm_icon_name;
 
+bool printcommand = false;
+
 static uint32_t get_wm_state(xcb_drawable_t win);
 static int findhidden(void);
 static void init(void);
 static void cleanup(void);
 static xcb_atom_t getatom(char *atom_name);
+static void printhelp(void);
 
 uint32_t get_wm_state(xcb_drawable_t win)
 {
@@ -123,15 +126,24 @@ int findhidden(void)
                 /*
                  * Example names:
                  * 
-                 * _NET_WM_ICON_NAME(UTF8_STRING) = 0x75, 0x72, 0x78, 0x76, 0x74
-                 * WM_ICON_NAME(STRING) = "urxvt"
-                 * _NET_WM_NAME(UTF8_STRING) = 0x75, 0x72, 0x78, 0x76, 0x74
-                 *  WM_NAME(STRING) = "urxvt"
+                 * _NET_WM_ICON_NAME(UTF8_STRING) = 0x75, 0x72, 0x78,
+                 * 0x76, 0x74 WM_ICON_NAME(STRING) = "urxvt"
+                 * _NET_WM_NAME(UTF8_STRING) = 0x75, 0x72, 0x78, 0x76,
+                 * 0x74 WM_NAME(STRING) = "urxvt"
                  */
                 cookie = xcb_icccm_get_wm_icon_name(conn, children[i]);
                 xcb_icccm_get_wm_icon_name_reply(conn, cookie, &prop, &error);
 
-                puts(prop.name);
+                prop.name[prop.name_len] = '\0';
+                if (printcommand)
+                {
+                    printf("'%s':'xdotool windowmap 0x%x windowraise 0x%x'\n",
+                           prop.name, children[i], children[i]);
+                }
+                else
+                {
+                    puts(prop.name);
+                }
             }
         } /* if not override redirect */
         
@@ -202,13 +214,38 @@ xcb_atom_t getatom(char *atom_name)
     return 0;
 }
 
-int main(void)
+void printhelp(void)
 {
+    printf("hidden: Usage: hidden [-c]\n");
+    printf("  -c print 9menu/xdotool compatible output.\n");
+}
 
+int main(int argc, char **argv)
+{
+    int ch;                     /* Option character */
+
+    while (1)
+    {
+        ch = getopt(argc, argv, "c");
+        if (-1 == ch)
+        {
+            /* No more options, break out of while loop. */
+            break;
+        }
+        switch (ch)
+        {
+        case 'c':
+            printcommand = true;
+            break;
+            
+        default:
+            printhelp();
+            exit(0);            
+        } /* switch ch */
+    } /* while 1 */
+    
     init();
-
     wm_state = getatom("WM_STATE");
-
     findhidden();
     cleanup();
     exit(0);
