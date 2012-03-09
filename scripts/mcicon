@@ -1,0 +1,6 @@
+#! /bin/sh
+
+# mcicon - list iconified windows in menu and map the chosen one.
+# Needs hidden (distributed with mcwm), 9menu and xdotool.
+
+hidden -c | xargs 9menu -popup -label 9icon -bg grey20 -fg grey80 -font 9x15
