@@ -1,4 +1,4 @@
-.TH mcwm 1 "Mar 05, 2012" "" ""
+.TH mcwm 1 "Mar 09, 2012" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
@@ -33,8 +33,8 @@ mcwm \- MC's Window Manager for X11.
 \-i turns on icons/hidden windows. 
 .B Please note
 that there is no way from mcwm to get a hidden window back! You have
-to use an external program such as a panel or the 9icon script (see
-below) to get the window mapped again.
+to use an external program such as a panel or the mcicon or 9icon
+scripts (see below) to get the window mapped again.
 .PP
 \-t urxvt will start urxvt when MODKEY + Return is pressed. Change to
 your prefered terminal program or something else entirely.
@@ -111,16 +111,16 @@ move up.
 move right.
 .IP \(bu 2
 .B y
-move to upper left corner of physical screen.
+move to upper left corner of monitor.
 .IP \(bu 2
 .B u
-move  to upper right corner of physical screen.
+move  to upper right corner of monitor.
 .IP \(bu 2
 .B b
-move to lower left corner of physical screen.
+move to lower left corner of monitor.
 .IP \(bu 2
 .B n
-move to lower right corner of physical screen.
+move to lower right corner of monitor.
 .IP \(bu 2
 .B Return
 start terminal or whatever program you have configured with -t or in
@@ -133,16 +133,16 @@ window. A new press of MODKEY + Tab will bring you back to the window
 where you last had focus.
 .IP \(bu 2
 .B f
-fix window so it is visible on all workspaces (toggles). Press again
-to unfix window. Also used to move windows between workspaces: First
-fix the window, change to the workspace you want, then unfix the
-window on the new workspace.
+fix window so it is visible on all workspaces (toggles). Note that
+this is also used to move windows between workspaces: First fix the
+window, change to the workspace you want, then unfix the window on the
+new workspace.
 .IP \(bu 2
 .B i
 iconify (or hide) window from the display. Only usable when mcwm has
 been started with -i. Currently there is no way to get a hidden window
-back. You have to use an external program such as a panel or the 9icon
-script in the mcwm distribution.
+back. You have to use an external program such as a panel or the
+mcicon or 9icon script in the mcwm distribution.
 .IP \(bu 2
 .B 0\-9
 go to workspace n, 0-9.
@@ -151,10 +151,10 @@ go to workspace n, 0-9.
 close window.
 .IP \(bu 2
 .B ,
-move window to previous physical screen.
+move window to previous monitor.
 .IP \(bu 2
 .B .
-move window to next physical screen.
+move window to next monitor.
 .RE
 .PP
 Note that all functions activated from the keyboard work on the
@@ -167,7 +167,8 @@ look in the config.h file, change and recompile. In the config.h file
 you can also define mouse button actions on the root window. By
 default button 3 starts the command mcmenu. You can write your own
 mcmenu by using, for instance, 9menu, dmenu or ratmenu.
-.PP
+.SH ENVIRONMENT
+.B mcwm\fP obeys the $DISPLAY variable.
 .SH STARTING
 Typically the window manager is started from a script, either run by
 .B startx(1) 
@@ -198,16 +199,20 @@ exec urxvt
 .fi
 .in -4
 .sp
-.PP
 .SH SCRIPTS
 You may want to define a menu program for use with mcwm (see
 config.h). In the source distribution you can find an example as
-mcmenu in the scripts directory.
+mcmenu (the default menu program in config.h) in the scripts
+directory.
 .PP
 Christian Neukirchen wrote a little script you can use to get
 iconified windows mapped again if you are running mcwm in allow icons
 mode (-i). You need awk, xdotool, xprop and xwininfo installed. You
-can the script as scripts/9icon.
+can find the script as scripts/9icon.
+.PP
+Inspired by Christian's work I wrote a small program, hidden(1), which
+is included with mcwm. You can use hidden(1) with the -c option
+together with 9menu. See scripts/mcicon for an example.
 .PP
 You might also be interested in the following shell function that
 might come in handy to give your terminal emulators good titles before
@@ -234,5 +239,7 @@ Use it like this:
 .fi
 .in -4
 .sp
+.SH SEE ALSO
+.B hidden(1)
 .SH AUTHOR
 Michael Cardell Widerkrantz <mc@hack.org>.
