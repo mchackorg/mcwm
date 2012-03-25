@@ -1457,7 +1457,7 @@ int setuprandr(void)
     extension = xcb_get_extension_data(conn, &xcb_randr_id);
     if (!extension->present)
     {
-        printf("No RANDR.\n");
+        PDEBUG("No RANDR extension.\n");
         return -1;
     }
     else
