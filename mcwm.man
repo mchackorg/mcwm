@@ -1,11 +1,11 @@
-.TH mcwm 1 "Mar 09, 2012" "" ""
+.TH mcwm 1 "Apr 30, 2012" "" ""
 .SH NAME
 mcwm \- MC's Window Manager for X11.
 .SH SYNOPSIS
 .B mcwm
 [ 
 .B \-b 
-] width
+width ] 
 [ 
 .B \-i
 ]
