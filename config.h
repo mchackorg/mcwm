@@ -39,7 +39,8 @@
 #define ALLOWICONS false
 
 /*
- * Start these programs when pressing MODKEY and mouse buttons on root window.
+ * Start these programs when pressing MOUSEMODKEY and mouse buttons on
+ * root window.
  */
 #define MOUSE1 ""
 #define MOUSE2 ""
