@@ -63,7 +63,7 @@
 
 /*
  * Keysym codes for window operations. Look in X11/keysymdefs.h for
- * actual symbols.
+ * actual symbols. Use XK_VoidSymbol to disable a function.
  */
 #define USERKEY_FIX 		XK_F
 #define USERKEY_MOVE_LEFT 	XK_H
@@ -75,6 +75,7 @@
 #define USERKEY_TERMINAL 	XK_Return
 #define USERKEY_MAX 		XK_X
 #define USERKEY_CHANGE 		XK_Tab
+#define USERKEY_BACKCHANGE	XK_VoidSymbol
 #define USERKEY_WS1		XK_1
 #define USERKEY_WS2		XK_2
 #define USERKEY_WS3		XK_3

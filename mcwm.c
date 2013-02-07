@@ -110,6 +110,7 @@ typedef enum {
     KEY_RET,
     KEY_X,
     KEY_TAB,
+    KEY_BACKTAB,
     KEY_1,
     KEY_2,
     KEY_3,
@@ -238,6 +239,7 @@ struct keys
     { USERKEY_TERMINAL, 0 },
     { USERKEY_MAX, 0 },
     { USERKEY_CHANGE, 0 },
+    { USERKEY_BACKCHANGE, 0 },
     { USERKEY_WS1, 0 },
     { USERKEY_WS2, 0 },
     { USERKEY_WS3, 0 },
@@ -331,7 +333,7 @@ static void raiseorlower(struct client *client);
 static void movelim(struct client *client);
 static void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y);
 static struct client *findclient(xcb_drawable_t win);
-static void focusnext(void);
+static void focusnext(bool reverse);
 static void setunfocus(xcb_drawable_t win);
 static void setfocus(struct client *client);
 static int start(char *program);
@@ -1268,6 +1270,12 @@ int setupkeys(void)
     /* Now grab the rest of the keys with the MODKEY modifier. */
     for (i = KEY_F; i < KEY_MAX; i ++)
     {
+	if (XK_VoidSymbol == keys[i].keysym)
+	{
+	    keys[i].keycode = 0;
+	    continue;
+	}
+
         keys[i].keycode = keysymtokeycode(keys[i].keysym, keysyms);        
         if (0 == keys[i].keycode)
         {
@@ -1910,7 +1918,7 @@ void movewindow(xcb_drawable_t win, uint16_t x, uint16_t y)
 }
 
 /* Change focus to next in window ring. */
-void focusnext(void)
+void focusnext(bool reverse)
 {
     struct client *client = NULL;
     
@@ -1954,25 +1962,54 @@ void focusnext(void)
     }
     else
     {
-        if (NULL == focuswin->wsitem[curws]->next)
+        if (reverse)
         {
-            /*
-             * We were at the end of list. Focusing on first window in
-             * list unless we were already there.
-             */
-            if (focuswin->wsitem[curws] != wslist[curws]->data)
+            if (NULL == focuswin->wsitem[curws]->prev)
             {
-                PDEBUG("End of list. Focusing first in list: %p\n",
-                       wslist[curws]);
-                client = wslist[curws]->data;
+                /*
+                 * We were at the head of list. Focusing on last
+                 * window in list unless we were already there.
+                 */
+                struct item *last = wslist[curws];
+                while (NULL != last->next)
+                    last = last->next;
+                if (focuswin->wsitem[curws] != last->data)
+                {
+                    PDEBUG("Beginning of list. Focusing last in list: %p\n",
+                           last);
+                    client = last->data;
+                }
+            }
+            else
+            {
+                /* Otherwise, focus the next in list. */
+                PDEBUG("Tabbing. Focusing next: %p.\n",
+                       focuswin->wsitem[curws]->prev);
+                client = focuswin->wsitem[curws]->prev->data;
             }
         }
         else
         {
-            /* Otherwise, focus the next in list. */
-            PDEBUG("Tabbing. Focusing next: %p.\n",
-                   focuswin->wsitem[curws]->next);            
-            client = focuswin->wsitem[curws]->next->data;
+            if (NULL == focuswin->wsitem[curws]->next)
+            {
+                /*
+                 * We were at the end of list. Focusing on first window in
+                 * list unless we were already there.
+                 */
+                if (focuswin->wsitem[curws] != wslist[curws]->data)
+                {
+                    PDEBUG("End of list. Focusing first in list: %p\n",
+                           wslist[curws]);
+                    client = wslist[curws]->data;
+                }
+            }
+            else
+            {
+                /* Otherwise, focus the next in list. */
+                PDEBUG("Tabbing. Focusing next: %p.\n",
+                       focuswin->wsitem[curws]->next);            
+                client = focuswin->wsitem[curws]->next->data;
+            }
         }
     } /* if NULL focuswin */
 
@@ -2960,9 +2997,10 @@ void handle_keypress(xcb_key_press_event_t *ev)
     
     for (key = KEY_MAX, i = KEY_F; i < KEY_MAX; i ++)
     {
-        if (ev->detail == keys[i].keycode)
+        if (ev->detail == keys[i].keycode && 0 != keys[i].keycode)
         {
             key = i;
+            break;
         }
     }
     if (key == KEY_MAX)
@@ -2979,7 +3017,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
         return;
     }
 
-    if (MCWM_TABBING == mode && key != KEY_TAB)
+    if (MCWM_TABBING == mode && key != KEY_TAB && key != KEY_BACKTAB)
     {
         /* First finish tabbing around. Then deal with the next key. */
         finishtabbing();
@@ -3004,6 +3042,10 @@ void handle_keypress(xcb_key_press_event_t *ev)
 
         case KEY_L: /* l */
             resizestep(focuswin, 'l');
+            break;
+
+        case KEY_TAB: /* shifted tab counts as backtab */
+            focusnext(true);
             break;
 
         default:
@@ -3040,7 +3082,11 @@ void handle_keypress(xcb_key_press_event_t *ev)
             break;
 
         case KEY_TAB: /* tab */
-            focusnext();
+            focusnext(false);
+            break;
+
+        case KEY_BACKTAB: /* backtab */
+            focusnext(true);
             break;
 
         case KEY_M: /* m */

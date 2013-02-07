@@ -132,6 +132,12 @@ MODKEY or press another command key mcwm will change focus to the new
 window. A new press of MODKEY + Tab will bring you back to the window
 where you last had focus.
 .IP \(bu 2
+.B Shift-Tab
+go to previous window in the current workspace window ring. This is
+most useful while you are tabbing: if you accidentally pressed Tab one
+time too many, you can move back by pressing Shift + TAB (all the
+while holding down the MODKEY).
+.IP \(bu 2
 .B f
 fix window so it is visible on all workspaces (toggles). Note that
 this is also used to move windows between workspaces: First fix the
