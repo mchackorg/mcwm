@@ -11,11 +11,11 @@
   hidden.c should list windows with _NET_WM_STATE_HIDDEN and,
   optionally, all with IconicState.
 
-* When hiding a window we want it to re-appear in the same position.
+* When unhiding a window we want it to re-appear in the same position.
   How?
 
-  Setting XCB_ICCCM_SIZE_HINT_US_POSITION before hiding would work
-  without adding more code, but does ICCCM allow that?
+  Setting XCB_ICCCM_SIZE_HINT_US_POSITION before hiding would probably
+  work without adding more code, but does ICCCM allow that?
 
   PPosition?
 
