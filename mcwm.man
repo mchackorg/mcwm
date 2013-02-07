@@ -194,6 +194,9 @@ xrdb \-load ~/.Xresources
 # Start window manager in the background. If it dies, X still lives.
 mcwm &
 
+# If you want to allow windows to be hidden, use this instead:
+# mcwm -i &
+
 # Start a terminal in the foreground. If this dies, X dies.
 exec urxvt
 .fi
