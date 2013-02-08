@@ -2,6 +2,14 @@
 
 User visible changes
 
+2013-02-08
+
+  * New keys: MODKEY + c,v moves to previous or next workspace. Thanks
+    to Per Cederqvist.
+
+  * New key: Shift-TAB moves backwards in on screen window list.
+    Thanks to Per Cederqvist.
+
 2012-03-05
 
   * New key: MODKEY + i hides windows.
