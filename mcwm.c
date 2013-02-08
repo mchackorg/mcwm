@@ -47,7 +47,6 @@
 
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
-#include <xcb/xcb_ewmh.h>
 
 #ifdef DEBUG
 #include "events.h"
