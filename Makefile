@@ -16,11 +16,14 @@ OBJS=mcwm.o list.o
 all: $(TARGETS)
 
 mcwm: $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $@
+
+hidden: hidden.c
+	$(CC) $(CFLAGS) hidden.c $(LDFLAGS) -o $@
 
 mcwm-static: $(OBJS)
-	$(CC) -o $@ $(OBJS) -static $(CFLAGS) $(LDFLAGS) \
-	-lXau -lXdmcp
+	$(CC) $(OBJS) -static $(CFLAGS) $(LDFLAGS) \
+	-lXau -lXdmcp -o $@
 
 mcwm.o: mcwm.c events.h list.h config.h Makefile
 
