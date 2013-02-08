@@ -153,6 +153,12 @@ mcicon or 9icon script in the mcwm distribution.
 .B 0\-9
 go to workspace n, 0-9.
 .IP \(bu 2
+.B c
+go to previous workspace.
+.IP \(bu 2
+.B v
+go to next workspace.
+.IP \(bu 2
 .B End
 close window.
 .IP \(bu 2

@@ -129,6 +129,8 @@ typedef enum {
     KEY_PREVSCR,
     KEY_NEXTSCR,
     KEY_ICONIFY,    
+    KEY_PREVWS,
+    KEY_NEXTWS,
     KEY_MAX
 } key_enum_t;
 
@@ -258,6 +260,8 @@ struct keys
     { USERKEY_PREVSCREEN, 0 },
     { USERKEY_NEXTSCREEN, 0 },
     { USERKEY_ICONIFY, 0 },    
+    { USERKEY_PREVWS, 0 },
+    { USERKEY_NEXTWS, 0 },
 };    
 
 /* All keycodes generating our MODKEY mask. */
@@ -3175,7 +3179,22 @@ void handle_keypress(xcb_key_press_event_t *ev)
                 hide(focuswin);
             }
             break;
-            
+
+	case KEY_PREVWS:
+	    if (curws > 0)
+	    {
+		changeworkspace(curws - 1);
+	    }
+	    else
+	    {
+		changeworkspace(WORKSPACES - 1);
+	    }
+	    break;
+
+	case KEY_NEXTWS:
+	    changeworkspace((curws + 1) % WORKSPACES);
+	    break;
+
         default:
             /* Ignore other keys. */
             break;            
