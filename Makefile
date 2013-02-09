@@ -1,7 +1,7 @@
-VERSION=20130209
+VERSION=20130209-2
 DIST=mcwm-$(VERSION)
 SRC=mcwm.c list.c config.h events.h list.h hidden.c
-DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man hidden.man $(SRC)
+DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man hidden.man scripts $(SRC)
 
 CFLAGS+=-g -std=c99 -Wall -Wextra -I/usr/local/include #-DDEBUG #-DDMALLOC
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm \
@@ -44,7 +44,7 @@ deinstall:
 
 $(DIST).tar.bz2:
 	mkdir $(DIST)
-	cp $(DISTFILES) $(DIST)/
+	cp -r $(DISTFILES) $(DIST)/
 	tar cf $(DIST).tar --exclude .git $(DIST)
 	bzip2 -9 $(DIST).tar
 	$(RM) -rf $(DIST)
