@@ -1,7 +1,7 @@
-VERSION=20130208-2
+VERSION=20130208-3
 DIST=mcwm-$(VERSION)
 SRC=mcwm.c list.c config.h events.h list.h hidden.c
-DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man $(SRC)
+DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man hidden.man $(SRC)
 
 CFLAGS+=-g -std=c99 -Wall -Wextra -I/usr/local/include #-DDEBUG #-DDMALLOC
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm \
