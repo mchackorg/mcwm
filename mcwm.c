@@ -1081,20 +1081,19 @@ struct client *setupwin(xcb_window_t win)
     xcb_size_hints_t hints;
     uint32_t ws;
     
-    /* Set border color. */
+    /* Set default border color. */
     values[0] = conf.unfocuscol;
     xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
 
-    /* Set border width. */
-    values[0] = conf.borderwidth;
-    mask = XCB_CONFIG_WINDOW_BORDER_WIDTH;
-    xcb_configure_window(conn, win, mask, values);
-    
+    /* Subscribe to events we want to know about in this window. */
     mask = XCB_CW_EVENT_MASK;
     values[0] = XCB_EVENT_MASK_ENTER_WINDOW;
     xcb_change_window_attributes_checked(conn, win, mask, values);
 
-    /* Add this window to the X Save Set. */
+    /*
+     * Add this window to the X Save Set, that is, the windows that
+     * will be automatically restored if we die.
+     */
     xcb_change_save_set(conn, XCB_SET_MODE_INSERT, win);
 
     xcb_flush(conn);
@@ -1146,6 +1145,8 @@ struct client *setupwin(xcb_window_t win)
     }
     
     PDEBUG("Adding window %d\n", client->id);
+
+    setborders(client, conf.borderwidth);
 
     /* Get window geometry. */
     if (!getgeom(client->id, &client->x, &client->y, &client->width,
