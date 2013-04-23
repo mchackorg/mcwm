@@ -71,11 +71,6 @@
 * Bug: We grab MODKEY all the time! We can grab it only when we start
   tabbing instead and release it when tabbing is complete.
 
-* Key to move to previous and next workspace. David Jacobs has a patch
-  for mod4+shift + I/O.
-
-  https://gist.github.com/1478365
-
 * Key to move windows to other workspaces, perhaps mod4+Shift + 0..9
   and mod4+shift + I/O.
 
@@ -178,7 +173,7 @@
 
 * Code cleaning
 
-  - Obivous cleanup: The event switch is way too big.
+  - Obvious cleanup: The event switch is way too big.
 
   - The states are known everywhere. A tight state machine would be
     nicer.
