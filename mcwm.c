@@ -7,7 +7,7 @@
  * MC, mc at the domain hack.org
  * http://hack.org/mc/
  *
- * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at
+ * Copyright (c) 2010, 2011, 2012, 2013 Michael Cardell Widerkrantz, mc at
  * the domain hack.org.
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -22,6 +22,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -278,6 +279,7 @@ struct modkeycodes
 struct conf
 {
     int borderwidth;            /* Do we draw borders? If so, how large? */    
+    int snapmargin;             /* Do we have snap margin? If so, how large? */
     char *terminal;             /* Path to terminal to start. */
     uint32_t focuscol;          /* Focused border colour. */
     uint32_t unfocuscol;        /* Unfocused border colour.  */
@@ -345,6 +347,7 @@ static void moveresize(xcb_drawable_t win, uint16_t x, uint16_t y,
                        uint16_t width, uint16_t height);
 static void resize(xcb_drawable_t win, uint16_t width, uint16_t height);
 static void resizestep(struct client *client, char direction);
+void snapwindow(struct client *client, int snap_mode);
 static void mousemove(struct client *client, int rel_x, int rel_y);
 static void mouseresize(struct client *client, int rel_x, int rel_y);
 static void movestep(struct client *client, char direction);
@@ -2349,7 +2352,7 @@ void resizestep(struct client *client, char direction)
         PDEBUG("resizestep in unknown direction.\n");
         break;
     } /* switch direction */
-
+    
     resizelim(client);
     
     /* If this window was vertically maximized, remember that it isn't now. */
@@ -2364,6 +2367,145 @@ void resizestep(struct client *client, char direction)
 }
 
 /*
+ * Try to snap to other windows and monitor border
+ */
+void snapwindow(struct client *client, int snap_mode)
+{
+    struct item *item;
+    struct client *win;
+    int16_t mon_x;
+    int16_t mon_y;
+    uint16_t mon_width;
+    uint16_t mon_height;
+
+    if (NULL == client->monitor)
+    {
+        mon_x = 0;
+        mon_y = 0;
+        mon_width = screen->width_in_pixels;
+        mon_height = screen->height_in_pixels;
+    }
+    else
+    {
+        mon_x = client->monitor->x;
+        mon_y = client->monitor->y;
+        mon_width = client->monitor->width;
+        mon_height = client->monitor->height;
+    }
+    /*
+     * Go through all windows on current workspace.
+     */
+    for (item = wslist[curws]; item != NULL; item = item->next)
+    {
+        win = item->data;
+
+        if (client == win)
+        {
+            continue;
+        }
+
+        if (snap_mode == MCWM_MOVE)
+        {
+            if (abs((win->x +win->width) - client->x) < conf.snapmargin)
+            {
+                if (client->y + client->height > win->y
+                    && client->y < win->y + win->height)
+                {
+                    client->x = (win->x + win->width) + (2 * conf.borderwidth);
+                }
+            }
+
+            if (abs((win->y +win->height) - client->y) < conf.snapmargin)
+            {
+                if (client->x + client->width >win->x
+                    && client->x < win->x + win->width)
+                {
+                    client->y = (win->y + win->height) + (2 * conf.borderwidth);
+                }
+            }
+
+            if (abs((client->x + client->width) - win->x) < conf.snapmargin)
+            {
+                if (client->y + client->height > win->y
+                    && client->y < win->y + win->height)
+                {
+                    client->x = (win->x - client->width)
+                        - (2 * conf.borderwidth);
+                }
+            }
+
+            if (abs((client->y + client->height) - win->y) < conf.snapmargin)
+            {
+                if (client->x + client->width >win->x
+                    && client->x < win->x + win->width)
+                {
+                    client->y = (win->y - client->height)
+                        - (2 * conf.borderwidth);
+                }
+            }
+
+        } /* mcwm_move */
+        else if (snap_mode == MCWM_RESIZE)
+        {
+            if (abs((client->x + client->width) - win->x) < conf.snapmargin)
+            {
+                if (client->y + client->height > win->y
+                    && client->y < win->y + win->height)
+                {
+                    client->width = (win->x - client->x)
+                        - (2 * conf.borderwidth);
+                }
+            }
+
+            if (abs((client->y + client->height) - win->y) < conf.snapmargin)
+            {
+                if (client->x + client->width >win->x
+                    && client->x < win->x + win->width)
+                {
+                    client->height = (win->y - client->y)
+                        - (2 * conf.borderwidth);
+                }
+            }
+        } /* mcwm_resize */
+    } /* for */
+
+    /* monitor border */
+    if (snap_mode == MCWM_MOVE) {
+
+        if (abs(client->x - mon_x) < conf.snapmargin)
+        {
+            client->x = mon_x;
+        }
+
+        if (abs(client->y - mon_y) < conf.snapmargin)
+        {
+            client->y = mon_y;
+        }
+
+        if (abs((client->x + client->width) - mon_width) < conf.snapmargin)
+        {
+            client->x = (mon_width - client->width);
+        }
+
+        if (abs((client->y + client->height) - mon_height) < conf.snapmargin)
+        {
+            client->y = (mon_height - client->height);
+        }
+    }
+    else if (snap_mode == MCWM_RESIZE)
+    {
+        if (abs((client->width + client->x) - mon_width) < conf.snapmargin)
+        {
+            client->width = mon_width;
+        }
+        if (abs((client->height + client->y) - mon_height) < conf.snapmargin)
+        {
+            client->height = mon_height;
+        }
+    }
+}
+
+/*
  * Move window win as a result of pointer motion to coordinates
  * rel_x,rel_y.
  */
@@ -2371,12 +2513,18 @@ void mousemove(struct client *client, int rel_x, int rel_y)
 {
     client->x = rel_x;
     client->y = rel_y;
-    
+
+    if (conf.snapmargin > 0)
+    {
+        snapwindow(client, MCWM_MOVE);
+    }
+
     movelim(client);
 }
 
 void mouseresize(struct client *client, int rel_x, int rel_y)
 {
+
     client->width = abs(rel_x - client->x);
     client->height = abs(rel_y - client->y);
 
@@ -2388,6 +2536,11 @@ void mouseresize(struct client *client, int rel_x, int rel_y)
            (client->width - client->base_width) / client->width_inc,
            (client->height - client->base_height) / client->height_inc);
 
+    if (conf.snapmargin > 0)
+    {    
+        snapwindow(client, MCWM_RESIZE);
+    }
+    
     resizelim(client);
     
     /* If this window was vertically maximized, remember that it isn't now. */
@@ -2442,7 +2595,7 @@ void movestep(struct client *client, char direction)
         PDEBUG("movestep: Moving in unknown direction.\n");
         break;
     } /* switch direction */
-
+    
     movelim(client);
     
     /*
@@ -4110,14 +4263,15 @@ void events(void)
 
 void printhelp(void)
 {
-    printf("mcwm: Usage: mcwm [-b] [-t terminal-program] [-f colour] "
-           "[-u colour] [-x colour] \n");
+    printf("mcwm: Usage: mcwm [-b] [-s snapmargin] [-t terminal-program] "
+           "[-f colour] [-u colour] [-x colour] \n");
     printf("  -b means draw no borders\n");
+    printf("  -s snapmargin in pixels\n");
     printf("  -t urxvt will start urxvt when MODKEY + Return is pressed\n");
     printf("  -f colour sets colour for focused window borders of focused "
            "to a named color.\n");
-    printf("  -u colour sets colour for unfocused window borders.");
-    printf("  -x color sets colour for fixed window borders.");    
+    printf("  -u colour sets colour for unfocused window borders.\n");
+    printf("  -x color sets colour for fixed window borders.\n");    
 }
 
 void sigcatch(int sig)
@@ -4188,6 +4342,7 @@ int main(int argc, char **argv)
     /* Set up defaults. */
     
     conf.borderwidth = BORDERWIDTH;
+    conf.snapmargin = SNAPMARGIN;
     conf.terminal = TERMINAL;
     conf.allowicons = ALLOWICONS;
     focuscol = FOCUSCOL;
@@ -4196,7 +4351,7 @@ int main(int argc, char **argv)
     
     while (1)
     {
-        ch = getopt(argc, argv, "b:it:f:u:x:");
+        ch = getopt(argc, argv, "b:s:it:f:u:x:");
         if (-1 == ch)
         {
                 
@@ -4209,6 +4364,11 @@ int main(int argc, char **argv)
         case 'b':
             /* Border width */
             conf.borderwidth = atoi(optarg);            
+            break;
+
+        case 's':
+            /* Snap margin */
+            conf.snapmargin = atoi(optarg);
             break;
 
         case 'i':

@@ -147,8 +147,6 @@
 
   Idea from Christian Neukirchen.
 
-* Snap to border and screen edge, which favours the edge.
-
 * Gaps on borders for docks, status windows et cetera.
 
   Keep space reserved for Conky, dzen2 et cetera.
