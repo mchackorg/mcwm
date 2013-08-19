@@ -2,6 +2,11 @@
 
 User visible changes
 
+2013-08-19
+
+  * New option: -s snap-margin. Optional snap to window and monitor
+    borders. Thanks to Simone Vellei.
+
 2013-02-08
 
   * New keys: MODKEY + c,v moves to previous or next workspace. Thanks
