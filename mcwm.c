@@ -347,7 +347,7 @@ static void moveresize(xcb_drawable_t win, uint16_t x, uint16_t y,
                        uint16_t width, uint16_t height);
 static void resize(xcb_drawable_t win, uint16_t width, uint16_t height);
 static void resizestep(struct client *client, char direction);
-void snapwindow(struct client *client, int snap_mode);
+static void snapwindow(struct client *client, int snap_mode);
 static void mousemove(struct client *client, int rel_x, int rel_y);
 static void mouseresize(struct client *client, int rel_x, int rel_y);
 static void movestep(struct client *client, char direction);
@@ -2369,7 +2369,7 @@ void resizestep(struct client *client, char direction)
 /*
  * Try to snap to other windows and monitor border
  */
-void snapwindow(struct client *client, int snap_mode)
+static void snapwindow(struct client *client, int snap_mode)
 {
     struct item *item;
     struct client *win;
