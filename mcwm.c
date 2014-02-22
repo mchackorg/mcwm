@@ -7,10 +7,10 @@
  * MC, mc at the domain hack.org
  * http://hack.org/mc/
  *
- * Copyright (c) 2010, 2011, 2012, 2013 Michael Cardell Widerkrantz, mc at
- * the domain hack.org.
+ * Copyright (c) 2010, 2011, 2012, 2013, 2014 Michael Cardell
+ * Widerkrantz, mc at the domain hack.org.
  *
- * Permission to use, copy, modify, and distribute this software for any
+ * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
  * copyright notice and this permission notice appear in all copies.
  *
