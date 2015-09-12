@@ -147,10 +147,10 @@ int findhidden(void)
                     puts(prop.name);
                 }
             }
-        } /* if not override redirect */
+        }
         
         free(attr);
-    } /* for */
+    }
 
     free(reply);
 
