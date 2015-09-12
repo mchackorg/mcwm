@@ -471,7 +471,7 @@ struct modkeycodes getmodkeys(xcb_mod_mask_t modmask)
             
             PDEBUG("Got %d keycodes.\n", keycodes.len);
         }
-    } /* for mask */
+    }
     
     free(reply);
     
@@ -511,7 +511,7 @@ void arrangewindows(void)
     {
         client = item->data;
         fitonscreen(client);
-    } /* for */
+    }
 }
 
 /* Set the EWMH hint that window win belongs on workspace ws. */
@@ -651,7 +651,7 @@ void changeworkspace(uint32_t ws)
              */
             xcb_unmap_window(conn, client->id);
         }
-    } /* for */
+    }
     
     /* Go through list of new ws. Map everything that isn't fixed. */
     for (item = wslist[ws]; item != NULL; item = item->next)
@@ -1305,7 +1305,7 @@ int setupkeys(void)
         xcb_grab_key(conn, 1, screen->root, MODKEY | SHIFTMOD,
                      keys[i].keycode,
                      XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    } /* for */
+    }
 
     /* Need this to take effect NOW! */
     xcb_flush(conn);
@@ -1432,7 +1432,7 @@ int setupscreen(void)
         }
         
         free(attr);
-    } /* for */
+    }
 
     changeworkspace(0);
         
@@ -1674,7 +1674,7 @@ void getoutputs(xcb_randr_output_t *outputs, int len, xcb_timestamp_t timestamp)
 
                         fitonscreen(client);
                     }
-                } /* for */
+                }
                 
                 /* It's not active anymore. Forget about it. */
                 delmonitor(mon);
@@ -1682,7 +1682,7 @@ void getoutputs(xcb_randr_output_t *outputs, int len, xcb_timestamp_t timestamp)
         }
 
         free(output);
-    } /* for */
+    }
 }
 
 void arrbymon(struct monitor *monitor)
@@ -1705,7 +1705,7 @@ void arrbymon(struct monitor *monitor)
         {
             fitonscreen(client);
         }
-    } /* for */
+    }
 
 }
 
@@ -2467,7 +2467,7 @@ static void snapwindow(struct client *client, int snap_mode)
                 }
             }
         } /* mcwm_resize */
-    } /* for */
+    }
 
     /* monitor border */
     if (snap_mode == MCWM_MOVE) {
@@ -4012,8 +4012,8 @@ void events(void)
                         /* Get out of for... */
                         break;
                     }
-                } /* for keycodes. */
-            } /* if tabbing. */
+                }
+            }
         }
         break;
             
@@ -4250,11 +4250,11 @@ void events(void)
                     /* We're finished. Break out of for loop. */
                     break; 
                 }
-            } /* for */
+            }
         } 
         break;
             
-        } /* switch */
+        }
 
         /* Forget about this event. */
         free(ev);
