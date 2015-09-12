@@ -2018,7 +2018,7 @@ void focusnext(bool reverse)
                 client = focuswin->wsitem[curws]->next->data;
             }
         }
-    } /* if NULL focuswin */
+    }
 
     if (NULL != client)
     {
@@ -4078,7 +4078,7 @@ void events(void)
                             }
 
                             movetohead(&wslist[curws], client->wsitem[curws]);
-                        } /* if not tabbing */
+                        }
 
                         setfocus(client);
                     }
@@ -4161,7 +4161,7 @@ void events(void)
                                         wm_state, wm_state, 32, 2, data);
                     xcb_flush(conn);
                 }
-            } /* if */
+            }
         }
         break;
 
