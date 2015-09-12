@@ -1277,11 +1277,11 @@ int setupkeys(void)
     /* Now grab the rest of the keys with the MODKEY modifier. */
     for (i = KEY_F; i < KEY_MAX; i ++)
     {
-	if (XK_VoidSymbol == keys[i].keysym)
-	{
-	    keys[i].keycode = 0;
-	    continue;
-	}
+        if (XK_VoidSymbol == keys[i].keysym)
+        {
+            keys[i].keycode = 0;
+            continue;
+        }
 
         keys[i].keycode = keysymtokeycode(keys[i].keysym, keysyms);        
         if (0 == keys[i].keycode)
@@ -3333,20 +3333,20 @@ void handle_keypress(xcb_key_press_event_t *ev)
             }
             break;
 
-	case KEY_PREVWS:
-	    if (curws > 0)
-	    {
-		changeworkspace(curws - 1);
-	    }
-	    else
-	    {
-		changeworkspace(WORKSPACES - 1);
-	    }
-	    break;
+        case KEY_PREVWS:
+            if (curws > 0)
+            {
+                changeworkspace(curws - 1);
+            }
+            else
+            {
+                changeworkspace(WORKSPACES - 1);
+            }
+            break;
 
-	case KEY_NEXTWS:
-	    changeworkspace((curws + 1) % WORKSPACES);
-	    break;
+        case KEY_NEXTWS:
+            changeworkspace((curws + 1) % WORKSPACES);
+            break;
 
         default:
             /* Ignore other keys. */
