@@ -1,11 +1,23 @@
 #! /bin/sh
-exec 9menu -bg grey20 -fg grey80 -popup \
+
+# hide: gives you a new pointer and hides the window you click on.
+#
+# list hidden: Install mcicon somewhere in path so the "list hidden"
+# alternative work. It will then list any iconified windows in a
+# 9menu. Select one and it's mapped again.
+#
+# cpu: Change to the host you usally connect a lot to. Add more ssh
+# hosts as you wish.
+#
+# VGA On/Off: Makes X aware of external screen connected on VGA port.
+#
+# close: Closes the 9menu program.
+exec 9menu -bg grey20 -fg grey80 -font 9x15 -popup \
      'hide:xdotool selectwindow windowminimize' \
+     'list hidden:mcicon' \
      'cpu:urxvt -e ssh cpu.example.org' \
      ':' \
      'VGA On: xrandr --output VGA --on' \
      'VGA Off: xrandr --output VGA --off' \
-     ':' \
-     'HHKB: xkbcomp -I$HOME/conf/xkb $HOME/conf/xkb/hhkb.xkb $DISPLAY' \
      ':' \
      'close:'
