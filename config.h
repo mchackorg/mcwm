@@ -64,6 +64,9 @@
 /* Default snap margin in pixels. Used unless -s width. */
 #define SNAPMARGIN 0
 
+/* Factor of the monitor width for main work window column, 0.05--0.95 */
+#define WORKFACTOR 0.55
+
 /*
  * Keysym codes for window operations. Look in X11/keysymdefs.h for
  * actual symbols. Use XK_VoidSymbol to disable a function.
@@ -99,3 +102,5 @@
 #define USERKEY_PREVSCREEN      XK_comma
 #define USERKEY_NEXTSCREEN      XK_period
 #define USERKEY_ICONIFY         XK_I
+#define USERKEY_TILE            XK_T
+#define USERKEY_NEWMAIN         XK_space

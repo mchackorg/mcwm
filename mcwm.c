@@ -131,6 +131,8 @@ typedef enum {
     KEY_ICONIFY,    
     KEY_PREVWS,
     KEY_NEXTWS,
+    KEY_TILE,
+    KEY_NEWMAIN,
     KEY_MAX
 } key_enum_t;
 
@@ -170,6 +172,7 @@ struct client
     bool vertmaxed;             /* Vertically maximized? */
     bool maxed;                 /* Totally maximized? */
     bool fixed;           /* Visible on all workspaces? */
+    bool isfloating;      /* Is this window floating among tiled windows? */
     struct monitor *monitor;    /* The physical output this window is on. */
     struct item *winitem; /* Pointer to our place in global windows list. */
     struct item *wsitem[WORKSPACES]; /* Pointer to our place in every
@@ -262,6 +265,8 @@ struct keys
     { USERKEY_ICONIFY, 0 },    
     { USERKEY_PREVWS, 0 },
     { USERKEY_NEXTWS, 0 },
+    { USERKEY_TILE, 0 },
+    { USERKEY_NEWMAIN, 0 },
 };    
 
 /* All keycodes generating our MODKEY mask. */
@@ -285,6 +290,7 @@ struct conf
     uint32_t unfocuscol;        /* Unfocused border colour.  */
     uint32_t fixedcol;          /* Fixed windows border colour. */
     bool allowicons;            /* Allow windows to be unmapped. */    
+    float wfactor;		/* Factor of monitor width for main column. */
 } conf;
 
 xcb_atom_t atom_desktop;        /*
@@ -512,6 +518,80 @@ void arrangewindows(void)
         client = item->data;
         fitonscreen(client);
     }
+}
+
+/* Tile windows on workspace ws. */
+void tile(uint32_t ws)
+{
+    struct item *item;
+    struct client *c, *masterwin;
+    unsigned int n;
+
+    /* How many windows are there? */
+    for (n = 0, item = wslist[ws]; item != NULL; item = item->next, n ++)
+        ;
+    if (n == 0)
+        return;
+
+    /* Master column */
+    if (focuswin == NULL)
+    {
+        item = wslist[ws];
+        if (item == NULL)
+            /* No windows!? */
+            return;
+        c = item->data;
+    }
+    else
+    {
+        c = focuswin;
+    }
+
+    c->x = c->monitor->x;
+    c->y = c->monitor->y;
+    if (n == 1)
+    {
+        /* We're alone. */
+        c->width = (c->monitor->width) - 2 * conf.borderwidth;
+    }
+    else
+    {
+        c->width = (c->monitor->width * conf.wfactor) - 2 * conf.borderwidth;
+    }
+    c->height = c->monitor->height - 2 * conf.borderwidth;
+    moveresize(c->id, c->x, c->y, c->width, c->height);
+    masterwin = c;
+
+    /* How many windows left to tile? */
+    n --;
+
+    /* Stacking column */
+    int i;
+    int y;
+    y = c->monitor->y;
+    for (i = 0, item = wslist[ws]; item != NULL; item = item->next, i ++)
+    {
+        c = item->data;
+        if (c->id == masterwin->id || c->isfloating)
+        {
+            PDEBUG("Not to be tiled, skipping.\n");
+            continue;
+        }
+
+        PDEBUG("tiling in stack.\n");
+        c->x = c->monitor->x + c->monitor->width * conf.wfactor;
+        c->y = y;
+        c->width = c->monitor->width - c->monitor->width * conf.wfactor - 2 * conf.borderwidth;
+        c->height = (c->monitor->height / n) - n * 2 * conf.borderwidth;
+        moveresize(c->id, c->x, c->y, c->width, c->height);
+        y += c->height + 2 * conf.borderwidth;
+    }
+
+    /* Move mouse pointer to master window. */
+    xcb_warp_pointer(conn, XCB_NONE, masterwin->id, 0, 0, 0, 0,
+                     masterwin->width / 2, masterwin->height / 2);
+
+    xcb_flush(conn);
 }
 
 /* Set the EWMH hint that window win belongs on workspace ws. */
@@ -1053,9 +1133,12 @@ void newwin(xcb_window_t win)
             }
         }
     }
-    
-    fitonscreen(client);
-    
+
+//    fitonscreen(client);
+    // Tile all windows to make room for the new window.
+    // FIXME Keep track of state: tiling or floating mode.
+    tile(curws);
+
     /* Show window on screen. */
     xcb_map_window(conn, client->id);
 
@@ -1138,6 +1221,7 @@ struct client *setupwin(xcb_window_t win)
     client->vertmaxed = false;
     client->maxed = false;
     client->fixed = false;
+    client->isfloating = false;    
     client->monitor = NULL;
 
     client->winitem = item;
@@ -3348,6 +3432,16 @@ void handle_keypress(xcb_key_press_event_t *ev)
             changeworkspace((curws + 1) % WORKSPACES);
             break;
 
+        case KEY_TILE:
+            // FIXME Should really call a function to tile all
+            // workspaces and set tiling mode.
+            tile(curws);
+            break;
+
+        case KEY_NEWMAIN:
+            tile(curws);
+            break;
+
         default:
             /* Ignore other keys. */
             break;            
@@ -3716,6 +3810,8 @@ void events(void)
              * it.
              */
             forgetwin(e->window);
+
+            tile(curws);
         }
         break;
             
@@ -4345,6 +4441,7 @@ int main(int argc, char **argv)
     conf.snapmargin = SNAPMARGIN;
     conf.terminal = TERMINAL;
     conf.allowicons = ALLOWICONS;
+    conf.wfactor = WORKFACTOR;
     focuscol = FOCUSCOL;
     unfocuscol = UNFOCUSCOL;
     fixedcol = FIXEDCOL;
