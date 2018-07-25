@@ -1,4 +1,4 @@
-VERSION=20130209-2
+VERSION=20180725
 DIST=mcwm-$(VERSION)
 SRC=mcwm.c list.c config.h events.h list.h hidden.c
 DISTFILES=LICENSE Makefile NEWS README TODO WISHLIST mcwm.man hidden.man scripts $(SRC)
