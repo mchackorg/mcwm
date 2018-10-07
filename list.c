@@ -17,14 +17,14 @@
 
 /*
  * Move element in item to the head of list mainlist.
- */ 
+ */
 void movetohead(struct item **mainlist, struct item *item)
 {
     if (NULL == item || NULL == mainlist || NULL == *mainlist)
     {
         return;
     }
-    
+
     if (*mainlist == item)
     {
         /* item is NULL or we're already at head. Do nothing. */
@@ -50,7 +50,7 @@ void movetohead(struct item **mainlist, struct item *item)
 
     /* Old head needs to know about us. */
     item->next->prev = item;
-    
+
     /* Remember the new head. */
     *mainlist = item;
 }
@@ -63,12 +63,12 @@ void movetohead(struct item **mainlist, struct item *item)
 struct item *additem(struct item **mainlist)
 {
     struct item *item;
-    
+
     if (NULL == (item = (struct item *) malloc(sizeof (struct item))))
     {
         return NULL;
     }
-  
+
     if (NULL == *mainlist)
     {
         /* First in the list. */
@@ -86,14 +86,14 @@ struct item *additem(struct item **mainlist)
     }
 
     *mainlist = item;
-        
+
     return item;
 }
 
 void delitem(struct item **mainlist, struct item *item)
 {
     struct item *ml = *mainlist;
-    
+
     if (NULL == mainlist || NULL == *mainlist || NULL == item)
     {
         return;
@@ -125,7 +125,7 @@ void freeitem(struct item **list, int *stored,
     {
         return;
     }
-    
+
     if (NULL != item->data)
     {
         free(item->data);
@@ -142,12 +142,12 @@ void freeitem(struct item **list, int *stored,
 
 /*
  * Delete all elements in list and free memory resources.
- */ 
+ */
 void delallitems(struct item **list, int *stored)
 {
     struct item *item;
     struct item *next;
-    
+
     for (item = *list; item != NULL; item = next)
     {
         next = item->next;
@@ -158,14 +158,14 @@ void delallitems(struct item **list, int *stored)
     if (NULL != stored)
     {
         (*stored) = 0;
-    }    
+    }
 }
 
 void listitems(struct item *mainlist)
 {
     struct item *item;
     int i;
-    
+
     for (item = mainlist, i = 1; item != NULL; item = item->next, i ++)
     {
         printf("item #%d (stored at %p).\n", i, (void *)item);
@@ -180,7 +180,7 @@ void listall(struct item *mainlist)
     int i;
 
     printf("Listing all:\n");
-    
+
     for (item = mainlist, i = 1; item != NULL; item = item->next, i ++)
     {
         printf("%d at %p: %s.\n", i, (void *)item, (char *)item->data);
@@ -203,7 +203,7 @@ int main(void)
     char *foo2 = "2";
     char *foo3 = "3";
     char *foo4 = "4";
-    
+
     item1 = additem(&mainlist);
     if (NULL == item1)
     {
@@ -213,7 +213,7 @@ int main(void)
     item1->data = foo1;
     printf("Current elements:\n");
     listall(mainlist);
-    
+
     item2 = additem(&mainlist);
     if (NULL == item2)
     {
@@ -221,9 +221,9 @@ int main(void)
         exit(1);
     }
     item2->data = foo2;
-    printf("Current elements:\n");    
+    printf("Current elements:\n");
     listall(mainlist);
-    
+
     item3 = additem(&mainlist);
     if (NULL == item3)
     {
@@ -231,7 +231,7 @@ int main(void)
         exit(1);
     }
     item3->data = foo3;
-    printf("Current elements:\n");    
+    printf("Current elements:\n");
     listall(mainlist);
 
     item4 = additem(&mainlist);
@@ -241,25 +241,25 @@ int main(void)
         exit(1);
     }
     item4->data = foo4;
-    printf("Current elements:\n");    
+    printf("Current elements:\n");
     listall(mainlist);
 
     printf("----------------------------------------------------------------------\n");
 
     printf("Moving item3 to be after item2\n");
     movetonext(&mainlist, item2, item3);
-    printf("Current elements:\n");    
+    printf("Current elements:\n");
     listall(mainlist);
 
     printf("----------------------------------------------------------------------\n");
 
     printf("Moving head! item4 to be after item2\n");
     movetonext(&mainlist, item2, item4);
-    printf("Current elements:\n");    
+    printf("Current elements:\n");
     listall(mainlist);
 
     printf("----------------------------------------------------------------------\n");
-    
+
     printf("Moving tail! item1 to be after item2\n");
     movetonext(&mainlist, item2, item1);
     printf("Current elements:\n");
@@ -271,7 +271,7 @@ int main(void)
     movetonext(&mainlist, item3, item2);
     printf("Current elements:\n");
     listall(mainlist);
-    
+
     printf("Moving all the items after each other.\n");
     /* item3 is tail. work backwards. */
     for (item = mainlist, i = 1;
@@ -285,38 +285,38 @@ int main(void)
             listall(mainlist);
         }
     }
-    
+
     printf("----------------------------------------------------------------------\n");
 
-#if 0    
+#if 0
     movetohead(&mainlist, item2);
-    printf("Current elements:\n");    
+    printf("Current elements:\n");
     listall(mainlist);
-    
+
     printf("----------------------------------------------------------------------\n");
 #endif
-    
+
     printf("Deleting item stored at %p\n", item3);
     delitem(&mainlist, item3);
-    printf("Current elements:\n");    
+    printf("Current elements:\n");
     listall(mainlist);
 
     puts("");
-    
+
     delitem(&mainlist, item2);
-    printf("Current elements:\n");    
+    printf("Current elements:\n");
     listall(mainlist);
 
     puts("");
-    
+
     delitem(&mainlist, item1);
-    printf("Current elements:\n");    
+    printf("Current elements:\n");
     listall(mainlist);
 
     puts("");
 
     printf("----------------------------------------------------------------------\n");
-               
+
     exit(0);
 }
 #endif

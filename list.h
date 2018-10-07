@@ -19,7 +19,7 @@ struct item *additem(struct item **mainlist);
 
 /*
  * Delete item from list mainlist.
- */ 
+ */
 void delitem(struct item **mainlist, struct item *item);
 
 /*
@@ -37,5 +37,5 @@ void delallitems(struct item **list, int *stored);
 
 /*
  * Print all items in mainlist on stdout.
- */ 
+ */
 void listitems(struct item *mainlist);

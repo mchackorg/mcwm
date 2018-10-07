@@ -1,7 +1,7 @@
 /*
  * hidden - A small program to listen all windows with WM_STATE set to
  * Iconic.
- * 
+ *
  * Copyright (c) 2012 Michael Cardell Widerkrantz, mc at the domain
  * hack.org.
  *
@@ -47,7 +47,7 @@ uint32_t get_wm_state(xcb_drawable_t win)
     xcb_get_property_cookie_t cookie;
     uint32_t *statep;
     uint32_t state = 0;
-    
+
     cookie = xcb_get_property(conn, false, win, wm_state, wm_state, 0,
                               sizeof (int32_t));
 
@@ -63,7 +63,7 @@ uint32_t get_wm_state(xcb_drawable_t win)
     {
         goto bad;
     }
-        
+
     statep = xcb_get_property_value(reply);
     state = *statep;
 
@@ -87,7 +87,7 @@ int findhidden(void)
     xcb_get_property_cookie_t cookie;
     xcb_icccm_get_text_property_reply_t prop;
     xcb_generic_error_t *error;
-    
+
     /* Get all children. */
     reply = xcb_query_tree_reply(conn,
                                  xcb_query_tree(conn, screen->root), 0);
@@ -96,9 +96,9 @@ int findhidden(void)
         return -1;
     }
 
-    len = xcb_query_tree_children_length(reply);    
+    len = xcb_query_tree_children_length(reply);
     children = xcb_query_tree_children(reply);
-    
+
     /* List all hidden windows on this root. */
     for (i = 0; i < len; i ++)
     {
@@ -126,7 +126,7 @@ int findhidden(void)
             {
                 /*
                  * Example names:
-                 * 
+                 *
                  * _NET_WM_ICON_NAME(UTF8_STRING) = 0x75, 0x72, 0x78,
                  * 0x76, 0x74 WM_ICON_NAME(STRING) = "urxvt"
                  * _NET_WM_NAME(UTF8_STRING) = 0x75, 0x72, 0x78, 0x76,
@@ -148,7 +148,7 @@ int findhidden(void)
                 }
             }
         }
-        
+
         free(attr);
     }
 
@@ -161,7 +161,7 @@ void init(void)
 {
     int scrno;
     xcb_screen_iterator_t iter;
-    
+
     conn = xcb_connect(NULL, &scrno);
     if (!conn)
     {
@@ -188,18 +188,18 @@ void init(void)
 
 void cleanup(void)
 {
-    xcb_disconnect(conn);    
+    xcb_disconnect(conn);
 }
 
 /*
  * Get a defined atom from the X server.
- */ 
+ */
 xcb_atom_t getatom(char *atom_name)
 {
     xcb_intern_atom_cookie_t atom_cookie;
     xcb_atom_t atom;
     xcb_intern_atom_reply_t *rep;
-    
+
     atom_cookie = xcb_intern_atom(conn, 0, strlen(atom_name), atom_name);
     rep = xcb_intern_atom_reply(conn, atom_cookie, NULL);
     if (NULL != rep)
@@ -239,13 +239,13 @@ int main(int argc, char **argv)
         case 'c':
             printcommand = true;
             break;
-            
+
         default:
             printhelp();
-            exit(0);            
+            exit(0);
         } /* switch ch */
     } /* while 1 */
-    
+
     init();
     wm_state = getatom("WM_STATE");
     findhidden();
